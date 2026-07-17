@@ -1972,7 +1972,11 @@ impl MvpAgent {
             .auth_manager
             .current()
             .map(|auth| {
-                let gate = if !self.tier_allowed.get() && gate.is_none() {
+                let current_model_id = self.models_manager.current_model_id();
+                let is_first_party_model = self.resolve_model_id(&current_model_id)
+                    .map(|entry| crate::util::is_first_party_xai_url(&entry.info.base_url))
+                    .unwrap_or(true);
+                let gate = if !self.tier_allowed.get() && gate.is_none() && is_first_party_model {
                     let message = "A subscription is required.".to_string();
                     Some(crate::auth::GateInfo {
                         message,

@@ -920,6 +920,7 @@ mod tests {
             login_label: None,
             has_auth_provider_command: false,
             preferred_method: None,
+            has_local_or_custom_models: false,
         });
 
         let (needs, label, method_id, mode) = startup_auth_metadata(&built.methods);

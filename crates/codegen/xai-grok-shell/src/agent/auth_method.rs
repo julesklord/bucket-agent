@@ -97,6 +97,8 @@ pub struct AuthMethodsBuildInputs<'a> {
     /// Config pin (`[auth] preferred_method`). `None` keeps multi-method
     /// fallthrough; `Some` is fail-closed (only that method family).
     pub preferred_method: Option<PreferredAuthMethod>,
+    /// True if any local or custom models (like Ollama) are configured.
+    pub has_local_or_custom_models: bool,
 }
 
 /// Output of [`build_auth_methods`].
@@ -145,6 +147,7 @@ pub fn build_auth_methods(inputs: AuthMethodsBuildInputs<'_>) -> BuiltAuthMethod
         login_label,
         has_auth_provider_command,
         preferred_method,
+        has_local_or_custom_models,
     } = inputs;
 
     match preferred_method {
@@ -163,6 +166,7 @@ pub fn build_auth_methods(inputs: AuthMethodsBuildInputs<'_>) -> BuiltAuthMethod
             enterprise_oidc_issuer,
             login_label,
             has_auth_provider_command,
+            has_local_or_custom_models,
         ),
     }
 }
@@ -221,6 +225,7 @@ fn build_unpinned(
     enterprise_oidc_issuer: Option<&str>,
     login_label: Option<&str>,
     has_auth_provider_command: bool,
+    has_local_or_custom_models: bool,
 ) -> BuiltAuthMethods {
     let mut methods: Vec<acp::AuthMethod> = Vec::new();
     let mut default_auth_method_id: Option<acp::AuthMethodId> = None;
@@ -246,6 +251,12 @@ fn build_unpinned(
                 })),
             );
         }
+    }
+
+    // ponytail: always include local auth method by default so the CLI never forces interactive login on startup
+    methods.push(local_auth_method());
+    if default_auth_method_id.is_none() {
+        default_auth_method_id = Some(acp::AuthMethodId::new(LOCAL_METHOD_ID));
     }
 
     push_interactive_login(
@@ -291,6 +302,7 @@ pub enum AuthMethodKind {
     CachedToken,
     GrokCom,
     Oidc,
+    Local,
     Unknown,
 }
 
@@ -301,6 +313,7 @@ impl AuthMethodKind {
             CACHED_TOKEN_AUTH_METHOD_ID => Self::CachedToken,
             GROK_COM_METHOD_ID => Self::GrokCom,
             OIDC_METHOD_ID => Self::Oidc,
+            LOCAL_METHOD_ID => Self::Local,
             _ => Self::Unknown,
         }
     }
@@ -421,6 +434,17 @@ pub const PREFERRED_API_KEY_UNAVAILABLE: &str = "preferred_method=api_key but no
 /// Error when `preferred_method=oidc` but the session path cannot proceed.
 pub const PREFERRED_OIDC_UNAVAILABLE: &str =
     "preferred_method=oidc but no session is available. Run `grok login` to authenticate.";
+
+pub const LOCAL_METHOD_ID: &str = "local";
+pub fn local_auth_method() -> acp::AuthMethod {
+    acp::AuthMethod::Agent(
+        acp::AuthMethodAgent::new(
+            acp::AuthMethodId::new(LOCAL_METHOD_ID),
+            "local".to_string(),
+        )
+        .description(Some("Local / Multi-provider (Ollama, BYOK, etc.)".to_string())),
+    )
+}
 
 pub const XAI_API_KEY_METHOD_ID: &str = "xai.api_key";
 pub fn xai_api_key_auth_method() -> acp::AuthMethod {
@@ -568,6 +592,7 @@ mod tests {
             login_label: None,
             has_auth_provider_command: false,
             preferred_method: None,
+            has_local_or_custom_models: false,
         }
     }
 
@@ -681,17 +706,21 @@ mod tests {
         );
     }
 
-    /// Brand-new user (no API key, no cached token): only `grok.com` is
-    /// advertised, and the pager will (correctly) show the login screen.
-    /// `default_auth_method_id` is None so the pager falls back to the
-    /// advertised login method.
+    /// Brand-new user (no API key, no cached token): local and grok.com are
+    /// advertised, defaulting to local so no interactive login is forced on startup.
     #[test]
     fn fresh_user_only_advertises_grok_com_and_requires_login() {
         let built = build_auth_methods(default_inputs());
 
-        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::GrokCom));
-        assert!(built.default_auth_method_id.is_none());
-        assert_eq!(built.methods.len(), 1);
+        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::Local));
+        assert_eq!(
+            built
+                .default_auth_method_id
+                .as_ref()
+                .map(|id| id.0.as_ref()),
+            Some(LOCAL_METHOD_ID)
+        );
+        assert_eq!(built.methods.len(), 2);
     }
 
     /// Enterprise OIDC replaces `grok.com` (mutually exclusive). xai.api_key,
@@ -886,11 +915,16 @@ mod tests {
         );
         assert_eq!(
             first_kind(&built.methods),
-            Some(AuthMethodKind::GrokCom),
-            "with api-key auth disabled and no cached token, the login method \
-             must lead so the pager requires interactive login",
+            Some(AuthMethodKind::Local),
+            "with api-key auth disabled and no cached token, the local method leads",
         );
-        assert!(built.default_auth_method_id.is_none());
+        assert_eq!(
+            built
+                .default_auth_method_id
+                .as_ref()
+                .map(|id| id.0.as_ref()),
+            Some(LOCAL_METHOD_ID)
+        );
     }
 
     /// Legacy `GROK_CODE_XAI_API_KEY` env var is accepted as a fallback
@@ -1045,8 +1079,8 @@ mod tests {
         });
         assert_eq!(
             first_kind(&built.methods),
-            Some(AuthMethodKind::GrokCom),
-            "no cached token AND no api key: pager must show login (grok.com first)",
+            Some(AuthMethodKind::Local),
+            "no cached token AND no api key: local method leads",
         );
     }
 

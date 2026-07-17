@@ -1,7 +1,5 @@
 # Security Policy
 
-Please report security vulnerabilities via our HackerOne program:
+Please report security vulnerabilities by opening a private GitHub Security Advisory on this repository.
 
-https://hackerone.com/x
-
-Do not open public GitHub issues for security reports.
+Do not open public issues for security reports.

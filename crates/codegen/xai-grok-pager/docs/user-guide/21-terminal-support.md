@@ -1,6 +1,6 @@
 # Terminal Support and Troubleshooting
 
-Grok Build runs as a full-screen TUI. To draw the interface, it relies on terminal escape sequences for color, clipboard, mouse, and full-screen control. Some terminals, multiplexers, and SSH sessions handle these sequences differently.
+Bucket Agent runs as a full-screen TUI. To draw the interface, it relies on terminal escape sequences for color, clipboard, mouse, and full-screen control. Some terminals, multiplexers, and SSH sessions handle these sequences differently.
 
 ## Quick Fixes
 
@@ -103,9 +103,9 @@ Grok writes to the clipboard through up to three routes, which match the **Clipb
 **Known limitation — Apple Terminal + SSH**:
 Apple Terminal ignores OSC 52, so copying from a Grok session over SSH can't reach your local clipboard. Use the workaround below.
 
-**Temporary workaround**: Use `grok wrap ssh` instead of plain `ssh` (for example, `grok wrap ssh user@host`). It runs the command in a local PTY that intercepts OSC 52 sequences, including tmux-wrapped ones, and writes their contents to your local clipboard. The same command wraps anything else whose clipboard can't reach you — for example `grok wrap docker exec -it <container> bash` or `grok wrap kubectl exec -it <pod> -- bash`.
+**Temporary workaround**: Use `bucket wrap ssh` instead of plain `ssh` (for example, `bucket wrap ssh user@host`). It runs the command in a local PTY that intercepts OSC 52 sequences, including tmux-wrapped ones, and writes their contents to your local clipboard. The same command wraps anything else whose clipboard can't reach you — for example `bucket wrap docker exec -it <container> bash` or `bucket wrap kubectl exec -it <pod> -- bash`.
 
-> **Warning**: `grok wrap` is **experimental** and may misbehave in some setups.
+> **Warning**: `bucket wrap` is **experimental** and may misbehave in some setups.
 
 **iTerm2 setting**:
 iTerm2 requires explicit permission for OSC 52:
@@ -125,7 +125,7 @@ This setting is off by default for security reasons. Without it, OSC 52 writes f
 
 **Fix**:
 - In Zellij or control mode, Grok intentionally runs inline (no alt screen).
-- Set `[terminal] alt_screen = "always"` in `~/.grok/pager.toml` to force fullscreen.
+- Set `[terminal] alt_screen = "always"` in `~/.bucket/pager.toml` to force fullscreen.
 - Use the CLI flag `--no-alt-screen` to disable alt-screen mode entirely (useful for debugging or when the alternate screen causes issues in your terminal).
 
 ### Problem: Zellij keybindings interfere with Grok (Ctrl+g, Ctrl+o, etc.)

@@ -319,6 +319,9 @@ impl acp::Agent for MvpAgent {
             login_label: login_label.as_deref(),
             has_auth_provider_command: has_auth_provider,
             preferred_method,
+            has_local_or_custom_models: self.models_manager.models().values().any(|entry| {
+                !crate::util::is_first_party_xai_url(&entry.info.base_url)
+            }),
         });
         let auth_methods = built.methods;
         xai_grok_telemetry::unified_log::info(

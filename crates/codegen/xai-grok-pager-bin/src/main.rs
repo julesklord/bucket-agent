@@ -88,7 +88,7 @@ fn resolve_agent_profile_path(path: &std::path::Path) -> std::path::PathBuf {
 /// Print startup information for the serve command.
 fn print_serve_startup_info(bind_addr: SocketAddr, secret: &str) {
     eprintln!();
-    eprintln!("   Grok agent server starting...");
+    eprintln!("   Bucket agent server starting...");
     eprintln!();
     eprintln!("   Address:  {}:{}", bind_addr.ip(), bind_addr.port());
     eprintln!("   Secret:   {}", secret);
@@ -99,7 +99,7 @@ fn print_serve_startup_info(bind_addr: SocketAddr, secret: &str) {
     );
     eprintln!();
 }
-/// Entrypoint tag for `grok -p`; keys the quiet stderr default in `init_tracing_simple`.
+/// Entrypoint tag for `bucket -p`; keys the quiet stderr default in `init_tracing_simple`.
 const HEADLESS_ENTRYPOINT: &str = "headless";
 /// Initialize simple tracing for non-TUI agent modes.
 fn init_tracing_simple(app_entrypoint: &'static str) {
@@ -129,7 +129,7 @@ fn init_tracing_simple(app_entrypoint: &'static str) {
         .with(xai_grok_telemetry::hooks_log::layer())
         .with(xai_grok_telemetry::otel_layer::build_otel_layer(
             xai_grok_telemetry::otel_layer::OtelClientInfo {
-                client_name: "grok-pager",
+                client_name: "bucket-agent",
                 client_version: xai_grok_version::VERSION,
                 service_version: env!("VERSION_WITH_COMMIT"),
                 app_entrypoint,
@@ -147,14 +147,14 @@ fn init_tracing_simple(app_entrypoint: &'static str) {
         ),
     );
 }
-/// `grok setup`: rendering + exit codes only; fetch logic lives in `xai_grok_shell::managed_config`.
+/// `bucket setup`: rendering + exit codes only; fetch logic lives in `xai_grok_shell::managed_config`.
 /// `json` prints the served configuration instead of installing it.
 async fn run_setup_command(json: bool) {
     use xai_grok_shell::managed_config::{self, SetupOutcome};
     if !managed_config::has_principal() {
         eprintln!("No deployment key or team sign-in found.");
         eprintln!();
-        eprintln!("To install managed configuration, sign in with a team using `grok login`,");
+        eprintln!("To install managed configuration, sign in with a team using `bucket login`,");
         eprintln!("or set a deployment key:");
         eprintln!();
         if cfg!(unix) {
@@ -162,7 +162,7 @@ async fn run_setup_command(json: bool) {
         } else {
             eprintln!("  $env:GROK_DEPLOYMENT_KEY=\"<your-key>\"");
         }
-        eprintln!("  grok setup");
+        eprintln!("  bucket setup");
         eprintln!();
         eprintln!("Or add the key to ~/.grok/config.toml:");
         eprintln!();
@@ -170,7 +170,7 @@ async fn run_setup_command(json: bool) {
         eprintln!("  deployment_key = \"<your-key>\"");
         eprintln!();
         eprintln!(
-            "If you don't have a deployment key, contact your organization's Grok administrator."
+            "If you don't have a deployment key, contact your organization's Bucket administrator."
         );
         std::process::exit(1);
     }
@@ -202,7 +202,7 @@ async fn run_setup_command(json: bool) {
         }
         SetupOutcome::Skipped => {
             eprintln!(
-                "Managed configuration was not applied this run (another process held the apply lock, or the credential changed during the fetch). Run `grok setup` again."
+                "Managed configuration was not applied this run (another process held the apply lock, or the credential changed during the fetch). Run `bucket setup` again."
             );
         }
         SetupOutcome::Failed(e) => {
@@ -271,7 +271,7 @@ async fn kill_leaders() -> Result<()> {
         };
         if !xai_grok_shell::util::is_grok_process(pid) {
             if let Some(ref lock) = d.lock_path {
-                eprintln!("  PID {pid} is not a grok process, removing stale lock");
+                eprintln!("  PID {pid} is not a bucket process, removing stale lock");
                 let _ = std::fs::remove_file(lock);
                 cleaned += 1;
             }

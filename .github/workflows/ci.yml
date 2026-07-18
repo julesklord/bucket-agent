@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.92.0"
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install DotSlash
+        run: cargo install dotslash
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check bucket-agent-core
+        run: cargo check -p bucket-agent-core
+      - name: Check bucket-tui
+        run: cargo check -p bucket-tui
+      - name: Check bucket-updater
+        run: cargo check -p bucket-updater
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.92.0"
+      - uses: Swatinem/rust-cache@v2
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install DotSlash
+        run: cargo install dotslash
+      - name: Run agent-core tests
+        run: cargo test -p bucket-agent-core
+      - name: Run updater tests
+        run: cargo test -p bucket-updater
+      - name: Run config tests
+        run: cargo test -p bucket-agent-core -- config

@@ -29,9 +29,9 @@ const MSG_RUN_UPDATE_MANUAL: &str = "Run `bucket update` to get the latest versi
 /// Manual-install one-liner for this platform's bootstrap installer.
 fn manual_install_cmd() -> &'static str {
     if cfg!(windows) {
-        "irm https://x.ai/cli/install.ps1 | iex"
+        "irm https://raw.githubusercontent.com/julesklord/bucket-agent/main/scripts/install.ps1 | iex"
     } else {
-        "curl -fsSL https://x.ai/cli/install.sh | bash"
+        "curl -fsSL https://raw.githubusercontent.com/julesklord/bucket-agent/main/scripts/install.sh | bash"
     }
 }
 
@@ -3254,7 +3254,7 @@ mod tests {
             "should suggest gh release download: {hint}"
         );
         assert!(
-            hint.contains("bucket-org-shared/bucket-build"),
+            hint.contains("julesklord/bucket-agent"),
             "should name the repo: {hint}"
         );
     }

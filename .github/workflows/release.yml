@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            os: ubuntu-latest
+            rust_target: x86_64-unknown-linux-gnu
+          - target: linux-aarch64
+            os: ubuntu-latest
+            rust_target: aarch64-unknown-linux-gnu
+          - target: macos-x86_64
+            os: macos-latest
+            rust_target: x86_64-apple-darwin
+          - target: macos-aarch64
+            os: macos-latest
+            rust_target: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.92.0"
+          targets: ${{ matrix.rust_target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        if: runner.os == 'Linux'
+
+      - name: Install DotSlash
+        run: cargo install dotslash
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build release binary
+        run: |
+          cargo build -p bucket-bin --release --target ${{ matrix.rust_target }}
+        env:
+          BUCKET_VERSION: ${{ steps.version.outputs.VERSION }}
+
+      - name: Prepare release artifact
+        run: |
+          BINARY_NAME=bucket-${{ steps.version.outputs.VERSION }}-${{ matrix.target }}
+          cp target/${{ matrix.rust_target }}/release/bucket ${BINARY_NAME}
+          sha256sum ${BINARY_NAME} > ${BINARY_NAME}.sha256
+          echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            bucket-${{ steps.version.outputs.VERSION }}-${{ matrix.target }}
+            bucket-${{ steps.version.outputs.VERSION }}-${{ matrix.target }}.sha256
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: bucket-agent ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
+          generate_release_notes: true
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify release assets
+        run: |
+          echo "Release created with assets:"
+          ls -la artifacts/

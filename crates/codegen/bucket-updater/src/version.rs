@@ -11,9 +11,9 @@ use bucket_agent_core::util::bucket_home::bucket_home;
 
 const TTL_SECONDS_BEFORE_AUTO_UPDATE: Duration = Duration::from_secs(60 * 30);
 const NPM_PACKAGE: &str = "@bucket-official/bucket";
-/// Default GitHub repo for gh-release installer (xAI upstream).
+/// Default GitHub repo for gh-release installer.
 /// Overridable via `update_gh_repo` config.
-const DEFAULT_GH_RELEASE_REPO: &str = "bucket-org-shared/bucket-build";
+const DEFAULT_GH_RELEASE_REPO: &str = "julesklord/bucket-agent";
 
 /// Default CLI base URLs for internal/GCS installer (xAI upstream).
 /// Overridable via `update_base_urls` config (comma-separated).

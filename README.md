@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Bucket Agent Logo" width="200" height="200" />
+<img src="assets/logo.svg" alt="Bucket Agent Logo" width="300" height="300" />
 
 > What if you get a nice bucket, but it's full of junk? Toss the junk and keep that nice **bucket**.
 
@@ -156,6 +156,7 @@ Third-party and vendored code remains under its original licenses. See:
 - [`third_party/NOTICE`](third_party/NOTICE) — vendored Mermaid-stack index
 
 ---
+
 <div align="center">
 
 <img src="assets/logo_bucky.png" alt="Bucky Logo" width="100" height="100" />

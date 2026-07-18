@@ -1,7 +1,7 @@
+use bucket_paths::ToAbsPath;
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
-use bucket_paths::ToAbsPath;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FsError {
@@ -11,7 +11,6 @@ pub enum FsError {
     Other(String),
 }
 
-// TODO: handle atomic write
 #[async_trait::async_trait]
 pub trait AsyncFileSystem: Send + Sync {
     /// Get the root directory for this filesystem.

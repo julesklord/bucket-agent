@@ -3,13 +3,13 @@
 //! Reads OIDC credentials from `~/.bucket/auth.json`, connects to a
 //! server, exposes workspace tools, and refreshes tokens
 //! automatically.
-use clap::Parser;
-use std::path::PathBuf;
-use url::Url;
 use bucket_workspace::config::WorkspaceServerMetadata;
 use bucket_workspace::daemonize;
 use bucket_workspace::diag_server;
 use bucket_workspace::preview_supervisor::{self, PreviewArgs, PreviewVisibility};
+use clap::Parser;
+use std::path::PathBuf;
+use url::Url;
 /// OTLP `service.name` for this binary's exported traces/logs/metrics and
 /// direct-OTLP fastrace export. Single source so the call sites can't drift.
 const SERVICE_NAME: &str = "prod_bucket_workspace";
@@ -414,10 +414,7 @@ async fn run(args: Args, cwd: PathBuf) -> anyhow::Result<()> {
     let tracker = ws_handle.activity_tracker().clone();
     let grace_budget = bucket_workspace::handle::termination_grace_from_env();
     ws_handle
-        .two_phase_drain(
-            grace_budget,
-            bucket_workspace::handle::DrainReason::Sigterm,
-        )
+        .two_phase_drain(grace_budget, bucket_workspace::handle::DrainReason::Sigterm)
         .await;
     tracker.set_shutting_down();
     tracing::info!("Shutting down...");
@@ -482,7 +479,8 @@ mod tests {
     #[test]
     fn ready_file_is_accepted_as_a_deprecated_no_op() {
         let args =
-            Args::try_parse_from(["bucket-workspace-server", "--ready-file", "/tmp/x.ready"]).unwrap();
+            Args::try_parse_from(["bucket-workspace-server", "--ready-file", "/tmp/x.ready"])
+                .unwrap();
         assert_eq!(args.ready_file, Some(PathBuf::from("/tmp/x.ready")));
     }
     #[test]

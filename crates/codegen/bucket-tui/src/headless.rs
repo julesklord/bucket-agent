@@ -540,8 +540,8 @@ async fn authenticate(
     // Prefer non-interactive methods only; interactive login is not usable headless.
     if kind.needs_interactive_login() {
         use std::io::IsTerminal;
-        let interactive =
-            std::io::stdin().is_terminal() && !bucket_agent_core::util::clipboard::is_remote_session();
+        let interactive = std::io::stdin().is_terminal()
+            && !bucket_agent_core::util::clipboard::is_remote_session();
         anyhow::bail!("{}", auth_required_message(interactive));
     }
     let is_api_key_auth = kind.is_api_key();
@@ -867,21 +867,23 @@ pub async fn run_single_turn(
         agent_config.default_model_override = Some(model.clone());
     }
 
-    agent_config.resolve_runtime_fields(&bucket_agent_core::agent::config::RuntimeResolutionContext {
-        raw_config: &raw_config,
-        remote_settings: None,
-        cwd: Some(&cwd),
-        is_headless: true,
-        cli_subagents: None,
-        cli_web_search_model: None,
-        cli_session_summary_model: None,
-        cli_experimental_memory: false,
-        cli_no_memory: false,
-        disable_web_search: options.disable_web_search,
-        todo_gate: false,
-        laziness_debug_log: None,
-        storage_mode: None,
-    });
+    agent_config.resolve_runtime_fields(
+        &bucket_agent_core::agent::config::RuntimeResolutionContext {
+            raw_config: &raw_config,
+            remote_settings: None,
+            cwd: Some(&cwd),
+            is_headless: true,
+            cli_subagents: None,
+            cli_web_search_model: None,
+            cli_session_summary_model: None,
+            cli_experimental_memory: false,
+            cli_no_memory: false,
+            disable_web_search: options.disable_web_search,
+            todo_gate: false,
+            laziness_debug_log: None,
+            storage_mode: None,
+        },
+    );
 
     agent_config.mode = bucket_agent_core::agent::config::AgentMode::Headless;
     agent_config.default_yolo_mode = options.yolo;

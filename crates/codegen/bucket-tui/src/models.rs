@@ -1,9 +1,9 @@
 //! `bucket models` subcommand.
 
 use anyhow::Result;
-use tokio_util::sync::CancellationToken;
 use bucket_agent_core::agent::config::Config as AgentConfig;
 use bucket_agent_core::cli_models::{AuthStatus, list_models};
+use tokio_util::sync::CancellationToken;
 
 use crate::client_identity::{PAGER_CLIENT_TYPE, PAGER_CLIENT_VERSION};
 
@@ -20,7 +20,8 @@ pub async fn list_available_models(agent_config: &AgentConfig) -> Result<()> {
     println!();
 
     let cancel = CancellationToken::new();
-    let spawned = crate::acp::spawn::spawn_bucket_shell(agent_config.clone(), &cancel, None).await?;
+    let spawned =
+        crate::acp::spawn::spawn_bucket_shell(agent_config.clone(), &cancel, None).await?;
 
     let state = list_models(&spawned.channel.tx, PAGER_CLIENT_TYPE, PAGER_CLIENT_VERSION).await?;
 

@@ -739,7 +739,9 @@ pub(super) fn handle_session_notification(notif: &acp::ExtNotification, app: &mu
                 use crate::views::extensions_modal::TabDataState;
                 modal.seed_plugin_groups_once(&plugins);
                 modal.plugins_data =
-                    TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse { plugins });
+                    TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                        plugins,
+                    });
                 if !matches!(modal.skills_data, TabDataState::Loading) {
                     modal.skills_data = TabDataState::Loading;
                     plugins_changed_needs_skills_refetch = true;
@@ -1071,8 +1073,10 @@ pub(super) fn handle_child_session_notification(
             {
                 info.tokens_used = Some(tokens_after);
                 if let Some(cw) = info.context_window_tokens.filter(|&cw| cw > 0) {
-                    info.context_usage_pct =
-                        Some(bucket_token_estimation::usage_percentage_u8(tokens_after, cw));
+                    info.context_usage_pct = Some(bucket_token_estimation::usage_percentage_u8(
+                        tokens_after,
+                        cw,
+                    ));
                 }
             }
             changed
@@ -1248,17 +1252,15 @@ pub(super) fn apply_retry_state(
             session.set_retry_activity(None);
             session.rate_limited = *rate_limited;
             if *rate_limited {
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::RateLimitHit {
-                        model_id: session
-                            .models
-                            .current
-                            .as_ref()
-                            .map(|m| m.0.to_string())
-                            .unwrap_or_default(),
-                        attempts: *attempts,
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::RateLimitHit {
+                    model_id: session
+                        .models
+                        .current
+                        .as_ref()
+                        .map(|m| m.0.to_string())
+                        .unwrap_or_default(),
+                    attempts: *attempts,
+                });
             }
             is_credit_limit = super::super::dispatch::is_credit_limit_error(None, reason);
             let is_free_usage =

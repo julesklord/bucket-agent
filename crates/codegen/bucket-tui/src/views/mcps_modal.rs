@@ -417,7 +417,10 @@ mod tests {
 
     #[test]
     fn managed_connectors_url_display_strips_scheme() {
-        assert_eq!(managed_connectors_url_display(None), "bucket.com/connectors");
+        assert_eq!(
+            managed_connectors_url_display(None),
+            "bucket.com/connectors"
+        );
         assert_eq!(
             managed_connectors_url_display(Some("team-uuid-1")),
             "bucket.com/connectors?teamId=team-uuid-1"

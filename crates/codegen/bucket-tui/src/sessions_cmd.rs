@@ -1,9 +1,9 @@
 use anyhow::Result;
-use clap::Subcommand;
 use bucket_agent_core::agent::config::Config as AgentConfig;
 use bucket_agent_core::auth::{AuthManager, try_ensure_fresh_auth};
 use bucket_agent_core::session::merge::MergedSession;
 use bucket_agent_core::util::bucket_home::bucket_home;
+use clap::Subcommand;
 #[derive(Debug, clap::Args, Clone)]
 pub struct SessionsArgs {
     #[command(subcommand)]
@@ -69,9 +69,11 @@ pub async fn run(args: SessionsArgs, agent_config: &AgentConfig) -> Result<()> {
             print_sessions_grouped(&sessions);
         }
         SessionsCommand::Search { query, limit } => {
-            use std::collections::HashSet;
             use bucket_agent_core::session::merge::REMOTE_TIMEOUT;
-            use bucket_agent_core::session::storage::search::{SessionSearchRequest, execute_search};
+            use bucket_agent_core::session::storage::search::{
+                SessionSearchRequest, execute_search,
+            };
+            use std::collections::HashSet;
 
             let req = SessionSearchRequest {
                 query,

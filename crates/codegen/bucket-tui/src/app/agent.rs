@@ -8,12 +8,12 @@ use crate::acp::tracker::{AcpUpdateTracker, TurnActivity};
 use crate::scrollback::EntryId;
 use crate::scrollback::state::ScrollbackState;
 use agent_client_protocol as acp;
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
-use std::path::PathBuf;
-use std::time::{Duration, Instant, SystemTime};
 use bucket_acp::AcpAgentTx;
 use bucket_agent_core::extensions::notification::GoalClassifierVerdict;
 use bucket_agent_core::sampling::types::ReasoningEffort;
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::path::PathBuf;
+use std::time::{Duration, Instant, SystemTime};
 /// Unique local identifier for an agent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct AgentId(pub usize);

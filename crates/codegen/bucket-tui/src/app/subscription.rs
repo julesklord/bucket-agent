@@ -178,12 +178,10 @@ impl AppView {
             None,
             Some(serde_json::json!({ "tier": self.subscription_tier })),
         );
-        bucket_telemetry::session_ctx::log_event(
-            bucket_telemetry::events::SubscriptionActivated {
-                auth_method: self.login_method_id.as_ref().map(|id| id.0.to_string()),
-                upsell_shown_this_session: self.access_gate_shown_logged,
-            },
-        );
+        bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::SubscriptionActivated {
+            auth_method: self.login_method_id.as_ref().map(|id| id.0.to_string()),
+            upsell_shown_this_session: self.access_gate_shown_logged,
+        });
         vec![Effect::CheckSubscription { verify: None }]
     }
 
@@ -192,7 +190,10 @@ impl AppView {
     /// (drops the deferral), or promotion on same-generation check failure /
     /// timeout via [`Self::promote_deferred_gate`].
     #[must_use]
-    fn defer_gate_for_verification(&mut self, gate: bucket_agent_core::auth::GateInfo) -> Vec<Effect> {
+    fn defer_gate_for_verification(
+        &mut self,
+        gate: bucket_agent_core::auth::GateInfo,
+    ) -> Vec<Effect> {
         self.pending_gate_verification = Some(gate);
         self.gate_verify_gen = self.gate_verify_gen.wrapping_add(1);
         self.note_subscription_check();

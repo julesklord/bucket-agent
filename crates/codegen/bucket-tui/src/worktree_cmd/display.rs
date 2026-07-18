@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use super::{DbStats, GcReport, RebuildReport};
-use bucket_fast_worktree::WorktreeRecord;
 use bucket_agent_core::session::worktree::META_KEY_LABEL;
+use bucket_fast_worktree::WorktreeRecord;
 
 /// Extract the label from a worktree record's metadata JSON.
 fn extract_label(rec: &WorktreeRecord) -> &str {
@@ -283,7 +283,9 @@ mod tests {
         assert!(formatted.contains(&long_id), "Full ID must be present");
     }
 
-    fn make_test_record(metadata: Option<serde_json::Value>) -> bucket_fast_worktree::WorktreeRecord {
+    fn make_test_record(
+        metadata: Option<serde_json::Value>,
+    ) -> bucket_fast_worktree::WorktreeRecord {
         use bucket_fast_worktree::{WorktreeKind, WorktreeRecord, WorktreeStatus};
         WorktreeRecord {
             id: "test".into(),

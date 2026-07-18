@@ -94,7 +94,10 @@ const COMPRESSED_BURST_FRAMES_MAX: u64 = 12;
 async fn trackpad_flood_does_not_under_travel() {
     let (mut harness, _content, top_before) = spawn_bottom_pinned_marker_scrollback_with_env(
         MARKER_COUNT,
-        &[("TERM_PROGRAM", "iTerm.app"), ("BUCKET_SCROLL_SPEED", "100")],
+        &[
+            ("TERM_PROGRAM", "iTerm.app"),
+            ("BUCKET_SCROLL_SPEED", "100"),
+        ],
     )
     .await;
 

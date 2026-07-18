@@ -166,10 +166,7 @@ pub fn is_dismissible(a: &bucket_announcements::RemoteAnnouncement) -> bool {
 /// dismissible items: an explicit `dismissible: false` stays selectable even
 /// with its hide key stored, so flipping the flag server-side resurrects a
 /// previously-hidden banner (the remote config stays source of truth).
-fn is_hidden(
-    a: &bucket_announcements::RemoteAnnouncement,
-    hidden_ids: &BTreeSet<String>,
-) -> bool {
+fn is_hidden(a: &bucket_announcements::RemoteAnnouncement, hidden_ids: &BTreeSet<String>) -> bool {
     is_dismissible(a) && hidden_ids.contains(&bucket_announcements::announcement_hide_key(a))
 }
 

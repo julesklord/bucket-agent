@@ -139,7 +139,8 @@ impl AgentView {
                         &self.plugin_cta.phase
                 {
                     let plugin_id = name.clone();
-                    if let Err(e) = bucket_agent_core::config::add_dismissed_plugin_cta(&plugin_id) {
+                    if let Err(e) = bucket_agent_core::config::add_dismissed_plugin_cta(&plugin_id)
+                    {
                         tracing::warn!(
                             error = % e, "couldn't persist plugin CTA dismissal"
                         );

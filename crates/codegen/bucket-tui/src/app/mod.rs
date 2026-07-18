@@ -45,6 +45,7 @@ pub mod subscription;
 mod turn_completion;
 mod xt_filter;
 pub(crate) use crate::terminal::kitty_flags_pushed;
+use bucket_agent_core::util::config;
 pub use cli::{
     AgentArgs, AgentCmd, Command, HeadlessArgs, LeaderArgs, LeaderMgmtArgs, LeaderMgmtCommand,
     LeaderTargetArgs, OutputFormat, PagerArgs, ServeArgs, WrapArgs,
@@ -66,7 +67,6 @@ use std::io::{self, Write};
 use std::panic;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio_util::sync::CancellationToken;
-use bucket_agent_core::util::config;
 /// Tracks the extra Kitty keyboard layer pushed while the `/gboom` game is
 /// open (see [`push_gboom_keyboard_flags`]). Kept separate from
 /// `KITTY_FLAGS_PUSHED` so teardown pops both, in LIFO order.
@@ -215,6 +215,26 @@ pub(crate) fn resolve_voice_mode_live(remote: Option<bool>, is_api_key: bool) ->
         remote,
         is_api_key,
     )
+}
+
+/// Resolve whether the session picker groups entries by repo.
+///
+/// Precedence: `BUCKET_SESSION_PICKER_GROUPED` env var > config > remote settings > true.
+pub(crate) fn resolve_session_picker_grouped(remote: Option<bool>) -> bool {
+    std::env::var("BUCKET_SESSION_PICKER_GROUPED")
+        .ok()
+        .and_then(|v| match v.as_str() {
+            "1" | "true" => Some(true),
+            "0" | "false" => Some(false),
+            _ => None,
+        })
+        .or_else(|| {
+            bucket_agent_core::config::load_effective_config()
+                .ok()
+                .and_then(|cfg| cfg.get("cli")?.get("session_picker_grouped")?.as_bool())
+        })
+        .or_else(|| remote)
+        .unwrap_or(true)
 }
 #[cfg(test)]
 mod voice_gate_tests {
@@ -489,7 +509,9 @@ pub async fn run(
         }
     }
     if let Some(reason) = policy_disable_reason {
-        tokio::spawn(bucket_agent_core::leader::kill_stale_reachable_leaders(reason));
+        tokio::spawn(bucket_agent_core::leader::kill_stale_reachable_leaders(
+            reason,
+        ));
     }
     if let Some(err) =
         session_startup::chat_mode_flag_conflict(args.chat(), args.fork_session, args.restore_code)
@@ -1702,8 +1724,8 @@ mod tests {
     }
     #[test]
     fn cli_session_id_with_resume_and_fork_ok() {
-        let args =
-            try_parse_pager(&["bucket-pager", "-s", "a", "--resume", "b", "--fork-session"]).unwrap();
+        let args = try_parse_pager(&["bucket-pager", "-s", "a", "--resume", "b", "--fork-session"])
+            .unwrap();
         assert!(args.session_startup_intent().is_ok());
     }
     #[test]

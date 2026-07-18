@@ -163,11 +163,11 @@ fn seed_trust_state(
     app: &mut AppView,
     remote: Option<&bucket_agent_core::util::config::RemoteSettings>,
 ) {
-    use std::io::IsTerminal;
     use bucket_workspace::folder_trust::{
         TrustOutcome, decide, decide_inputs_with_interactive, feature_enabled,
     };
     use bucket_workspace::trust::workspace_key;
+    use std::io::IsTerminal;
 
     let feature = feature_enabled(remote);
     if !feature {
@@ -609,24 +609,11 @@ pub(crate) async fn run(
         .or_else(|| remote_settings.as_ref().and_then(|s| s.plugin_cta))
         .unwrap_or(false);
     // Voice is applied after auth_meta so API-key detection is accurate.
-    app.session_picker_grouped = std::env::var("BUCKET_SESSION_PICKER_GROUPED")
-        .ok()
-        .and_then(|v| match v.as_str() {
-            "1" | "true" => Some(true),
-            "0" | "false" => Some(false),
-            _ => None,
-        })
-        .or_else(|| {
-            bucket_agent_core::config::load_effective_config()
-                .ok()
-                .and_then(|cfg| cfg.get("cli")?.get("session_picker_grouped")?.as_bool())
-        })
-        .or_else(|| {
-            remote_settings
-                .as_ref()
-                .and_then(|s| s.session_picker_grouped)
-        })
-        .unwrap_or(true);
+    app.session_picker_grouped = crate::app::resolve_session_picker_grouped(
+        remote_settings
+            .as_ref()
+            .and_then(|s| s.session_picker_grouped),
+    );
     app.cancel_rewind_enabled = connection.cancel_rewind_enabled;
     apply_session_recap_available(&mut app, connection.session_recap_available);
 
@@ -696,7 +683,8 @@ pub(crate) async fn run(
             // preferred_method pin unavailable — no advertised method to start.
             app.auth_state = super::app_view::AuthState::Pending {
                 error: Some(
-                    bucket_agent_core::agent::auth_method::PREFERRED_API_KEY_UNAVAILABLE.to_string(),
+                    bucket_agent_core::agent::auth_method::PREFERRED_API_KEY_UNAVAILABLE
+                        .to_string(),
                 ),
             };
             vec![]
@@ -769,12 +757,11 @@ pub(crate) async fn run(
         effective_config.as_ref().ok_or(()),
         remote_settings.as_ref(),
     );
-    app.foreign_session_compat =
-        bucket_workspace::foreign_sessions::EnabledForeignSessionSources {
-            claude: compat.claude.sessions,
-            codex: compat.codex.sessions,
-            cursor: compat.cursor.sessions,
-        };
+    app.foreign_session_compat = bucket_workspace::foreign_sessions::EnabledForeignSessionSources {
+        claude: compat.claude.sessions,
+        codex: compat.codex.sessions,
+        cursor: compat.cursor.sessions,
+    };
 
     // Load notification config from [ui.notifications] in config.toml.
     if let Some(ref raw) = effective_config {

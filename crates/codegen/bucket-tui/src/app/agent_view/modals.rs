@@ -1346,7 +1346,10 @@ impl AgentView {
             ButtonAction::HooksAction(hooks_action) => {
                 if let Some(ref mut state) = self.extensions_modal {
                     state.modal_message = None;
-                    if matches!(hooks_action, bucket_hooks_plugins_types::HooksAction::Reload) {
+                    if matches!(
+                        hooks_action,
+                        bucket_hooks_plugins_types::HooksAction::Reload
+                    ) {
                         // Reload rebuilds the entire plugin registry -- show
                         // tab-level "Loading..." instead of a single-entry badge.
                         state.pending_action = Some("Reloading...".into());
@@ -2079,9 +2082,10 @@ mod extensions_action_target_tests {
     #[test]
     fn plugins_toggle_and_uninstall_resolve_name_and_state() {
         let mut modal = ExtensionsModalState::new(ExtensionsTab::Plugins);
-        modal.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![plugin_info("my-plugin", true)],
-        });
+        modal.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![plugin_info("my-plugin", true)],
+            });
         modal.entry_data_indices = vec![Some(0)];
         modal.entry_group_keys = vec![None];
         modal.picker_state.selected = 0;
@@ -2101,9 +2105,10 @@ mod extensions_action_target_tests {
     fn update_selected_plugin_dispatches_update_with_selected_id_and_pending_state() {
         let mut agent = super::test_fixtures::make_agent();
         let mut modal = ExtensionsModalState::new(ExtensionsTab::Plugins);
-        modal.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![plugin_info("my-plugin", true)],
-        });
+        modal.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![plugin_info("my-plugin", true)],
+            });
         modal.entry_data_indices = vec![Some(0)];
         modal.entry_group_keys = vec![None];
         modal.picker_state.selected = 0;
@@ -2133,9 +2138,10 @@ mod extensions_action_target_tests {
     fn plugins_cycle_filter_resets_selection_to_top() {
         let mut agent = super::test_fixtures::make_agent();
         let mut modal = ExtensionsModalState::new(ExtensionsTab::Plugins);
-        modal.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![plugin_info("my-plugin", true)],
-        });
+        modal.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![plugin_info("my-plugin", true)],
+            });
         modal.picker_state.selected = 5;
         agent.extensions_modal = Some(modal);
 
@@ -2152,9 +2158,10 @@ mod extensions_action_target_tests {
     fn plugins_toggle_expand_folds_group_header_and_expands_row_details() {
         let mut agent = super::test_fixtures::make_agent();
         let mut modal = ExtensionsModalState::new(ExtensionsTab::Plugins);
-        modal.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![plugin_info("my-plugin", true)],
-        });
+        modal.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![plugin_info("my-plugin", true)],
+            });
         modal.entry_data_indices = vec![None, Some(0)];
         modal.entry_group_keys = vec![Some("origin:user".into()), None];
         modal.picker_state.selected = 0;

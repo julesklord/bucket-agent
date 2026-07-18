@@ -9,6 +9,9 @@
 use std::io::{self, stdout};
 use std::time::Duration;
 
+use bucket_agent_core::tools::{TodoItem, TodoPriority, TodoStatus};
+use bucket_tui::appearance::LayoutConfig;
+use bucket_tui::views::todo_pane::TodoPane;
 use crossterm::ExecutableCommand;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
@@ -18,9 +21,6 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
-use bucket_tui::appearance::LayoutConfig;
-use bucket_tui::views::todo_pane::TodoPane;
-use bucket_agent_core::tools::{TodoItem, TodoPriority, TodoStatus};
 
 type Scenario = (&'static str, &'static str, Vec<TodoItem>);
 

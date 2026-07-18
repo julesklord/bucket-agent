@@ -8,6 +8,12 @@ use crate::theme::Theme;
 use crate::views::modal_window::{
     self, ModalContentArea, ModalSizing, ModalWindowConfig, ModalWindowState, Shortcut,
 };
+use bucket_agent::config::{AgentDefinition, AgentScope, BuiltinAgentName};
+use bucket_agent_core::agent::config::AgentSelectionConfig;
+use bucket_tools::implementations::skills::discovery::extract_first_paragraph;
+use bucket_tools::registry::types::ToolServerConfig;
+use bucket_tools::types::template_renderer::TemplateRenderer;
+use bucket_tools::types::tool::ToolKind;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -15,12 +21,6 @@ use ratatui::style::{Modifier, Style};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use unicode_width::UnicodeWidthStr;
-use bucket_agent::config::{AgentDefinition, AgentScope, BuiltinAgentName};
-use bucket_agent_core::agent::config::AgentSelectionConfig;
-use bucket_tools::implementations::skills::discovery::extract_first_paragraph;
-use bucket_tools::registry::types::ToolServerConfig;
-use bucket_tools::types::template_renderer::TemplateRenderer;
-use bucket_tools::types::tool::ToolKind;
 /// Which tab is active in the agents modal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AgentsTab {
@@ -395,7 +395,10 @@ pub fn merge_persona_lists(bundle: &BundleState, cwd: &Path) -> Vec<PersonaDetai
         }
     }
     let dirs = [
-        (ConfigFileScope::Project, cwd.join(".bucket").join("personas")),
+        (
+            ConfigFileScope::Project,
+            cwd.join(".bucket").join("personas"),
+        ),
         (ConfigFileScope::User, bucket_home.join("personas")),
     ];
     for (scope, dir) in dirs {
@@ -2651,7 +2654,11 @@ mod tests {
     #[test]
     fn delete_persona_file_allows_project_persona() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let path = dir.path().join(".bucket").join("personas").join("gone.toml");
+        let path = dir
+            .path()
+            .join(".bucket")
+            .join("personas")
+            .join("gone.toml");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, "instructions = \"bye\"\n").unwrap();
         delete_persona_file(&path).expect("delete");

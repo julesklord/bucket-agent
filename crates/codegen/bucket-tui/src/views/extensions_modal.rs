@@ -4799,7 +4799,10 @@ mod tests {
         assert!(StatusFilter::Disabled.matches(false));
     }
 
-    fn make_plugin_with_enabled(name: &str, enabled: bool) -> bucket_hooks_plugins_types::PluginInfo {
+    fn make_plugin_with_enabled(
+        name: &str,
+        enabled: bool,
+    ) -> bucket_hooks_plugins_types::PluginInfo {
         let mut p = make_plugin(name);
         p.enabled = enabled;
         p
@@ -4816,12 +4819,13 @@ mod tests {
 
         state.entry_data_indices = vec![Some(0), Some(1)];
         state.picker_state.selected = 0;
-        state.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![
-                make_plugin_with_enabled("on", true),
-                make_plugin_with_enabled("off", false),
-            ],
-        });
+        state.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![
+                    make_plugin_with_enabled("on", true),
+                    make_plugin_with_enabled("off", false),
+                ],
+            });
 
         assert_eq!(state.selected_item_enabled(), Some(true));
         assert_eq!(action_key_footer_desc(' ', "toggle", &state), "disable");
@@ -4842,12 +4846,13 @@ mod tests {
     #[test]
     fn space_footer_follows_refreshed_entry_data_indices_after_filter_shape_change() {
         let mut state = ExtensionsModalState::new(ExtensionsTab::Plugins);
-        state.plugins_data = TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
-            plugins: vec![
-                make_plugin_with_enabled("on", true),
-                make_plugin_with_enabled("off", false),
-            ],
-        });
+        state.plugins_data =
+            TabDataState::Loaded(bucket_hooks_plugins_types::PluginsListResponse {
+                plugins: vec![
+                    make_plugin_with_enabled("on", true),
+                    make_plugin_with_enabled("off", false),
+                ],
+            });
 
         // Unfiltered shape: both rows; selection on the enabled plugin.
         let unfiltered = vec![Some(0), Some(1)];
@@ -6745,7 +6750,8 @@ mod tests {
     fn marketplace_placeholders_render_only_when_expanded() {
         let mut source = superpowers_source();
         source.plugins.truncate(2);
-        source.plugins[0].components = Some(bucket_hooks_plugins_types::PluginComponents::default());
+        source.plugins[0].components =
+            Some(bucket_hooks_plugins_types::PluginComponents::default());
         source.plugins[1].components = None;
         source.plugins[1].skill_count = 0;
         source.plugins[1].has_hooks = false;

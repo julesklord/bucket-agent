@@ -11,6 +11,11 @@ use std::collections::VecDeque;
 use std::io::{self, stdout};
 use std::time::Duration;
 
+use bucket_tui::scrollback::{
+    RenderBlock, ScratchBuffer, ScrollbackPane, ScrollbackSearchState, ScrollbackState,
+};
+use bucket_tui::theme::Theme;
+use bucket_tui::views::picker::render_search_bar;
 use crossterm::ExecutableCommand;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
@@ -22,11 +27,6 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use unicode_width::UnicodeWidthStr;
-use bucket_tui::scrollback::{
-    RenderBlock, ScratchBuffer, ScrollbackPane, ScrollbackSearchState, ScrollbackState,
-};
-use bucket_tui::theme::Theme;
-use bucket_tui::views::picker::render_search_bar;
 
 struct App {
     scrollback: ScrollbackState,

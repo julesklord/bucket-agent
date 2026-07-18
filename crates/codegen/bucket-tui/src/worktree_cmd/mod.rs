@@ -1,9 +1,9 @@
 mod display;
 
 use anyhow::{Result, bail};
+use bucket_fast_worktree::WorktreeRecord;
 use clap::Subcommand;
 use tokio_util::sync::CancellationToken;
-use bucket_fast_worktree::WorktreeRecord;
 
 use agent_client_protocol as acp;
 use bucket_acp::acp_send;
@@ -95,7 +95,8 @@ enum WorktreeDbCommand {
 
 pub async fn run(args: WorktreeArgs, agent_config: &AgentConfig) -> Result<()> {
     let cancel = CancellationToken::new();
-    let spawned = crate::acp::spawn::spawn_bucket_shell(agent_config.clone(), &cancel, None).await?;
+    let spawned =
+        crate::acp::spawn::spawn_bucket_shell(agent_config.clone(), &cancel, None).await?;
 
     let _init: acp::InitializeResponse = acp_send(
         acp::InitializeRequest::new(acp::ProtocolVersion::V1)

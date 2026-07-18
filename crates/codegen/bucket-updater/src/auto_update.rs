@@ -36,10 +36,13 @@ fn manual_install_cmd() -> &'static str {
 }
 
 /// Build a reinstall hint for a known installer type.
-fn reinstall_hint(installer: &str) -> String {
+fn reinstall_hint(installer: &str, update_config: &UpdateConfig) -> String {
     match installer {
         "npm" => "Please reinstall via npm:\n  npm i -g @bucket-official/bucket".to_string(),
-        "gh-release" => "Please reinstall via GitHub Releases:\n  gh release download --repo bucket-org-shared/bucket-build --pattern 'bucket-*' --output bucket && chmod +x bucket".to_string(),
+        "gh-release" => format!(
+            "Please reinstall via GitHub Releases:\n  gh release download --repo {} --pattern 'bucket-*' --output bucket && chmod +x bucket",
+            crate::version::gh_release_repo(update_config)
+        ),
         _ => format!("Please reinstall via:\n  {}", manual_install_cmd()),
     }
 }
@@ -414,7 +417,7 @@ pub async fn check_update_background(update_config: &UpdateConfig) -> Background
     )
     .unwrap_or(false)
     {
-        let stable_ptr = try_fetch_stable_pointer().await;
+        let stable_ptr = try_fetch_stable_pointer(&update_config).await;
         write_version_cache(&latest_version, stable_ptr.as_deref()).await;
         return BackgroundUpdateCheck::none();
     }
@@ -515,7 +518,7 @@ pub async fn run_update_if_available(
     )
     .unwrap_or(false)
     {
-        let stable_ptr = try_fetch_stable_pointer().await;
+        let stable_ptr = try_fetch_stable_pointer(&update_config).await;
         write_version_cache(&latest_version, stable_ptr.as_deref()).await;
         return Ok(false);
     }
@@ -694,7 +697,7 @@ pub async fn run_install_script(
             &update_config.channel,
             update_config.npm_registry.as_deref(),
         ),
-        "gh-release" => install_gh_release(target).await,
+        "gh-release" => install_gh_release(target, update_config).await,
         _ => install_internal(target, update_config).await,
     };
     if result.is_ok() {
@@ -704,7 +707,7 @@ pub async fn run_install_script(
         anyhow::anyhow!(
             "Auto-update failed: {:#}\n\n{}",
             e,
-            reinstall_hint(installer)
+            reinstall_hint(installer, update_config)
         )
     })
 }
@@ -1088,7 +1091,9 @@ async fn download_cli_artifact_from_gcs(
 }
 
 async fn install_internal(target: Option<&str>, update_config: &UpdateConfig) -> Result<()> {
-    install_internal_from_bases(target, update_config, crate::version::CLI_BASE_URLS).await
+    let bases = crate::version::cli_base_urls(update_config);
+    let base_refs: Vec<&str> = bases.iter().map(|s| s.as_str()).collect();
+    install_internal_from_bases(target, update_config, &base_refs).await
 }
 
 /// Try the base-dependent install phase ([`download_verified_from_base`]:
@@ -1857,7 +1862,12 @@ async fn cleanup_old_downloads(dir: &std::path::Path, bin_prefix: &str, current_
 }
 
 /// Download a single asset from a GitHub release via `gh release download`.
-async fn gh_release_download(tag: &str, pattern: &str, dest: &std::path::Path) -> Result<()> {
+async fn gh_release_download(
+    tag: &str,
+    pattern: &str,
+    dest: &std::path::Path,
+    update_config: &UpdateConfig,
+) -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(
         ProgressStyle::default_spinner()
@@ -1872,7 +1882,7 @@ async fn gh_release_download(tag: &str, pattern: &str, dest: &std::path::Path) -
         "download",
         tag,
         "--repo",
-        crate::version::GH_RELEASE_REPO,
+        crate::version::gh_release_repo(update_config),
         "--pattern",
         pattern,
         "--output",
@@ -1894,25 +1904,25 @@ async fn gh_release_download(tag: &str, pattern: &str, dest: &std::path::Path) -
             "gh release download failed for {} tag {} from {}: {}",
             pattern,
             tag,
-            crate::version::GH_RELEASE_REPO,
+            crate::version::gh_release_repo(update_config),
             stderr.trim()
         );
     }
     Ok(())
 }
 
-/// Download and install bucket from GitHub Releases (bucket-org-shared/bucket-build).
+/// Download and install bucket from GitHub Releases.
 ///
 /// Uses `gh release download` to fetch the binary matching the current platform.
 /// This works anywhere the `gh` CLI is authenticated, without needing npm or
 /// internal network access.
-async fn install_gh_release(target: Option<&str>) -> Result<()> {
+async fn install_gh_release(target: Option<&str>, update_config: &UpdateConfig) -> Result<()> {
     let (os, arch) = detect_platform()?;
     let platform = format!("{}-{}", os, arch);
 
     let version = match target {
         Some(v) => v.to_string(),
-        None => crate::version::fetch_gh_release_version("stable").await?,
+        None => crate::version::fetch_gh_release_version("stable", update_config).await?,
     };
 
     let bucket_home = bucket_home();
@@ -1930,7 +1940,7 @@ async fn install_gh_release(target: Option<&str>) -> Result<()> {
         version, platform
     );
 
-    gh_release_download(&tag, &binary_name, &binary_path).await?;
+    gh_release_download(&tag, &binary_name, &binary_path, update_config).await?;
 
     // chmod +x
     #[cfg(unix)]
@@ -2253,7 +2263,7 @@ pub async fn run_update(
                 if channel_switch.is_some() && effective_current != install_target {
                     // Fall through to install
                 } else {
-                    let stable_ptr = try_fetch_stable_pointer().await;
+                    let stable_ptr = try_fetch_stable_pointer(&update_config).await;
                     write_version_cache(&install_target, stable_ptr.as_deref()).await;
                     eprintln!("Already up to date ({}).", effective_current);
                     // Retry if a prior sync failed.
@@ -2313,7 +2323,7 @@ pub async fn run_update(
     // Fetch the stable pointer now so the new binary has it immediately
     // for channel_label() display, rather than waiting for the next
     // TTL-gated update check (~30 min).
-    let stable_ptr = try_fetch_stable_pointer().await;
+    let stable_ptr = try_fetch_stable_pointer(&update_config).await;
     write_version_cache(target_version, stable_ptr.as_deref()).await;
     refresh_deployment_config().await;
     eprintln!("  ✓ bucket v{} installed successfully!", target_version);
@@ -2356,6 +2366,21 @@ async fn refresh_deployment_config() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Helper to create an UpdateConfig for tests with default values.
+    fn test_update_config() -> UpdateConfig {
+        UpdateConfig {
+            proxy_base_url: String::new(),
+            auth_scope: String::new(),
+            deployment_key: None,
+            alpha_test_key: None,
+            channel: "stable".to_string(),
+            npm_registry: None,
+            update_check_url: None,
+            update_base_urls: None,
+            update_gh_repo: None,
+        }
+    }
 
     #[test]
     fn test_tmp_download_path_is_unique_per_version_and_per_attempt() {
@@ -3211,7 +3236,8 @@ mod tests {
 
     #[test]
     fn test_reinstall_hint_npm_mentions_npm_command() {
-        let hint = reinstall_hint("npm");
+        let cfg = test_update_config();
+        let hint = reinstall_hint("npm", &cfg);
         assert!(hint.contains("npm i -g"), "should suggest npm i -g: {hint}");
         assert!(
             hint.contains("@bucket-official/bucket"),
@@ -3221,7 +3247,8 @@ mod tests {
 
     #[test]
     fn test_reinstall_hint_gh_release_mentions_gh_command() {
-        let hint = reinstall_hint("gh-release");
+        let cfg = test_update_config();
+        let hint = reinstall_hint("gh-release", &cfg);
         assert!(
             hint.contains("gh release download"),
             "should suggest gh release download: {hint}"
@@ -3234,7 +3261,8 @@ mod tests {
 
     #[test]
     fn test_reinstall_hint_internal_mentions_platform_installer() {
-        let hint = reinstall_hint("internal");
+        let cfg = test_update_config();
+        let hint = reinstall_hint("internal", &cfg);
         if cfg!(windows) {
             assert!(hint.contains("irm"), "should suggest irm install: {hint}");
             assert!(
@@ -3253,15 +3281,17 @@ mod tests {
     #[test]
     fn test_reinstall_hint_unknown_falls_back_to_internal() {
         // Unknown installer falls back to the same hint as "internal".
-        let unknown = reinstall_hint("homebrew");
-        let internal = reinstall_hint("internal");
+        let cfg = test_update_config();
+        let unknown = reinstall_hint("homebrew", &cfg);
+        let internal = reinstall_hint("internal", &cfg);
         assert_eq!(unknown, internal);
     }
 
     #[test]
     fn test_reinstall_hint_empty_falls_back_to_internal() {
-        let hint = reinstall_hint("");
-        assert_eq!(hint, reinstall_hint("internal"));
+        let cfg = test_update_config();
+        let hint = reinstall_hint("", &cfg);
+        assert_eq!(hint, reinstall_hint("internal", &cfg));
     }
 
     // ──────────────────────────────────────────────────────────────────────

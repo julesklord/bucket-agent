@@ -964,6 +964,17 @@ pub struct CliConfig {
     /// Group sessions by repo in the picker and CLI listings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_picker_grouped: Option<bool>,
+    /// Custom update check URL (GitHub Releases API endpoint).
+    /// Example: "https://api.github.com/repos/owner/repo/releases/latest"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub update_check_url: Option<String>,
+    /// Custom base URLs for channel pointers (comma-separated).
+    /// Used by "internal" installer. Example: "https://github.com/owner/repo/releases/download"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub update_base_urls: Option<String>,
+    /// GitHub repo for gh-release installer (owner/repo).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub update_gh_repo: Option<String>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]

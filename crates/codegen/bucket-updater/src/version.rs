@@ -11,20 +11,38 @@ use bucket_agent_core::util::bucket_home::bucket_home;
 
 const TTL_SECONDS_BEFORE_AUTO_UPDATE: Duration = Duration::from_secs(60 * 30);
 const NPM_PACKAGE: &str = "@bucket-official/bucket";
-pub const GH_RELEASE_REPO: &str = "bucket-org-shared/bucket-build";
+/// Default GitHub repo for gh-release installer (xAI upstream).
+/// Overridable via `update_gh_repo` config.
+const DEFAULT_GH_RELEASE_REPO: &str = "bucket-org-shared/bucket-build";
 
-/// Primary CLI base URL: Cloudflare-fronted x.ai endpoint with edge caching
-/// for binaries and origin-respecting no-cache for channel pointers.
-pub(crate) const CLI_BASE_URL_PRIMARY: &str = "https://x.ai/cli";
-
-/// Fallback CLI base URL: direct GCS, used when the primary is unreachable
-/// (Cloudflare outage, regional CF egress issue, DNS hijack, etc.).
-pub(crate) const CLI_BASE_URL_FALLBACK: &str =
+/// Default CLI base URLs for internal/GCS installer (xAI upstream).
+/// Overridable via `update_base_urls` config (comma-separated).
+const DEFAULT_CLI_BASE_URL_PRIMARY: &str = "https://x.ai/cli";
+const DEFAULT_CLI_BASE_URL_FALLBACK: &str =
     "https://storage.googleapis.com/bucket-build-public-artifacts/cli";
+const DEFAULT_CLI_BASE_URLS: &[&str] = &[DEFAULT_CLI_BASE_URL_PRIMARY, DEFAULT_CLI_BASE_URL_FALLBACK];
 
-/// CLI base URLs in preference order. Callers (channel-pointer fetch, binary
-/// download, in-app updater) try each in turn and stop at the first success.
-pub(crate) const CLI_BASE_URLS: &[&str] = &[CLI_BASE_URL_PRIMARY, CLI_BASE_URL_FALLBACK];
+/// Get the GitHub release repo from config or use default.
+pub fn gh_release_repo(config: &UpdateConfig) -> &str {
+    config
+        .update_gh_repo
+        .as_deref()
+        .unwrap_or(DEFAULT_GH_RELEASE_REPO)
+}
+
+/// Get the CLI base URLs from config or use defaults.
+pub fn cli_base_urls(config: &UpdateConfig) -> Vec<String> {
+    config
+        .update_base_urls
+        .as_ref()
+        .map(|s| s.split(',').map(|s| s.trim().to_owned()).collect())
+        .unwrap_or_else(|| DEFAULT_CLI_BASE_URLS.iter().map(|s| s.to_string()).collect())
+}
+
+/// Get the custom update check URL if configured.
+fn update_check_url(config: &UpdateConfig) -> Option<&str> {
+    config.update_check_url.as_deref()
+}
 
 /// Minimal configuration the update system needs from the environment.
 ///
@@ -45,6 +63,12 @@ pub struct UpdateConfig {
     pub channel: String,
     /// Custom npm registry URL. When set, passed as `--registry=` to npm CLI.
     pub npm_registry: Option<String>,
+    /// Custom update check URL (GitHub Releases API endpoint).
+    pub update_check_url: Option<String>,
+    /// Custom base URLs for channel pointers (comma-separated).
+    pub update_base_urls: Option<String>,
+    /// GitHub repo for gh-release installer (owner/repo).
+    pub update_gh_repo: Option<String>,
 }
 
 impl UpdateConfig {
@@ -56,6 +80,9 @@ impl UpdateConfig {
             alpha_test_key: None,
             channel: "stable".to_string(),
             npm_registry: None,
+            update_check_url: None,
+            update_base_urls: None,
+            update_gh_repo: None,
         }
     }
 }
@@ -176,23 +203,23 @@ async fn fetch_npm_tag(tag: &str, npm_registry: Option<&str>) -> Result<String> 
 /// semver-greater — `gh release list --limit 1` orders by publication date,
 /// not semver, so we need both to guarantee correctness.
 #[doc(hidden)]
-pub async fn fetch_gh_release_version(channel: &str) -> Result<String> {
+pub async fn fetch_gh_release_version(channel: &str, config: &UpdateConfig) -> Result<String> {
     if channel == "alpha" {
         let (with_pre, stable_only) = tokio::try_join!(
-            fetch_gh_release_latest(false),
-            fetch_gh_release_latest(true),
+            fetch_gh_release_latest(false, config),
+            fetch_gh_release_latest(true, config),
         )?;
         return semver_max(&with_pre, &stable_only);
     }
-    fetch_gh_release_latest(true).await
+    fetch_gh_release_latest(true, config).await
 }
 
-async fn fetch_gh_release_latest(exclude_pre: bool) -> Result<String> {
+async fn fetch_gh_release_latest(exclude_pre: bool, config: &UpdateConfig) -> Result<String> {
     let mut args = vec![
         "release",
         "list",
         "--repo",
-        GH_RELEASE_REPO,
+        gh_release_repo(config),
         "--limit",
         "1",
         "--exclude-drafts",
@@ -219,7 +246,7 @@ async fn fetch_gh_release_latest(exclude_pre: bool) -> Result<String> {
     // Tags are formatted as "v0.1.141", strip the leading "v"
     let version = tag.strip_prefix('v').unwrap_or(&tag).to_string();
     if version.is_empty() {
-        anyhow::bail!("No releases found in {}", GH_RELEASE_REPO);
+        anyhow::bail!("No releases found in {}", gh_release_repo(config));
     }
     Ok(version)
 }
@@ -233,17 +260,18 @@ async fn fetch_gh_release_latest(exclude_pre: bool) -> Result<String> {
 /// returns the semver-greater, matching the behavior of the npm and
 /// gh-release paths.
 ///
-/// Tries each base URL in [`CLI_BASE_URLS`] in order and stops at the first
+/// Tries each base URL from config (or defaults) in order and stops at the first
 /// success. Each individual base also retries up to 3 times with exponential
 /// backoff (1s, 2s, 4s) on transient failures before falling through to the
 /// next base.
-pub(crate) async fn fetch_gcs_version(channel: &str) -> Result<String> {
+pub(crate) async fn fetch_gcs_version(channel: &str, config: &UpdateConfig) -> Result<String> {
+    let urls = cli_base_urls(config);
     let mut last_err: Option<anyhow::Error> = None;
-    for (i, base) in CLI_BASE_URLS.iter().enumerate() {
+    for (i, base) in urls.iter().enumerate() {
         match fetch_gcs_version_from_base(channel, base).await {
             Ok(v) => return Ok(v),
             Err(e) => {
-                if i + 1 < CLI_BASE_URLS.len() {
+                if i + 1 < urls.len() {
                     tracing::warn!(
                         "channel pointer fetch from {} failed ({:#}); trying next base URL",
                         base,
@@ -345,8 +373,8 @@ async fn fetch_gcs_channel_pointer(channel: &str, base_url: &str) -> Result<Stri
 pub async fn fetch_latest_version(installer: &str, config: &UpdateConfig) -> Result<String> {
     match installer {
         "npm" => fetch_npm_version(&config.channel, config.npm_registry.as_deref()).await,
-        "gh-release" => fetch_gh_release_version(&config.channel).await,
-        _ => fetch_gcs_version(&config.channel).await,
+        "gh-release" => fetch_gh_release_version(&config.channel, config).await,
+        _ => fetch_gcs_version(&config.channel, config).await,
     }
 }
 
@@ -396,7 +424,7 @@ pub async fn write_version_cache(version: &str, stable_version: Option<&str>) {
 /// - `"gh-release"` — uses `gh release list` against GitHub Releases.
 pub async fn get_latest_version(installer: &str, config: &UpdateConfig) -> Result<String> {
     let version = fetch_latest_version(installer, config).await?;
-    let stable_ptr = try_fetch_stable_pointer().await;
+    let stable_ptr = try_fetch_stable_pointer(config).await;
     write_version_cache(&version, stable_ptr.as_deref()).await;
     Ok(version)
 }
@@ -488,9 +516,10 @@ pub(crate) fn version_from_versioned_binary_name(name: &str, bin_prefix: &str) -
 /// for correctness. On slow or unreachable networks the timeout fires and we
 /// return `None`; the label will populate on the next successful TTL check
 /// (~30 min). This keeps startup and post-install paths fast.
-pub(crate) async fn try_fetch_stable_pointer() -> Option<String> {
+pub(crate) async fn try_fetch_stable_pointer(config: &UpdateConfig) -> Option<String> {
+    let urls = cli_base_urls(config);
     tokio::time::timeout(Duration::from_millis(500), async {
-        for base in CLI_BASE_URLS {
+        for base in &urls {
             if let Ok(v) = fetch_gcs_channel_pointer("stable", base).await {
                 return Some(v);
             }

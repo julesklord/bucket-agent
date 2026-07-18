@@ -1,6 +1,6 @@
 # Bucket Agent — Plan de Desacoplamiento Completo
 
-> Estado base: fork de xAI Grok Build (`d5e79b1`)  
+> Estado base: fork de xAI Bucket Build (`d5e79b1`)  
 > Equipo objetivo: 3-4 contribuidores  
 > Horizonte: 6-9 meses de trabajo agentico intenso
 
@@ -11,11 +11,11 @@
 | Métrica | Valor |
 |---------|-------|
 | Crates totales en el workspace | 75 |
-| Crates con nombre `xai-*` o `xai-grok-*` | ~55 |
-| Archivos `.rs` con referencias a `grok.com`, `x.ai`, `supergrok` | **584** |
-| Líneas de código en `xai-grok-shell` (runtime del agente) | **318,406** |
+| Crates con nombre `bucket-*` o `bucket-*` | ~55 |
+| Archivos `.rs` con referencias a `bucket.com`, `x.ai`, `superbucket` | **584** |
+| Líneas de código en `bucket-agent-core` (runtime del agente) | **318,406** |
 | Ocurrencias de lógica de billing/subscripción/crédito | **926** |
-| Telemetría enviada a infraestructura xAI | `xai-grok-telemetry` (4 archivos core) |
+| Telemetría enviada a infraestructura xAI | `bucket-telemetry` (4 archivos core) |
 
 El acoplamiento no es aleatorio. Hay **tres capas** distintas de dependencia:
 
@@ -29,7 +29,7 @@ El plan ataca las tres capas en orden, de afuera hacia adentro.
 
 ## Fase 1 — Limpieza Nominal (2-3 semanas)
 
-**Objetivo:** Que ningún nombre interno mencione `xai` o `grok` salvo los que son
+**Objetivo:** Que ningún nombre interno mencione `xai` o `bucket` salvo los que son
 literalmente el protocolo de red (nombres de modelos, endpoints).
 
 ### 1.1 Renombrar crates
@@ -39,41 +39,41 @@ El `Cargo.toml` raíz está marcado como generado. El primer acto real es
 
 | Nombre actual | Nombre nuevo |
 |---------------|-------------|
-| `xai-grok-shell` | `bucket-agent-core` |
-| `xai-grok-pager` | `bucket-tui` |
-| `xai-grok-pager-bin` | `bucket-bin` |
-| `xai-grok-tools` | `bucket-tools` |
-| `xai-grok-workspace` | `bucket-workspace` |
-| `xai-grok-telemetry` | `bucket-telemetry` |
-| `xai-grok-auth` | `bucket-auth` |
-| `xai-grok-memory` | `bucket-memory` |
-| `xai-grok-markdown` | `bucket-markdown` |
-| `xai-grok-config` | `bucket-config` |
-| `xai-grok-update` | `bucket-updater` |
-| `xai-grok-shell-base` | `bucket-agent-base` |
-| `xai-acp-lib` | `bucket-acp` |
-| `xai-computer-hub-*` | `bucket-hub-*` |
-| `xai-tool-*` | `bucket-tool-*` |
-| `xai-tracing*` | `bucket-tracing*` |
-| `xai-*` (resto) | `bucket-*` |
+| `bucket-agent-core` | `bucket-agent-core` |
+| `bucket-tui` | `bucket-tui` |
+| `bucket-bin` | `bucket-bin` |
+| `bucket-tools` | `bucket-tools` |
+| `bucket-workspace` | `bucket-workspace` |
+| `bucket-telemetry` | `bucket-telemetry` |
+| `bucket-auth` | `bucket-auth` |
+| `bucket-memory` | `bucket-memory` |
+| `bucket-markdown` | `bucket-markdown` |
+| `bucket-config` | `bucket-config` |
+| `bucket-updater` | `bucket-updater` |
+| `bucket-agent-base` | `bucket-agent-base` |
+| `bucket-acp` | `bucket-acp` |
+| `bucket-computer-hub-*` | `bucket-hub-*` |
+| `bucket-tool-*` | `bucket-tool-*` |
+| `bucket-tracing*` | `bucket-tracing*` |
+| `bucket-*` (resto) | `bucket-*` |
 
 **Cómo hacerlo agenticamente:** script Rust/sed que:
 1. Renombra directorios físicos
 2. Actualiza `name` en cada `Cargo.toml`
-3. Actualiza todas las referencias de dependencia interna (`xai-grok-shell = ...`)
-4. Actualiza todos los `use xai_grok_shell::` en código fuente
+3. Actualiza todas las referencias de dependencia interna (`bucket-agent-core = ...`)
+4. Actualiza todos los `use bucket_agent_core::` en código fuente
 
 ### 1.2 Variables de entorno
 
 | Variable actual | Variable nueva |
 |----------------|----------------|
-| `GROK_HOME` | `BUCKET_HOME` |
-| `GROK_LOG_FILE` | `BUCKET_LOG_FILE` |
-| `GROK_AUTH_PROVIDER_COMMAND` | `BUCKET_AUTH_PROVIDER_COMMAND` |
-| `GROK_OIDC_ISSUER` | `BUCKET_OIDC_ISSUER` |
-| `GROK_MODELS_BASE_URL` | `BUCKET_MODELS_BASE_URL` |
-| `XAI_API_KEY` | Mantener como alias (backward compat) + `BUCKET_API_KEY` |
-| `GROK_*` (resto) | `BUCKET_*` |
+| `BUCKET_HOME` | `BUCKET_HOME` |
+| `BUCKET_LOG_FILE` | `BUCKET_LOG_FILE` |
+| `BUCKET_AUTH_PROVIDER_COMMAND` | `BUCKET_AUTH_PROVIDER_COMMAND` |
+| `BUCKET_OIDC_ISSUER` | `BUCKET_OIDC_ISSUER` |
+| `BUCKET_MODELS_BASE_URL` | `BUCKET_MODELS_BASE_URL` |
+| `BUCKET_API_KEY` | Mantener como alias (backward compat) + `BUCKET_API_KEY` |
+| `BUCKET_*` (resto) | `BUCKET_*` |
 
 Mantener los nombres viejos como aliases deprecados por al menos 2 releases.
 
@@ -81,35 +81,35 @@ Mantener los nombres viejos como aliases deprecados por al menos 2 releases.
 
 | Ruta actual | Ruta nueva |
 |-------------|------------|
-| `~/.grok/` | `~/.bucket/` |
-| `~/.grok/config.toml` | `~/.bucket/config.toml` |
-| `~/.grok/auth.json` | `~/.bucket/auth.json` |
-| `~/.grok/sessions/` | `~/.bucket/sessions/` |
-| `~/.grok/hooks/` | `~/.bucket/hooks/` |
-| `~/.grok/AGENTS.md` | `~/.bucket/AGENTS.md` |
+| `~/.bucket/` | `~/.bucket/` |
+| `~/.bucket/config.toml` | `~/.bucket/config.toml` |
+| `~/.bucket/auth.json` | `~/.bucket/auth.json` |
+| `~/.bucket/sessions/` | `~/.bucket/sessions/` |
+| `~/.bucket/hooks/` | `~/.bucket/hooks/` |
+| `~/.bucket/AGENTS.md` | `~/.bucket/AGENTS.md` |
 
-Con migración automática: si existe `~/.grok` y no existe `~/.bucket`, copiar y avisar.
+Con migración automática: si existe `~/.bucket` y no existe `~/.bucket`, copiar y avisar.
 
 ---
 
 ## Fase 2 — Desacoplamiento de Auth y Billing (3-4 semanas)
 
-**Objetivo:** Eliminar toda lógica que asume que existe una cuenta xAI/grok.
+**Objetivo:** Eliminar toda lógica que asume que existe una cuenta xAI/bucket.
 
-### 2.1 Eliminar el login screen de grok.com
+### 2.1 Eliminar el login screen de bucket.com
 
 Ya hecho el bypass. Lo que queda es **borrar el código muerto**:
-- El `AuthMethodKind::GrokCom` y todo su flujo OIDC hacia `auth.x.ai` puede
+- El `AuthMethodKind::BucketCom` y todo su flujo OIDC hacia `auth.x.ai` puede
   quedar como provider opcional pero no debe ser el default ni estar hardcodeado.
 - Mover la URL de auth a config: `BUCKET_OIDC_ISSUER` en lugar de `auth.x.ai` hardcoded.
 
 ### 2.2 Eliminar la lógica de subscripción/billing (926 ocurrencias)
 
 Esta es la parte quirúrgica más importante. La lógica está en:
-- `xai-grok-shell/src/agent/mvp_agent/mod.rs` — subscription gate (ya bypasseado)
-- `xai-grok-pager/src/views/welcome/mod.rs` — credit bar, SuperGrok CTA
-- `xai-grok-pager/src/views/credit_bar.rs` — barra de créditos
-- `xai-grok-pager/src/app/actions.rs` — billing data actions
+- `bucket-agent-core/src/agent/mvp_agent/mod.rs` — subscription gate (ya bypasseado)
+- `bucket-tui/src/views/welcome/mod.rs` — credit bar, SuperBucket CTA
+- `bucket-tui/src/views/credit_bar.rs` — barra de créditos
+- `bucket-tui/src/app/actions.rs` — billing data actions
 
 **Plan:** Reemplazar con un sistema de `ProviderCapabilities`:
 
@@ -124,11 +124,11 @@ pub struct ProviderCapabilities {
 ```
 
 El TUI consulta `ProviderCapabilities` para decidir qué mostrar.
-Sin billing → sin credit bar, sin SuperGrok banner, sin subscription gate.
+Sin billing → sin credit bar, sin SuperBucket banner, sin subscription gate.
 
 ### 2.3 Update checker
 
-`xai-grok-update` apunta a `https://x.ai/cli/...` para verificar versiones.
+`bucket-updater` apunta a `https://x.ai/cli/...` para verificar versiones.
 
 Opciones:
 - **a)** Apuntar a GitHub Releases del fork (más simple, recomendado)
@@ -143,7 +143,7 @@ update_check_url = "https://api.github.com/repos/tu-org/bucket-agent/releases/la
 
 ### 2.4 Telemetría
 
-`xai-grok-telemetry` envía datos a infraestructura de xAI (OpenTelemetry hacia endpoints xAI).
+`bucket-telemetry` envía datos a infraestructura de xAI (OpenTelemetry hacia endpoints xAI).
 
 **Plan:**
 1. Vaciar los endpoints hardcodeados
@@ -155,7 +155,7 @@ update_check_url = "https://api.github.com/repos/tu-org/bucket-agent/releases/la
 
 ## Fase 3 — Desacoplamiento del Runtime del Agente (4-6 semanas)
 
-**Objetivo:** Que `bucket-agent-core` (ex `xai-grok-shell`) no sepa nada de xAI.
+**Objetivo:** Que `bucket-agent-core` (ex `bucket-agent-core`) no sepa nada de xAI.
 
 Esta es la fase más profunda. El runtime actual tiene tres acoplamentos estructurales:
 
@@ -185,11 +185,11 @@ Implementaciones:
 - `AnthropicProvider` — Messages API
 - `MockProvider` — para tests
 
-El agente solo habla con `dyn ChatProvider`. Nunca sabe si hay Ollama o grok detrás.
+El agente solo habla con `dyn ChatProvider`. Nunca sabe si hay Ollama o bucket detrás.
 
 ### 3.2 El sistema de modelos
 
-Hoy hay modelos hardcodeados en el código (lista de modelos xAI, grok-build, etc.).
+Hoy hay modelos hardcodeados en el código (lista de modelos xAI, bucket-build, etc.).
 
 **Plan:** Eliminar la lista hardcodeada. Solo modelos de:
 1. Configuración del usuario (`config.toml`)
@@ -208,7 +208,7 @@ base_url = "http://localhost:11434/v1"
 
 ### 3.3 System prompts y personalidad del agente
 
-El system prompt actual menciona xAI, Grok, etc.
+El system prompt actual menciona xAI, Bucket, etc.
 Necesita ser configurable:
 
 ```toml
@@ -326,14 +326,14 @@ El sistema de skills (`SKILL.md`) ya funciona. Crear un registry público:
 Hoy                          →  Objetivo
 ──────────────────────────────────────────────────────
 auth.x.ai (OIDC endpoint)   →  BUCKET_OIDC_ISSUER configurable
-grok.com (login)             →  Provider OIDC genérico o ninguno
+bucket.com (login)             →  Provider OIDC genérico o ninguno
 x.ai/cli (updates)           →  GitHub Releases API
 OTLP → xAI infra             →  BUCKET_TELEMETRY_ENDPOINT o noop
-xai_grok_* (crate names)    →  bucket_* 
-GROK_* (env vars)            →  BUCKET_* (con alias GROK_* deprecated)
-~/.grok (config dir)         →  ~/.bucket (con migración automática)
+bucket_* (crate names)    →  bucket_* 
+BUCKET_* (env vars)            →  BUCKET_* (con alias BUCKET_* deprecated)
+~/.bucket (config dir)         →  ~/.bucket (con migración automática)
 hardcoded model list         →  solo config.toml + /v1/models del provider
-SuperGrok/billing UI         →  ProviderCapabilities.has_billing flag
+SuperBucket/billing UI         →  ProviderCapabilities.has_billing flag
 system prompt con xAI refs   →  configurable, default neutro
 ```
 

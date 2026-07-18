@@ -1,6 +1,6 @@
 # Contributing
 
-This is a fork of the xAI Grok Build agent, rebranded and extended as **Bucket Agent** to support local and multiprovider AI backends (Ollama, OpenAI-compatible endpoints, etc.).
+This is a fork of the xAI Bucket Build agent, rebranded and extended as **Bucket Agent** to support local and multiprovider AI backends (Ollama, OpenAI-compatible endpoints, etc.).
 
 Pull requests that improve provider compatibility, fix bugs, or extend the documentation are welcome.
 

@@ -1,0 +1,12 @@
+[package]
+license = "Apache-2.0"
+name = "bucket-version"
+version = "0.2.101"
+edition.workspace = true
+description = "Lockstepped bucket CLI version."
+
+[dependencies]
+semver = { workspace = true }
+
+[lints]
+workspace = true

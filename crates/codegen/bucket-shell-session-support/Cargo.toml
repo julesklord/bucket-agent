@@ -1,0 +1,32 @@
+[package]
+license = "Apache-2.0"
+name = "bucket-shell-session-support"
+version = "0.1.0"
+edition.workspace = true
+description = "Session-support modules for the bucket shell crate family: managed MCP credential/catalog caching and file-access tracking."
+
+[dependencies]
+agent-client-protocol = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt", "time", "macros"] }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+bucket-file-utils = { path = "../bucket-file-utils", optional = true }
+bucket-http = { workspace = true }
+bucket-agent-base = { workspace = true }
+bucket-version = { workspace = true }
+bucket-workspace = { workspace = true }
+
+[features]
+default-bazel = []
+
+[dev-dependencies]
+axum = { workspace = true }
+tokio = { workspace = true, features = ["net", "rt-multi-thread"] }
+
+[lints]
+workspace = true

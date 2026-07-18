@@ -40,15 +40,15 @@ Requirements:
   and not currently tested from this tree.
 
 ```sh
-cargo run -p xai-grok-pager-bin              # build + launch the TUI as `bucket`
-cargo build -p xai-grok-pager-bin --release  # release binary: target/release/bucket
-cargo check -p xai-grok-pager-bin            # fast validation
+cargo run -p bucket-bin              # build + launch the TUI as `bucket`
+cargo build -p bucket-bin --release  # release binary: target/release/bucket
+cargo check -p bucket-bin            # fast validation
 ```
 
 The binary artifact is named `bucket`. On first launch it drops straight into
 the welcome screen — no browser login required. Configure a model backend in
 `~/.bucket/config.toml` to get started (see
-[Custom Models](crates/codegen/xai-grok-pager/docs/user-guide/11-custom-models.md)).
+[Custom Models](crates/codegen/bucket-tui/docs/user-guide/11-custom-models.md)).
 
 ---
 
@@ -81,7 +81,7 @@ No API keys. No account. Full agentic coding loop, locally.
 ## Documentation
 
 The user guide ships with the pager crate:
-[`crates/codegen/xai-grok-pager/docs/user-guide/`](crates/codegen/xai-grok-pager/docs/user-guide/)
+[`crates/codegen/bucket-tui/docs/user-guide/`](crates/codegen/bucket-tui/docs/user-guide/)
 — getting started, keyboard shortcuts, slash commands, configuration, theming,
 MCP servers, skills, plugins, hooks, headless mode, sandboxing, and more.
 
@@ -91,11 +91,11 @@ MCP servers, skills, plugins, hooks, headless mode, sandboxing, and more.
 
 | Path | Contents |
 |------|----------|
-| `crates/codegen/xai-grok-pager-bin` | Composition-root package; builds the `bucket` binary |
-| `crates/codegen/xai-grok-pager` | The TUI: scrollback, prompt, modals, rendering |
-| `crates/codegen/xai-grok-shell` | Agent runtime + leader/stdio/headless entry points |
-| `crates/codegen/xai-grok-tools` | Tool implementations (terminal, file edit, search, ...) |
-| `crates/codegen/xai-grok-workspace` | Host filesystem, VCS, execution, checkpoints |
+| `crates/codegen/bucket-bin` | Composition-root package; builds the `bucket` binary |
+| `crates/codegen/bucket-tui` | The TUI: scrollback, prompt, modals, rendering |
+| `crates/codegen/bucket-agent-core` | Agent runtime + leader/stdio/headless entry points |
+| `crates/codegen/bucket-tools` | Tool implementations (terminal, file edit, search, ...) |
+| `crates/codegen/bucket-workspace` | Host filesystem, VCS, execution, checkpoints |
 | `crates/codegen/...` | The rest of the CLI crate closure (config, MCP, markdown, sandbox, ...) |
 | `crates/common/`, `crates/build/`, `prod/mc/` | Small shared leaf crates pulled in by the closure |
 | `third_party/` | Vendored upstream source (Mermaid diagram stack) — see below |
@@ -111,7 +111,7 @@ MCP servers, skills, plugins, hooks, headless mode, sandboxing, and more.
 
 ```sh
 cargo check -p <crate>        # always target specific crates; full-workspace builds are slow
-cargo test -p xai-grok-shell  # per-crate tests
+cargo test -p bucket-agent-core  # per-crate tests
 cargo clippy -p <crate>       # lint config: clippy.toml at the repo root
 cargo fmt --all               # rustfmt.toml at the repo root
 ```
@@ -134,7 +134,7 @@ Third-party and vendored code remains under its original licenses. See:
 - [`THIRD-PARTY-NOTICES`](THIRD-PARTY-NOTICES) — crates.io / git dependencies,
   bundled UI themes, and **in-tree source ports** (including openai/codex and
   sst/opencode tool implementations)
-- [`crates/codegen/xai-grok-tools/THIRD_PARTY_NOTICES.md`](crates/codegen/xai-grok-tools/THIRD_PARTY_NOTICES.md)
+- [`crates/codegen/bucket-tools/THIRD_PARTY_NOTICES.md`](crates/codegen/bucket-tools/THIRD_PARTY_NOTICES.md)
   — crate-local notice for the codex and opencode ports (license texts +
   Apache §4(b) change notice)
 - [`third_party/NOTICE`](third_party/NOTICE) — vendored Mermaid-stack index

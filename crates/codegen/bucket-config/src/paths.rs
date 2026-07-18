@@ -40,11 +40,48 @@ pub fn bucket_home() -> PathBuf {
             } else {
                 default_bucket_home()
             };
+            if !bucket_home.exists() {
+                migrate_grok_home(&bucket_home);
+            }
             let _ = std::fs::create_dir_all(&bucket_home);
             bucket_home
         })
         .clone()
 }
+
+fn migrate_grok_home(bucket_home: &std::path::Path) {
+    #[allow(deprecated)]
+    let home = std::env::home_dir().unwrap_or_else(|| PathBuf::from("."));
+    let home = dunce::canonicalize(&home).unwrap_or(home);
+    let grok_home = home.join(".grok");
+    if grok_home.exists() && !bucket_home.exists() {
+        eprintln!(
+            "Migration: Existing configuration found at '{}'. Copying to '{}'...",
+            grok_home.display(),
+            bucket_home.display()
+        );
+        if let Err(e) = copy_dir_all(&grok_home, bucket_home) {
+            eprintln!("Warning: Failed to copy config directory: {}", e);
+        } else {
+            eprintln!("Migration completed successfully!");
+        }
+    }
+}
+
+fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
 
 /// The user-global bucket home, but only when one genuinely resolves: `Some` when
 /// `$BUCKET_HOME` is set or a home directory is found, `None` otherwise. Unlike

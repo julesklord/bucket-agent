@@ -154,3 +154,7 @@ Third-party and vendored code remains under its original licenses. See:
   — crate-local notice for the codex and opencode ports (license texts +
   Apache §4(b) change notice)
 - [`third_party/NOTICE`](third_party/NOTICE) — vendored Mermaid-stack index
+
+---
+
+<img src="assets/logo_bucky.png" alt="Bucky Logo" width="100" height="100" />

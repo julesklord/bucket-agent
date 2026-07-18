@@ -80,11 +80,11 @@ pub enum TraceUploadReason {
     ZdrTeam,
     /// `[telemetry] trace_upload = false` in config.
     FeatureOff,
-    /// No bucket.com auth or deployment key.
+    /// No provider auth or deployment key.
     NoCredentials,
     /// Direct-to-bucket S3 upload.
     DirectS3,
-    /// Proxy mode via bucket.com auth.
+    /// Proxy mode via provider auth.
     Proxy,
     /// Direct GCS with service account key.
     DirectGcs,

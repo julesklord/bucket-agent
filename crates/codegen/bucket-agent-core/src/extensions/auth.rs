@@ -21,7 +21,13 @@ pub async fn handle(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtResult {
         "x.ai/auth/get_url" => handle_get_url(agent).await,
         "x.ai/auth/logout" => handle_logout(agent, args).await,
         "x.ai/auth/info" => handle_info(agent),
-        "x.ai/auth/check_subscription" => handle_check_subscription(agent).await,
+        "x.ai/auth/check_subscription" => {
+            // No billing → subscription check is not applicable.
+            if !agent.provider_capabilities.has_billing {
+                return Err(acp::Error::method_not_found());
+            }
+            handle_check_subscription(agent).await
+        }
         _ => Err(acp::Error::method_not_found()),
     }
 }

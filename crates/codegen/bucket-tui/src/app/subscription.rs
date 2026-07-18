@@ -86,6 +86,10 @@ impl AppView {
     /// Whether the watch (and the refocus check) should run: enabled,
     /// consumer session, and gated or possibly-free.
     pub fn subscription_watch_wanted(&self) -> bool {
+        // No billing → no subscription watch needed.
+        if !self.provider_capabilities.shows_billing_ui() {
+            return false;
+        }
         self.subscription_watch_interval().is_some()
             && self.is_consumer_session()
             && (self.gate.is_some() || self.may_be_free_tier())

@@ -957,7 +957,13 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
         Action::PermissionCancel => dispatch_permission_cancel(app),
         Action::Logout => dispatch_logout(app),
         Action::SwitchAccount => dispatch_switch_account(app),
-        Action::CheckSubscription => vec![Effect::CheckSubscription { verify: None }],
+        Action::CheckSubscription => {
+            if app.provider_capabilities.shows_billing_ui() {
+                vec![Effect::CheckSubscription { verify: None }]
+            } else {
+                vec![]
+            }
+        }
         Action::OpenSuperbucketUrl => dispatch_open_superbucket_url(app),
         Action::OpenUrl(url) => {
             if url.starts_with("file://") {

@@ -433,7 +433,8 @@ impl acp::Agent for MvpAgent {
                         .command_availability()), "cancelRewind" : self.cfg.borrow()
                         .resolve_cancel_rewind().value, "sessionRecap" : self.cfg
                         .borrow().is_session_recap_enabled(), "voiceMode" : self.cfg
-                        .borrow().is_voice_mode_enabled(), }
+                        .borrow().is_voice_mode_enabled(), "providerCapabilities" :
+                        self.provider_capabilities, }
                     )
                         .as_object()
                         .cloned()

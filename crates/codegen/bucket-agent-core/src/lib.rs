@@ -29,6 +29,7 @@ pub mod managed_config;
 pub mod mcp_doctor;
 pub use bucket_models as models;
 pub mod plugin;
+pub mod provider;
 pub mod relay;
 pub mod remote;
 pub mod sampling;

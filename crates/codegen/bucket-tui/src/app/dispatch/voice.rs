@@ -49,6 +49,10 @@ fn voice_target_for_view(app: &AppView) -> Option<VoiceTarget> {
 /// (e.g. the welcome screen, which has no agent to host the modal). Never starts
 /// voice; always returns no effects.
 fn open_voice_tier_upsell(app: &mut AppView) -> Vec<Effect> {
+    // No billing → no tier restriction on voice.
+    if !app.provider_capabilities.shows_billing_ui() {
+        return vec![];
+    }
     let login_method = app.login_method_id.as_ref().map(|id| id.0.to_string());
     match app.active_view {
         ActiveView::Agent(id) => {

@@ -1251,6 +1251,9 @@ impl MvpAgent {
         &self,
     ) -> bucket_tools::implementations::bucket_build::image_gen::ImageGenConfig {
         use bucket_tools::implementations::bucket_build::image_gen::ImageGenConfig;
+        if !self.provider_capabilities.supports_image_gen {
+            return ImageGenConfig::Disabled;
+        }
         let sampling_config = self.sampling_config.borrow();
         let Some(ref api_key) = sampling_config.api_key else {
             return ImageGenConfig::Disabled;
@@ -1293,6 +1296,9 @@ impl MvpAgent {
         &self,
     ) -> bucket_tools::implementations::bucket_build::video_gen::VideoGenConfig {
         use bucket_tools::implementations::bucket_build::video_gen::VideoGenConfig;
+        if !self.provider_capabilities.supports_video_gen {
+            return VideoGenConfig::Disabled;
+        }
         let Some(api_key) = self.sampling_config.borrow().api_key.clone() else {
             return VideoGenConfig::Disabled;
         };
@@ -1513,6 +1519,7 @@ impl MvpAgent {
                 RefCell::new(std::collections::HashSet::new()),
             ),
             tier_allowed: std::cell::Cell::new(true),
+            provider_capabilities: crate::provider::ProviderCapabilities::default(),
             storage_mode,
             default_yolo_mode,
             default_auto_mode,

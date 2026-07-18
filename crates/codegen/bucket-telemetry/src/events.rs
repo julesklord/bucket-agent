@@ -1480,7 +1480,7 @@ pub struct CreditLimitUpsellClicked {
 // ---------------------------------------------------------------------------
 
 /// Emitted when a previously access-gated user re-authenticates and the gate
-/// is lifted — i.e. they subscribed (externally on bucket.com) and came back.
+/// is lifted — i.e. they subscribed externally and came back.
 /// This is the actual conversion signal for SuperBucket Heavy subscriptions
 /// attributed to Bucket Build: the user saw the gate in Bucket Build, went and
 /// paid, then returned with access.

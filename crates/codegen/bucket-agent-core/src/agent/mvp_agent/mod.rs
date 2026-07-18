@@ -695,6 +695,10 @@ pub struct MvpAgent {
     /// external-auth users bypass the check). When `false`, the pager shows a
     /// gate CTA instead of the prompt.
     tier_allowed: std::cell::Cell<bool>,
+    /// Provider capability flags. Determines which UI surfaces and agent
+    /// extensions are active (billing, subscription gate, image/video gen, etc.).
+    /// Defaults to no billing; set by the provider at init time.
+    pub(crate) provider_capabilities: crate::provider::ProviderCapabilities,
     /// Storage mode - determines whether to sync to backend (writeback) or local only
     storage_mode: StorageMode,
     /// Default YOLO mode - when true, sessions start with auto-approve enabled.
@@ -1950,24 +1954,38 @@ impl MvpAgent {
         }
     }
     pub(crate) fn auth_response_with_meta(&self) -> AuthenticateResponse {
+        // If the provider doesn't have subscription gating, skip all gate logic.
+        let has_subscription_gate = self.provider_capabilities.has_subscription_gate;
+
         let (show_resolved_model, gate, subscription_tier) = {
             let cfg = self.cfg.borrow();
             let rs = cfg.remote_settings.as_ref();
-            let gate = rs
-                .and_then(|s| s.gate_message.as_ref())
-                .filter(|m| !m.is_empty())
-                .map(|message| crate::auth::GateInfo {
-                    message: message.clone(),
-                    url: rs.and_then(|s| s.gate_url.clone()),
-                    label: rs.and_then(|s| s.gate_label.clone()),
-                });
-            let subscription_tier = rs.and_then(|s| s.subscription_tier_display.clone());
+            let gate = if has_subscription_gate {
+                rs.and_then(|s| s.gate_message.as_ref())
+                    .filter(|m| !m.is_empty())
+                    .map(|message| crate::auth::GateInfo {
+                        message: message.clone(),
+                        url: rs.and_then(|s| s.gate_url.clone()),
+                        label: rs.and_then(|s| s.gate_label.clone()),
+                    })
+            } else {
+                None
+            };
+            let subscription_tier = if has_subscription_gate {
+                rs.and_then(|s| s.subscription_tier_display.clone())
+            } else {
+                None
+            };
             (rs.and_then(|s| s.show_resolved_model), gate, subscription_tier)
         };
-        let subscription_tier = resolve_subscription_tier_for_telemetry(
-            subscription_tier,
-            self.auth_manager.current_or_expired().as_ref(),
-        );
+        let subscription_tier = if has_subscription_gate {
+            resolve_subscription_tier_for_telemetry(
+                subscription_tier,
+                self.auth_manager.current_or_expired().as_ref(),
+            )
+        } else {
+            None
+        };
         let meta = self
             .auth_manager
             .current()
@@ -1976,7 +1994,11 @@ impl MvpAgent {
                 let is_first_party_model = self.resolve_model_id(&current_model_id)
                     .map(|entry| crate::util::is_first_party_xai_url(&entry.info.base_url))
                     .unwrap_or(true);
-                let gate = if !self.tier_allowed.get() && gate.is_none() && is_first_party_model {
+                let gate = if has_subscription_gate
+                    && !self.tier_allowed.get()
+                    && gate.is_none()
+                    && is_first_party_model
+                {
                     let message = "A subscription is required.".to_string();
                     Some(crate::auth::GateInfo {
                         message,

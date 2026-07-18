@@ -380,6 +380,10 @@ pub(super) fn handle_billing_fetched(
     subscription_tier: Option<String>,
     autotopup: crate::views::credit_bar::AutoTopupFetch,
 ) -> Vec<Effect> {
+    // No billing capability → ignore billing data entirely.
+    if !app.provider_capabilities.shows_billing_ui() {
+        return vec![];
+    }
     // Parse/transport failures route to `BillingError`, so a `None`
     // balance here means the response carried no billing config. Clear
     // the cached balance + polling so the status bar agrees with the
@@ -444,6 +448,10 @@ pub(super) fn handle_check_subscription_complete(
     verify: Option<u64>,
     meta: Option<serde_json::Value>,
 ) -> Vec<Effect> {
+    // No billing → subscription check is not applicable.
+    if !app.provider_capabilities.shows_billing_ui() {
+        return vec![];
+    }
     let was_blocked = !app.has_access();
     let applied = match meta {
         Some(meta_val) => {
@@ -562,6 +570,10 @@ pub(super) fn handle_credit_limit_recheck_complete(
 // Action handlers.
 
 pub(super) fn dispatch_open_superbucket_url(app: &mut AppView) -> Vec<Effect> {
+    // No billing → SuperBucket upsell is not applicable.
+    if !app.provider_capabilities.shows_billing_ui() {
+        return vec![];
+    }
     log_event(SuperBucketUpsellClicked {
         source: SuperBucketUpsell::WelcomeScreen,
         auth_method: app.login_method_id.as_ref().map(|id| id.0.to_string()),

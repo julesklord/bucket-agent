@@ -666,6 +666,8 @@ pub struct AppView {
     pub auto_topup: Option<crate::views::credit_bar::AutoTopupInfo>,
     /// Periodic billing poll requested (credits >= 99%).
     pub billing_poll_wanted: bool,
+    /// Provider capability flags from the agent (billing, streaming, image/video gen).
+    pub provider_capabilities: bucket_agent_core::provider::ProviderCapabilities,
     /// Leader-mode session roster (FleetView dashboard). Populated from
     /// `x.ai/sessions/list` polls and `x.ai/sessions/changed` broadcasts.
     /// Empty in non-leader mode, which naturally gates roster rendering.
@@ -1332,6 +1334,7 @@ impl AppView {
             credit_balance: None,
             auto_topup: None,
             billing_poll_wanted: false,
+            provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
             leader_roster: Vec::new(),
             dashboard_local_sessions: Vec::new(),
             dashboard_sessions_loading: false,

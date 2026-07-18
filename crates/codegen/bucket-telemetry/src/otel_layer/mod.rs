@@ -55,7 +55,7 @@ pub struct OtelClientInfo {
 /// managed config.
 #[derive(Debug, Default, Clone)]
 pub struct OtelExporterConfig {
-    /// Full OTLP traces endpoint URL (e.g. `https://cli-chat-proxy.bucket.com/v1/traces`).
+    /// Full OTLP traces endpoint URL (e.g. `https://your-collector.example.com/v1/traces`).
     pub traces_url: String,
     /// `OTEL_EXPORTER_OTLP_HEADERS` pairs.
     pub extra_headers: Vec<(String, String)>,

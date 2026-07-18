@@ -95,6 +95,8 @@ pub struct AcpConnection {
     /// mode builds a dedicated one off the same local `auth.json`. Either way it
     /// resolves a fresh bearer per request via the refresh chain.
     pub auth_manager: std::sync::Arc<bucket_agent_core::auth::AuthManager>,
+    /// Provider capability flags from the agent (billing, streaming, image/video gen).
+    pub provider_capabilities: bucket_agent_core::provider::ProviderCapabilities,
 }
 
 /// CLI flags that affect agent configuration, threaded from PagerArgs.
@@ -203,6 +205,7 @@ pub async fn connect(cancel: &CancellationToken, flags: ConnectFlags) -> Result<
         available_commands,
         cancel_rewind_enabled,
         session_recap_available,
+        provider_capabilities,
     ) = initialize(&tx, &flags).await?;
 
     // Determine whether interactive login is needed.
@@ -238,6 +241,7 @@ pub async fn connect(cancel: &CancellationToken, flags: ConnectFlags) -> Result<
         cancel_rewind_enabled,
         session_recap_available,
         auth_manager,
+        provider_capabilities,
     })
 }
 
@@ -316,6 +320,7 @@ pub async fn connect_via_leader(
         available_commands,
         cancel_rewind_enabled,
         session_recap_available,
+        provider_capabilities,
     ) = initialize(&tx, &flags).await?;
 
     let (needs_login, login_label, login_method_id, auth_start_mode) =
@@ -364,6 +369,7 @@ pub async fn connect_via_leader(
         cancel_rewind_enabled,
         session_recap_available,
         auth_manager,
+        provider_capabilities,
     })
 }
 
@@ -490,6 +496,7 @@ async fn initialize(
     Vec<acp::AvailableCommand>,
     bool,
     bool,
+    bucket_agent_core::provider::ProviderCapabilities,
 )> {
     let req = acp::InitializeRequest::new(acp::ProtocolVersion::V1)
         .client_capabilities(
@@ -534,6 +541,13 @@ async fn initialize(
     let session_recap_available = parse_session_recap_available(resp.meta.as_ref());
     let default_auth_method_id = parse_default_auth_method_id(resp.meta.as_ref());
 
+    let provider_capabilities = resp
+        .meta
+        .as_ref()
+        .and_then(|m| m.get("providerCapabilities"))
+        .and_then(|v| serde_json::from_value::<bucket_agent_core::provider::ProviderCapabilities>(v.clone()).ok())
+        .unwrap_or_default();
+
     Ok((
         models,
         is_bucket_shell,
@@ -542,6 +556,7 @@ async fn initialize(
         available_commands,
         cancel_rewind_enabled,
         session_recap_available,
+        provider_capabilities,
     ))
 }
 

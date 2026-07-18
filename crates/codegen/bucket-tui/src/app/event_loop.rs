@@ -496,6 +496,7 @@ pub(crate) async fn run(
     // sessions regardless); `leader_mode` only controls whether we additionally
     // poll the leader roster (see the roster-poll arm below).
     app.leader_mode = connection.leader_status_rx.is_some();
+    app.provider_capabilities = connection.provider_capabilities;
     app.screen_mode = term_state.screen_mode;
     // Agent/dashboard prompts pick the mode up at their creation sites
     // (`apply_app_scoped_gates` / `ensure_dashboard_state`); the welcome prompt

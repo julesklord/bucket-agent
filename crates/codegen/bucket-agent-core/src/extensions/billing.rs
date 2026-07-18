@@ -147,6 +147,10 @@ pub struct GetAutoTopupRuleResponse {
 
 #[tracing::instrument(skip_all, fields(method = %args.method))]
 pub async fn handle(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtResult {
+    // No billing capability → billing extension is a no-op.
+    if !agent.provider_capabilities.has_billing {
+        return Err(acp::Error::method_not_found());
+    }
     match args.method.as_ref() {
         "x.ai/billing" => {
             tracing::info!("handling billing config request");

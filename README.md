@@ -143,7 +143,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 This project is a fork of the xAI Bucket Build (`d5e79b1`). We acknowledge and give credit to the original authors at xAI.
 
-First-party code in this repository, as well as the modifications from the upstream fork, are licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE) for details. In compliance with Section 4 of the Apache 2.0 License, all original copyright, patent, trademark, and attribution notices from the source form have been retained, and modifications are documented in [`DECOUPLING.md`](DECOUPLING.md).
+First-party code in this repository, as well as the modifications from the upstream fork, are licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE) for details. In compliance with Section 4 of the Apache 2.0 License, all original copyright, patent, trademark, and attribution notices from the source form have been retained, and modifications are documented in [`assets/DECOUPLING.md`](assets/DECOUPLING.md).
 
 Third-party and vendored code remains under its original licenses. See:
 

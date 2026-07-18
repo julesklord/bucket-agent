@@ -17,12 +17,12 @@ use crate::scrollback::render::ScratchBuffer;
 use crate::views::prompt_widget::PromptWidget;
 use crate::views::welcome::WelcomePromptFocus;
 use agent_client_protocol as acp;
-use bucket_acp::AcpAgentTx;
 use crossterm::event::{Event, KeyCode, KeyEventKind, MouseButton, MouseEventKind};
 use indexmap::IndexMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use bucket_acp::AcpAgentTx;
 /// State for the "New Worktree" popup dialog on the welcome screen.
 #[derive(Debug, Default)]
 pub struct NewWorktreeDialogState {
@@ -1261,8 +1261,7 @@ impl AppView {
             cli_effort_token: None,
             default_yolo: false,
             permission_mode_from_soft_default: true,
-            auto_mode_gate: bucket_agent_core::util::config::auto_permission_mode_enabled_from_disk(
-            ),
+            auto_mode_gate: bucket_agent_core::util::config::auto_permission_mode_enabled_from_disk(),
             yolo_policy_block: None,
             yolo_launch_block_notice: None,
             screen_mode_switch_hint: None,
@@ -5231,6 +5230,7 @@ pub(crate) mod tests {
             optimistic_prompt_echoes: std::collections::HashMap::new(),
             pending_running_adoptions: std::collections::HashMap::new(),
             session_picker_grouped: false,
+            provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
             cancel_rewind_enabled: true,
             session_recap_available: false,
             dashboard: None,
@@ -6095,14 +6095,16 @@ pub(crate) mod tests {
         let mut app = test_app_with_agent();
         let id = super::super::agent::AgentId(0);
         assert!(!app.needs_animation(), "idle agent must not request ticks");
-        app.agents.get_mut(&id).unwrap().todo.update_todos(vec![
-            bucket_agent_core::tools::TodoItem {
+        app.agents
+            .get_mut(&id)
+            .unwrap()
+            .todo
+            .update_todos(vec![bucket_agent_core::tools::TodoItem {
                 content: "do the thing".into(),
                 priority: Default::default(),
                 status: bucket_agent_core::tools::TodoStatus::InProgress,
                 meta: None,
-            },
-        ]);
+            }]);
         assert!(
             app.agents[&id].todo.badge_needs_tick(),
             "fixture: a counts change must arm the badge flash"

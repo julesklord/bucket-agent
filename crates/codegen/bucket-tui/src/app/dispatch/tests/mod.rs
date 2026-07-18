@@ -245,6 +245,7 @@ fn test_app() -> AppView {
         optimistic_prompt_echoes: std::collections::HashMap::new(),
         pending_running_adoptions: std::collections::HashMap::new(),
         session_picker_grouped: false,
+        provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
         cancel_rewind_enabled: true,
         session_recap_available: false,
         dashboard: None,
@@ -833,7 +834,8 @@ fn enqueue_permission_with_enable_always_approve(
     });
     response_rx
 }
-const POLICY_WARNING: &str = bucket_workspace::permission::resolution::YOLO_PIN_REASON_REQUIREMENTS;
+const POLICY_WARNING: &str =
+    bucket_workspace::permission::resolution::YOLO_PIN_REASON_REQUIREMENTS;
 fn agent_toast(app: &AppView) -> Option<String> {
     app.agents[&AgentId(0)]
         .toast

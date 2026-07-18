@@ -91,6 +91,17 @@ MCP servers, skills, plugins, hooks, headless mode, sandboxing, and more.
 
 ---
 
+## Telemetry & Decoupling
+
+Unlike the upstream project which contained telemetry enabled by default (sending metrics via OpenTelemetry directly to `x.ai` infrastructure) and forced OIDC authentication/billing checks.
+
+- **Telemetry is disabled by default**: No tracking data is collected or sent. To opt-in, you must explicitly define your own telemetry collector via `BUCKET_TELEMETRY_ENDPOINT`.
+- **Zero billing & login constraints**: All subscription gates, billing bars, and login checks to `xai.com` have been completely stripped or replaced by a provider capabilities system. The agent runs fully locally or with your own API keys.
+- **Independent Updates**: Automatic update checks point to our GitHub Releases repository, not upstream proprietary endpoints.
+
+---
+
+
 ## Repository layout
 
 | Path | Contents |
@@ -128,10 +139,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
-## License
+## License & Credits
 
-First-party code in this repository is licensed under the **Apache License,
-Version 2.0** — see [`LICENSE`](LICENSE).
+This project is a fork of the xAI Bucket Build (`d5e79b1`). We acknowledge and give credit to the original authors at xAI.
+
+First-party code in this repository, as well as the modifications from the upstream fork, are licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE) for details. In compliance with Section 4 of the Apache 2.0 License, all original copyright, patent, trademark, and attribution notices from the source form have been retained, and modifications are documented in [`DECOUPLING.md`](DECOUPLING.md).
 
 Third-party and vendored code remains under its original licenses. See:
 

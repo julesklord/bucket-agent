@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
 
-  <path d="M 285 205 L 652 206 L 483 502 L 280 817 L 280 236 L 382 330 L 383 489 L 505 308 L 393 306 L 286 206 L 280 235 Z " fill="white" fill-rule="evenodd" />
-  <path d="M 736 206 L 736 430 L 669 499 L 743 584 L 743 717 L 641 818 L 372 818 L 534 532 L 734 209 Z M 605 579 L 641 623 L 641 677 L 601 717 L 433 716 L 522 578 L 604 578 L 520 579 Z " fill="white" fill-rule="evenodd" />
+  <path d="M 285 205 L 652 206 L 483 502 L 280 817 L 280 236 L 382 330 L 383 489 L 505 308 L 393 306 L 286 206 L 280 235 Z " fill="black" fill-rule="evenodd" />
+  <path d="M 736 206 L 736 430 L 669 499 L 743 584 L 743 717 L 641 818 L 372 818 L 534 532 L 734 209 Z M 605 579 L 641 623 L 641 677 L 601 717 L 433 716 L 522 578 L 604 578 L 520 579 Z " fill="black" fill-rule="evenodd" />
   <!-- Cyan diagonal cut line with glow -->
   <line x1="681" y1="200" x2="350" y2="820" stroke="#00CFBE" stroke-width="12" stroke-linecap="round" opacity="0.3" />
   <line x1="681" y1="200" x2="350" y2="820" stroke="#00CFBE" stroke-width="4" stroke-linecap="round" />

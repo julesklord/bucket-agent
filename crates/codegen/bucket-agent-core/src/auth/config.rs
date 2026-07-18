@@ -129,6 +129,7 @@ pub struct OAuth2ProviderConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub referrer: Option<String>,
 }
+/// Default OAuth2 issuer for production — overridden by `BUCKET_OIDC_ISSUER` env var.
 pub const BUCKET_OAUTH2_ISSUER: &str = "https://auth.x.ai";
 /// Production accounts-app origin allowlist — the only origins builds without
 /// non-production builds accept. Lives in its own const, referenced by both
@@ -166,6 +167,21 @@ pub fn accounts_app_cors_layer(method: axum::http::Method) -> tower_http::cors::
 /// Local-dev OAuth2 issuer (accounts-app running on localhost).
 const BUCKET_OAUTH2_LOCAL_ISSUER: &str = "http://localhost:22255";
 const DEFAULT_OAUTH2_REFERRER: &str = "bucket-build";
+/// Returns the configured OIDC issuer URL from `BUCKET_OIDC_ISSUER` env var.
+/// Returns empty string if not set (no default issuer — provider must be configured explicitly).
+pub fn oidc_issuer() -> String {
+    std::env::var("BUCKET_OIDC_ISSUER").unwrap_or_default()
+}
+/// Returns the active OAuth2 issuer — the local-dev issuer when
+/// `BUCKET_LOCAL_AUTH=1` is set, otherwise the configured `BUCKET_OIDC_ISSUER`.
+/// Returns empty string if neither local auth nor OIDC issuer is configured.
+pub fn oauth2_issuer() -> String {
+    if use_local_auth() {
+        BUCKET_OAUTH2_LOCAL_ISSUER.to_owned()
+    } else {
+        oidc_issuer()
+    }
+}
 /// Returns `true` when `BUCKET_LOCAL_AUTH=1` is set,
 /// indicating the local accounts-app should be used as the OAuth2 issuer.
 pub fn use_local_auth() -> bool {
@@ -173,21 +189,14 @@ pub fn use_local_auth() -> bool {
         .map(|v| !v.is_empty() && v != "0")
         .unwrap_or(false)
 }
-/// Returns the active xAI OAuth2 issuer — the local-dev issuer when
-/// `BUCKET_LOCAL_AUTH=1` is set, otherwise the production issuer.
-pub fn xai_oauth2_issuer() -> &'static str {
-    if use_local_auth() {
-        BUCKET_OAUTH2_LOCAL_ISSUER
-    } else {
-        BUCKET_OAUTH2_ISSUER
-    }
-}
-/// Returns `true` if `issuer` is a recognised xAI OAuth2 issuer
-/// (production **or** local-dev). Use this instead of comparing against
-/// [`BUCKET_OAUTH2_ISSUER`] directly so that local-dev sessions are still
-/// treated as first-party xAI auth.
+/// Returns `true` if `issuer` matches a recognised xAI OAuth2 issuer
+/// (production or local-dev). When `BUCKET_OIDC_ISSUER` is configured,
+/// that issuer is also recognised as first-party.
 pub fn is_xai_oauth2_issuer(issuer: &str) -> bool {
-    issuer == BUCKET_OAUTH2_ISSUER || issuer == BUCKET_OAUTH2_LOCAL_ISSUER
+    let configured = oidc_issuer();
+    issuer == BUCKET_OAUTH2_ISSUER
+        || issuer == BUCKET_OAUTH2_LOCAL_ISSUER
+        || (!configured.is_empty() && issuer == configured)
 }
 /// auth.json scope key used by the pre-OIDC `bucket login --legacy` flow.
 /// Matches the key format produced by the original `accounts.x.ai` relay auth.
@@ -229,10 +238,19 @@ impl OAuth2ProviderConfig {
         self.principal_type.as_deref() == Some(TEAM_PRINCIPAL_TYPE)
     }
     pub fn from_env() -> Option<Self> {
-        let issuer = std::env::var("BUCKET_OAUTH2_ISSUER").ok()?;
-        let client_id = std::env::var("BUCKET_OAUTH2_CLIENT_ID").ok()?;
-        let principal_type = std::env::var("BUCKET_OAUTH2_PRINCIPAL_TYPE").ok();
-        let principal_id = std::env::var("BUCKET_OAUTH2_PRINCIPAL_ID").ok();
+        // Prefer new unified env var, fall back to old for compat.
+        let issuer = std::env::var("BUCKET_OIDC_ISSUER")
+            .ok()
+            .or_else(|| std::env::var("BUCKET_OAUTH2_ISSUER").ok())?;
+        let client_id = std::env::var("BUCKET_OIDC_CLIENT_ID")
+            .ok()
+            .or_else(|| std::env::var("BUCKET_OAUTH2_CLIENT_ID").ok())?;
+        let principal_type = std::env::var("BUCKET_OIDC_PRINCIPAL_TYPE")
+            .ok()
+            .or_else(|| std::env::var("BUCKET_OAUTH2_PRINCIPAL_TYPE").ok());
+        let principal_id = std::env::var("BUCKET_OIDC_PRINCIPAL_ID")
+            .ok()
+            .or_else(|| std::env::var("BUCKET_OAUTH2_PRINCIPAL_ID").ok());
         let default_scopes = match principal_type.as_deref() {
             Some(TEAM_PRINCIPAL_TYPE) => default_team_oauth2_scopes(),
             _ => default_oauth2_scopes(),
@@ -240,14 +258,18 @@ impl OAuth2ProviderConfig {
         Some(Self {
             issuer,
             client_id,
-            scopes: std::env::var("BUCKET_OAUTH2_SCOPES")
+            scopes: std::env::var("BUCKET_OIDC_SCOPES")
+                .ok()
+                .or_else(|| std::env::var("BUCKET_OAUTH2_SCOPES").ok())
                 .map(|s| s.split(',').map(|s| s.trim().to_owned()).collect())
                 .unwrap_or(default_scopes),
             principal_type,
             principal_id,
             referrer: Some(
-                std::env::var("BUCKET_OAUTH2_REFERRER")
-                    .unwrap_or_else(|_| DEFAULT_OAUTH2_REFERRER.to_owned()),
+                std::env::var("BUCKET_OIDC_REFERRER")
+                    .ok()
+                    .or_else(|| std::env::var("BUCKET_OAUTH2_REFERRER").ok())
+                    .unwrap_or_else(|| DEFAULT_OAUTH2_REFERRER.to_owned()),
             ),
         })
     }
@@ -275,7 +297,7 @@ impl Default for BucketComConfig {
         } else {
             Some(
                 OAuth2ProviderConfig::from_env().unwrap_or_else(|| OAuth2ProviderConfig {
-                    issuer: xai_oauth2_issuer().to_owned(),
+                    issuer: BUCKET_OAUTH2_ISSUER.to_owned(),
                     client_id: obfstr::obfstr!("b1a00492-073a-47ea-816f-4c329264a828").to_owned(),
                     scopes: default_oauth2_scopes(),
                     principal_type: None,

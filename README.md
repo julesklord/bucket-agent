@@ -156,5 +156,8 @@ Third-party and vendored code remains under its original licenses. See:
 - [`third_party/NOTICE`](third_party/NOTICE) — vendored Mermaid-stack index
 
 ---
+<div align="center">
 
 <img src="assets/logo_bucky.png" alt="Bucky Logo" width="100" height="100" />
+
+</div>

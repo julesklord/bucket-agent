@@ -50,3 +50,7 @@ Automate, script, and integrate Bucket Agent with other systems.
 | 20 | [Background Tasks and Monitoring](20-background-tasks.md) | `background: true`, `/loop`, `monitor`, and `Ctrl+G` to demote |
 | 21 | [Terminal Support and Troubleshooting](21-terminal-support.md) | tmux, SSH, truecolor, clipboard, and OSC 52 |
 | 22 | [Permissions and Safety Controls](22-permissions-and-safety.md) | `dontAsk` mode, auto-approved tools, the safe-bash list, and restrictive PreToolUse hooks |
+| 23 | [Agent Dashboard](23-dashboard.md) | A centralized, agent-native overview of every top-level session in flight |
+| 24 | [Monitoring Usage](24-monitoring-usage.md) | Export usage metrics and events to your own OpenTelemetry collector |
+| 25 | [Decoupling & Licensing](25-decoupling-and-licensing.md) | Decoupling plan from upstream infrastructure, licenses, and intellectual property |
+

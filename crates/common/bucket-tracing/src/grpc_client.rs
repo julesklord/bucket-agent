@@ -12,6 +12,18 @@ use tower_http::trace::{MakeSpan, Trace, TraceLayer};
 use tracing::{Span, warn};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
+// Tonic channel
+#[allow(dead_code)]
+pub type FastraceChannel = fastrace_tonic::FastraceClientService<tonic::transport::Channel>;
+
+pub fn fastrace_channel(
+    channel: tonic::transport::Channel,
+) -> fastrace_tonic::FastraceClientService<tonic::transport::Channel> {
+    tower::ServiceBuilder::new()
+        .layer(fastrace_tonic::FastraceClientLayer)
+        .service(channel)
+}
+
 pub type TracedChannel = Trace<
     InjectTraceContextService<Channel>,
     SharedClassifier<GrpcErrorsAsFailures>,

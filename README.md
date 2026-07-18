@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="assets/logo.png" alt="Bucket Agent Logo" width="200" height="200" />
+
+> What if you get a nice bucket, but it's full of junk? Toss the junk and keep that nice **bucket**.
+
 # Bucket Agent (`bucket`)
 
 **Bucket Agent** is an open, multiprovider terminal AI coding agent. It runs as a full-screen TUI that understands your codebase, edits files, executes shell commands, searches the web, and manages long-running tasks — interactively, headlessly for scripting/CI, or embedded in editors via the Agent Client Protocol (ACP).

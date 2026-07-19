@@ -2,6 +2,15 @@
 
 <img src="assets/logo.svg" alt="Bucket Agent Logo" width="300" height="300" />
 
+<p>
+  <a href="https://github.com/julesklord/bucket-agent/actions/workflows/ci.yml"><img src="https://github.com/julesklord/bucket-agent/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <a href="https://github.com/julesklord/bucket-agent/actions/workflows/rust.yml"><img src="https://github.com/julesklord/bucket-agent/actions/workflows/rust.yml/badge.svg" alt="Rust Build" /></a>
+  <a href="https://github.com/julesklord/bucket-agent/releases"><img src="https://img.shields.io/github/v/release/julesklord/bucket-agent?style=flat-square&color=blue" alt="Latest Release" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/rust-2024-orange?style=flat-square&logo=rust" alt="Rust Edition 2024" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square" alt="License Apache 2.0" /></a>
+  <a href="#quickstart-with-ollama"><img src="https://img.shields.io/badge/BYOK-OpenAI%20%7C%20Anthropic%20%7C%20NVIDIA%20NIM%20%7C%20OpenRouter%20%7C%20Groq%20%7C%20Ollama-purple?style=flat-square" alt="BYOK Providers" /></a>
+</p>
+
 ---
 
 <img src="assets/screen.png" alt="Bucket Agent Screenshot"/>

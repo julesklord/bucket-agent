@@ -2,6 +2,12 @@
 
 <img src="assets/logo.svg" alt="Bucket Agent Logo" width="300" height="300" />
 
+---
+
+<img src="assets/screen.png" alt="Bucket Agent Screenshot"/>
+
+
+
 > What if you get a nice bucket, but it's full of junk? Toss the junk and keep that nice **bucket**.
 
 # Bucket Agent (`bucket`)

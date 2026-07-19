@@ -36,12 +36,12 @@ check_release_readiness() {
     
     # Check we're up to date with remote
     git fetch $REMOTE $MAIN_BRANCH --quiet
-    LOCAL=$(git rev-parse HEAD)
-    REMOTE=$(git rev-parse $REMOTE/$MAIN_BRANCH)
-    if [ "$LOCAL" != "$REMOTE" ]; then
+    LOCAL_SHA=$(git rev-parse HEAD)
+    REMOTE_SHA=$(git rev-parse $REMOTE/$MAIN_BRANCH)
+    if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
         echo -e "${RED}✗ Not up to date with remote $MAIN_BRANCH${NC}"
-        echo "  Local:  $LOCAL"
-        echo "  Remote: $REMOTE"
+        echo "  Local:  $LOCAL_SHA"
+        echo "  Remote: $REMOTE_SHA"
         return 1
     fi
     echo -e "${GREEN}✓ Up to date with remote${NC}"

@@ -42,12 +42,12 @@ pub const DEFAULT_AGENT_TYPE: &str = "bucket-build-plan";
 pub fn default_agent_type() -> String {
     DEFAULT_AGENT_TYPE.to_owned()
 }
-/// Default base URL for the cli chat proxy.
-pub const CLI_CHAT_PROXY_BASE_URL_DEFAULT: &str = "https://cli-chat-proxy.bucket.com/v1";
-/// Default base URL for the public xAI API.
-pub const BUCKET_API_BASE_URL_DEFAULT: &str = "https://api.x.ai/v1";
-/// Default base URL for the asset server (profile images, etc.).
-pub const ASSET_SERVER_URL_DEFAULT: &str = "https://assets.bucket.com";
+/// Default base URL for the cli chat proxy. Empty = unset (user must configure).
+pub const CLI_CHAT_PROXY_BASE_URL_DEFAULT: &str = "";
+/// Default base URL for the public API. Empty = unset (user must configure).
+pub const BUCKET_API_BASE_URL_DEFAULT: &str = "";
+/// Default base URL for the asset server. Empty = unset.
+pub const ASSET_SERVER_URL_DEFAULT: &str = "";
 /// One or more environment variable names that may hold a model API key.
 ///
 /// Serde `untagged`: accepts a string or an array in TOML/JSON.

@@ -1,7 +1,6 @@
-//! bucket.com chat-product model catalog (`POST /rest/modes`) — the models
-//! bucket-web's chat picker shows, distinct from the CLI `/v1/models` build
-//! catalog. Transport only; cache + ACP mapping live in
-//! [`crate::agent::chat_modes`].
+//! Chat-product model catalog — the models the chat picker shows, distinct
+//! from the CLI `/v1/models` build catalog. Transport only; cache + ACP
+//! mapping live in [`crate::agent::chat_modes`].
 
 use std::sync::Arc;
 
@@ -9,7 +8,7 @@ use serde::Deserialize;
 
 use crate::auth::AuthManager;
 
-const BUCKET_WEB_URL: &str = "https://bucket.com";
+const BUCKET_WEB_URL: &str = "";
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -520,8 +520,10 @@ pub struct SessionInfoData {
 }
 
 /// Whether this model slug supports showing checkpoint identity (resolved model ID, fingerprint).
-pub fn is_coding_model_slug(model: &str) -> bool {
-    matches!(model, "bucket-build" | "bucket-4.5")
+/// In the decoupled version, all models support fingerprint display — the catalog flag
+/// is the authoritative gate.
+pub fn is_coding_model_slug(_model: &str) -> bool {
+    true
 }
 
 /// Display gate for the model fingerprint: server/catalog opt-in OR the built-in coding-slug default.

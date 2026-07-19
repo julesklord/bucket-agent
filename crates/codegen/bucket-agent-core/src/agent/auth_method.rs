@@ -33,13 +33,23 @@ pub const LEGACY_BUCKET_API_KEY_ENV_VAR: &str = "BUCKET_CODE_BUCKET_API_KEY";
 ///
 /// Checks `BUCKET_API_KEY` first, then falls back to the legacy
 /// `BUCKET_CODE_BUCKET_API_KEY` for backward compatibility.
-pub fn read_xai_api_key_env() -> Result<String, std::env::VarError> {
+pub fn read_api_key_env() -> Result<String, std::env::VarError> {
     std::env::var(BUCKET_API_KEY_ENV_VAR).or_else(|_| std::env::var(LEGACY_BUCKET_API_KEY_ENV_VAR))
 }
 
+/// Deprecated alias for [`read_api_key_env`].
+pub fn read_xai_api_key_env() -> Result<String, std::env::VarError> {
+    read_api_key_env()
+}
+
 /// Returns `true` if either `BUCKET_API_KEY` or `BUCKET_CODE_BUCKET_API_KEY` is set.
+pub fn has_api_key_env() -> bool {
+    read_api_key_env().is_ok()
+}
+
+/// Deprecated alias for [`has_api_key_env`].
 pub fn has_xai_api_key_env() -> bool {
-    read_xai_api_key_env().is_ok()
+    has_api_key_env()
 }
 
 /// Whether `xai.api_key` should be advertised (and pushed FIRST) when building
@@ -298,7 +308,7 @@ fn push_interactive_login(
 /// ACP session auth method. Use `is_session_based_method` for classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthMethodKind {
-    XaiApiKey,
+    ApiKey,
     CachedToken,
     BucketCom,
     Oidc,
@@ -309,7 +319,7 @@ pub enum AuthMethodKind {
 impl AuthMethodKind {
     pub fn from_id(id: &acp::AuthMethodId) -> Self {
         match id.0.as_ref() {
-            BUCKET_API_KEY_METHOD_ID => Self::XaiApiKey,
+            BUCKET_API_KEY_METHOD_ID => Self::ApiKey,
             CACHED_TOKEN_AUTH_METHOD_ID => Self::CachedToken,
             BUCKET_COM_METHOD_ID => Self::BucketCom,
             OIDC_METHOD_ID => Self::Oidc,
@@ -320,7 +330,7 @@ impl AuthMethodKind {
 
     /// API key auth: no auth.json, no refresh, no user interaction.
     pub fn is_api_key(self) -> bool {
-        matches!(self, Self::XaiApiKey)
+        matches!(self, Self::ApiKey)
     }
 
     /// `true` for session-based methods (cached_token, bucket.com, oidc).
@@ -446,17 +456,22 @@ pub fn local_auth_method() -> acp::AuthMethod {
     )
 }
 
-pub const BUCKET_API_KEY_METHOD_ID: &str = "xai.api_key";
-pub fn xai_api_key_auth_method() -> acp::AuthMethod {
+pub const BUCKET_API_KEY_METHOD_ID: &str = "api_key";
+pub fn api_key_auth_method() -> acp::AuthMethod {
     acp::AuthMethod::Agent(
         acp::AuthMethodAgent::new(
             acp::AuthMethodId::new(BUCKET_API_KEY_METHOD_ID),
-            "xai.api_key".to_string(),
+            "api_key".to_string(),
         )
         .description(Some(format!(
             "{BUCKET_API_KEY_ENV_VAR} or api_key/env_key in config.toml"
         ))),
     )
+}
+
+/// Deprecated alias for [`api_key_auth_method`].
+pub fn xai_api_key_auth_method() -> acp::AuthMethod {
+    api_key_auth_method()
 }
 
 pub const CACHED_TOKEN_AUTH_METHOD_ID: &str = "cached_token";
@@ -626,7 +641,7 @@ mod tests {
 
         assert_eq!(
             first_kind(&built.methods),
-            Some(AuthMethodKind::XaiApiKey),
+            Some(AuthMethodKind::ApiKey),
             "BYOK enterprise-style: auth_methods.first() MUST be xai.api_key \
              (deferred-to-last ordering sends users to the login screen)",
         );
@@ -660,7 +675,7 @@ mod tests {
 
         assert_eq!(
             first_kind(&built.methods),
-            Some(AuthMethodKind::XaiApiKey),
+            Some(AuthMethodKind::ApiKey),
             "xai.api_key MUST precede cached_token in advertised order",
         );
         // Sanity: cached_token still appears, just second.
@@ -736,7 +751,7 @@ mod tests {
         };
         let built = build_auth_methods(inputs);
 
-        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::XaiApiKey));
+        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::ApiKey));
         assert!(
             built
                 .methods
@@ -788,9 +803,9 @@ mod tests {
     /// (which causes the pager to skip the login screen).
     ///
     /// This is the test that *would have caught* that regression -- if you mentally
-    /// re-introduce that bug (push xai.api_key LAST when has_external_api_key
+    /// re-introduce that bug (push api_key LAST when has_external_api_key
     /// && !global env var), this test fails because `first_kind` is no longer
-    /// `XaiApiKey`.
+    /// `ApiKey`.
     #[test]
     #[serial]
     fn enterprise_byok_config_does_not_require_login() {
@@ -832,7 +847,7 @@ mod tests {
             });
             assert_ne!(
                 first_kind(&built.methods),
-                Some(AuthMethodKind::XaiApiKey),
+                Some(AuthMethodKind::ApiKey),
                 "without env_key resolved, xai.api_key must NOT be advertised first",
             );
         }
@@ -853,7 +868,7 @@ mod tests {
             });
             assert_eq!(
                 first_kind(&built.methods),
-                Some(AuthMethodKind::XaiApiKey),
+                Some(AuthMethodKind::ApiKey),
                 "BYOK: xai.api_key must be auth_methods.first(); deferred-to-last \
                  ordering sends enterprise users to the login screen",
             );
@@ -882,7 +897,7 @@ mod tests {
             has_external_api_key,
             ..default_inputs()
         });
-        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::XaiApiKey));
+        assert_eq!(first_kind(&built.methods), Some(AuthMethodKind::ApiKey));
     }
 
     /// Admin kill switch (`disable_api_key_auth`): the predicate must return
@@ -910,7 +925,7 @@ mod tests {
             !built
                 .methods
                 .iter()
-                .any(|m| AuthMethodKind::from_id(m.id()) == AuthMethodKind::XaiApiKey),
+                .any(|m| AuthMethodKind::from_id(m.id()) == AuthMethodKind::ApiKey),
             "xai.api_key must not be advertised when disable_api_key_auth is set",
         );
         assert_eq!(

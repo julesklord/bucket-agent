@@ -5,9 +5,9 @@ use indexmap::IndexMap;
 use prod_mc_cli_chat_proxy_types::SubagentBundle;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-const BUCKET_CODE_BACKEND_URL: &str = "https://code.bucket.com";
+const BUCKET_CODE_BACKEND_URL: &str = "";
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
-const BUCKET_CODE_WEB_URL: &str = "https://bucket.com";
+const BUCKET_CODE_WEB_URL: &str = "";
 /// Build a share URL from a permission ID
 pub fn share_url(permission_id: &str) -> String {
     let web_url =

@@ -346,7 +346,7 @@ impl acp::Agent for MvpAgent {
         debug_assert!(
             ! has_external_api_key || matches!(auth_methods.first().map(| m |
             auth_method::AuthMethodKind::from_id(m.id())),
-            Some(auth_method::AuthMethodKind::XaiApiKey)),
+            Some(auth_method::AuthMethodKind::ApiKey)),
             "BYOK invariant violated: xai.api_key MUST be auth_methods.first() \
              when has_external_api_key is true; got {:?}",
             auth_methods.first().map(| m | m.id()),

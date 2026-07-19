@@ -181,7 +181,7 @@ fn apply_terminal_event_overrides(event: &mut rs::ResponseStreamEvent, data: &st
 }
 
 /// Metadata key for cost ticks past typed Response events.
-pub(crate) const COST_USD_TICKS_METADATA_KEY: &str = "xai.cost_usd_ticks";
+pub(crate) const COST_USD_TICKS_METADATA_KEY: &str = "cost_usd_ticks";
 
 /// Read `response.usage.context_details.{input_tokens, output_tokens}`
 /// from the parsed terminal-event JSON and return their sum. Returns `None`

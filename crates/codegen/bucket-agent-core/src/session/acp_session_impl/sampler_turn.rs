@@ -554,7 +554,7 @@ impl SessionActor {
         self.refresh_token_if_expired().await;
         let mut sampler_config = self.reconstruct_full_config().await;
         sampler_config.idle_timeout_secs = Some(self.inference_idle_timeout.as_secs());
-        self.sampler_handle.update_config(sampler_config);
+        self.chat_provider.update_config(sampler_config);
     }
     fn log_terminal_failure(&self, error_type: &str, status_code: Option<u16>, message: &str) {
         let auth = self
@@ -869,11 +869,7 @@ impl SessionActor {
         };
         let request_id = bucket_sampler::RequestId::random();
         let request_id_str = request_id.as_str().to_string();
-        match self
-            .sampler_handle
-            .submit_and_collect(request_id, request)
-            .await
-        {
+        match self.chat_provider.complete(request).await {
             Ok((response, metrics)) => {
                 let span = tracing::Span::current();
                 span.record("request_id", request_id_str.as_str());

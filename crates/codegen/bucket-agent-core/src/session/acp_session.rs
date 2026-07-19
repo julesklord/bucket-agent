@@ -1012,6 +1012,8 @@ pub(crate) struct SessionActor {
     /// tests and other constructor sites use `SamplerHandle::noop()`.
     /// All inference flows through this handle.
     pub(crate) sampler_handle: bucket_sampler::SamplerHandle,
+    /// Provider-agnostic chat inference provider wrapping sampler_handle or custom providers.
+    pub(crate) chat_provider: Arc<dyn crate::provider::ChatProvider>,
     /// Cached recipe for constructing this session's [`bucket_agent::Agent`].
     ///
     /// Populated once at session spawn and then reused by
@@ -1116,6 +1118,10 @@ impl SessionActor {
     /// Build a hook run context for dispatching hook events.
     fn session_id_string(&self) -> String {
         self.session_info.id.0.to_string()
+    }
+    /// Get the provider capabilities for the current session inference backend.
+    pub(crate) fn provider_capabilities(&self) -> crate::provider::ProviderCapabilities {
+        self.chat_provider.capabilities()
     }
     /// Send a before-turn hook via the local workspace channel.
     /// Fire-and-forget — failures are logged but do not interrupt the turn.

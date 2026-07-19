@@ -92,8 +92,8 @@ impl Iterator for UpdatesIterator {
 /// Method name for standard ACP session/update notifications.
 const ACP_SESSION_UPDATE_METHOD: &str = "session/update";
 
-/// Method name for xAI extension session/update notifications.
-pub(crate) const BUCKET_SESSION_UPDATE_METHOD: &str = "_x.ai/session/update";
+/// Method name for extension session/update notifications.
+pub(crate) const BUCKET_SESSION_UPDATE_METHOD: &str = "_bucket/session/update";
 
 /// A unified session update that can be either an ACP notification or an xAI extension notification.
 /// This allows storing all session updates in chronological order.

@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::auth::AuthManager;
 
-const BUCKET_WEB_URL: &str = "https://bucket.com";
+const BUCKET_WEB_URL: &str = "";
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]

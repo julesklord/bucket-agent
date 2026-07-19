@@ -153,80 +153,29 @@ update_check_url = "https://api.github.com/repos/tu-org/bucket-agent/releases/la
 
 ---
 
-## Fase 3 — Desacoplamiento del Runtime del Agente (4-6 semanas)
+## Fase 3 — Desacoplamiento del Runtime del Agente [COMPLETADA - 100%]
 
-**Objetivo:** Que `bucket-agent-core` (ex `bucket-agent-core`) no sepa nada de xAI.
+**Objetivo:** Que `bucket-agent-core` no sepa nada de infraestructura propietaria ni asuma backends específicos.
 
-Esta es la fase más profunda. El runtime actual tiene tres acoplamentos estructurales:
+**Estado:** ✅ **Completada (100%)**
 
-### 3.1 El cliente de chat (inference client)
+### 3.1 El cliente de chat (inference client) — ✅ COMPLETADO
+- **Trait `ChatProvider`**: Implementado en `crates/codegen/bucket-agent-core/src/provider/mod.rs`.
+- **Estructura `ProviderCapabilities`**: Implementada en `crates/codegen/bucket-agent-core/src/provider/capabilities.rs`.
+- **Integración con `AcpSession`**: Integra `chat_provider: Arc<dyn ChatProvider>` en la sesión principal del agente y despacha turnos e inferencia a través de la abstracción `ChatProvider`.
+- **Implementaciones**: `SamplerProvider` (multiprocesamiento con `ApiBackend`: ChatCompletions, Messages, Responses) y `MockProvider` para pruebas.
 
-Hoy el cliente de completions está mezclado con la lógica del agente.
-Necesita extraerse como trait:
+### 3.2 El sistema de modelos — ✅ COMPLETADO
+- Removido catálogo hardcodeado de modelos propietarios.
+- Reemplazado `default_models.json` con configuración neutra basada en `config.toml` y resolución de endpoints en runtime (`/v1/models`).
 
-```rust
-// bucket-agent-core/src/provider/mod.rs
-#[async_trait]
-pub trait ChatProvider: Send + Sync {
-    async fn complete(
-        &self,
-        messages: &[Message],
-        tools:    &[ToolDefinition],
-        params:   &SamplingParams,
-    ) -> Result<ChatStream>;
+### 3.3 System prompts y personalidad del agente — ✅ COMPLETADO
+- Inyección de system prompt configurable (`system_prompt_label`, `system_prompt_override_from_meta`, `SessionCommand::ReplaceSystemPrompt`).
+- Identidad por defecto neutra ("Bucket, an agentic coding assistant").
 
-    fn capabilities(&self) -> ProviderCapabilities;
-    fn model_id(&self)      -> &str;
-}
-```
-
-Implementaciones:
-- `OpenAICompatProvider` — cubre xAI, Ollama, OpenAI, Together, LM Studio
-- `AnthropicProvider` — Messages API
-- `MockProvider` — para tests
-
-El agente solo habla con `dyn ChatProvider`. Nunca sabe si hay Ollama o bucket detrás.
-
-### 3.2 El sistema de modelos
-
-Hoy hay modelos hardcodeados en el código (lista de modelos xAI, bucket-build, etc.).
-
-**Plan:** Eliminar la lista hardcodeada. Solo modelos de:
-1. Configuración del usuario (`config.toml`)
-2. Endpoint `/v1/models` del proveedor configurado
-3. Un set mínimo de aliases convenientes (opcionales)
-
-```toml
-# ~/.bucket/config.toml — el único lugar donde existen modelos
-[models]
-default = "ollama-coder"
-
-[model.ollama-coder]
-model    = "qwen2.5-coder:latest"
-base_url = "http://localhost:11434/v1"
-```
-
-### 3.3 System prompts y personalidad del agente
-
-El system prompt actual menciona xAI, Bucket, etc.
-Necesita ser configurable:
-
-```toml
-# ~/.bucket/config.toml
-[agent]
-system_prompt = """
-You are Bucket, an agentic coding assistant.
-Work autonomously, read files, edit code, run tests.
-"""
-```
-
-Con un default sensato que no mencione ninguna empresa.
-
-### 3.4 Serialización de sesiones
-
-Las sesiones guardadas incluyen metadata con nombres de modelos xAI.
-Necesita ser agnóstica al provider — solo almacena `model_id` y `base_url`,
-no asume nada sobre quién sirve ese modelo.
+### 3.4 Serialización de sesiones — ✅ COMPLETADO
+- Metadatos de sesión agnósticos al proveedor (`model_id` y `base_url`).
+- Formato de conversación v1 (`CHAT_FORMAT_VERSION = 1`) usando `ConversationItem`.
 
 ---
 

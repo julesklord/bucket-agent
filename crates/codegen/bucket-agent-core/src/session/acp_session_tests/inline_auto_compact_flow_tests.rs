@@ -226,6 +226,10 @@ async fn create_test_actor(
         streaming_turn_capture: parking_lot::Mutex::new(StreamingTurnCapture::default()),
         turn_stream_drained: parking_lot::Mutex::new(None),
         sampler_handle: bucket_sampler::SamplerHandle::noop(),
+        chat_provider: Arc::new(crate::provider::SamplerProvider::new(
+            bucket_sampler::SamplerHandle::noop(),
+            bucket_sampler::SamplerConfig::default(),
+        )),
         image_description_model: crate::test_support::TEST_MODEL.to_owned(),
         image_describe_cache: Arc::new(crate::session::image_describe::ImageDescribeCache::new()),
         subagent_spawn_info: parking_lot::Mutex::new(HashMap::new()),
@@ -671,6 +675,10 @@ async fn create_test_actor_with_memory(
         streaming_turn_capture: parking_lot::Mutex::new(StreamingTurnCapture::default()),
         turn_stream_drained: parking_lot::Mutex::new(None),
         sampler_handle: bucket_sampler::SamplerHandle::noop(),
+        chat_provider: Arc::new(crate::provider::SamplerProvider::new(
+            bucket_sampler::SamplerHandle::noop(),
+            bucket_sampler::SamplerConfig::default(),
+        )),
         image_description_model: crate::test_support::TEST_MODEL.to_owned(),
         image_describe_cache: Arc::new(crate::session::image_describe::ImageDescribeCache::new()),
         subagent_spawn_info: parking_lot::Mutex::new(HashMap::new()),
@@ -1432,6 +1440,10 @@ async fn test_e2e_idle_resume_refreshes_model_metadata() {
                 turn_stream_drained: parking_lot::Mutex::new(None),
                 attribution_callback: None,
                 sampler_handle: bucket_sampler::SamplerHandle::noop(),
+                chat_provider: Arc::new(crate::provider::SamplerProvider::new(
+                    bucket_sampler::SamplerHandle::noop(),
+                    bucket_sampler::SamplerConfig::default(),
+                )),
                 image_description_model: crate::test_support::TEST_MODEL.to_owned(),
                 image_describe_cache: Arc::new(
                     crate::session::image_describe::ImageDescribeCache::new(),

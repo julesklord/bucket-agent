@@ -17,14 +17,12 @@ use agent_client_protocol as acp;
 /// see this code and show a user-friendly upgrade message instead.
 pub const RATE_LIMITED_ERROR_CODE: i32 = -32003;
 
-/// OAuth / session rate-limit copy (personal plan upgrade path).
+/// OAuth / session rate-limit copy.
 pub const RATE_LIMITED_USER_MESSAGE_OAUTH: &str =
-    "You\u{2019}ve hit the rate limit for your plan. Upgrade your account or try again later.";
+    "You\u{2019}ve hit the rate limit for your plan. Try again later or configure a different provider.";
 
-/// API key / team rate-limit copy. Personal bucket.com upgrades do not raise API
-/// team limits; admins purchase credits or a higher spend-based tier.
-/// See https://docs.x.ai/developers/rate-limits#rate-limit-tiers
-pub const RATE_LIMITED_USER_MESSAGE_API_KEY: &str = "You\u{2019}ve hit your team\u{2019}s API rate limit. Ask a team admin to purchase more credits for higher limits, or try again later. See https://docs.x.ai/developers/rate-limits#rate-limit-tiers";
+/// API key rate-limit copy.
+pub const RATE_LIMITED_USER_MESSAGE_API_KEY: &str = "You\u{2019}ve hit the API rate limit. Try again later or configure a different provider in your config.toml.";
 
 /// Pick rate-limit copy from the *active* auth method.
 ///

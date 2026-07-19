@@ -1461,7 +1461,7 @@ impl AgentDefinition {
     pub fn default_bucket_build() -> Self {
         Self::base(
             BuiltinAgentName::BucketBuild,
-            "Bucket Build agent for software engineering tasks.",
+            "Coding agent for software engineering tasks.",
         )
     }
     /// Bucket Build Concise agent definition — concise output format for SFT/RL.
@@ -1471,7 +1471,7 @@ impl AgentDefinition {
             agents_md: false,
             ..Self::base(
                 BuiltinAgentName::BucketBuildConcise,
-                "Bucket Build agent with concise output format.",
+                "Coding agent with concise output format.",
             )
         }
     }
@@ -1481,7 +1481,7 @@ impl AgentDefinition {
             tool_config: bucket_build_plan_toolset(),
             ..Self::base(
                 BuiltinAgentName::BucketBuildPlan,
-                "Bucket Build agent with plan mode support.",
+                "Coding agent with plan mode support.",
             )
         }
     }
@@ -1491,7 +1491,7 @@ impl AgentDefinition {
             tool_config: bucket_build_plan_no_subagents_toolset(),
             ..Self::base(
                 BuiltinAgentName::BucketBuildPlanNoSubagents,
-                "Bucket Build agent with plan mode (no subagents).",
+                "Coding agent with plan mode (no subagents).",
             )
         }
     }
@@ -1501,7 +1501,7 @@ impl AgentDefinition {
             tool_config: bucket_build_ask_user_toolset(),
             ..Self::base(
                 BuiltinAgentName::BucketBuildAskUser,
-                "Bucket Build agent with ask-user-question tool.",
+                "Coding agent with ask-user-question tool.",
             )
         }
     }

@@ -2360,6 +2360,10 @@ mod inline_auto_compact_flow_tests {
             ),
             turn_stream_drained: parking_lot::Mutex::new(None),
             sampler_handle: bucket_sampler::SamplerHandle::noop(),
+            chat_provider: Arc::new(crate::provider::SamplerProvider::new(
+                bucket_sampler::SamplerHandle::noop(),
+                bucket_sampler::SamplerConfig::default(),
+            )),
             rebuild_spec: crate::session::agent_rebuild::test_rebuild_spec_default(),
             image_description_model: crate::test_support::TEST_MODEL.to_owned(),
             image_describe_cache: Arc::new(

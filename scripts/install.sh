@@ -36,7 +36,10 @@ download_release() {
     
     if [ -z "$version" ]; then
         echo "Fetching latest version..."
-        version=$(gh release list --repo "$REPO" --limit 1 --exclude-drafts --json tagName --jq '.[0].tagName' | sed 's/^v//')
+        version=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"v?([^"]+)".*/\1/' || true)
+        if [ -z "$version" ]; then
+            version=$(gh release list --repo "$REPO" --limit 1 --exclude-drafts --json tagName --jq '.[0].tagName' 2>/dev/null | sed 's/^v//' || true)
+        fi
         if [ -z "$version" ]; then
             echo "Error: could not determine latest version" >&2
             exit 1

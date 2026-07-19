@@ -454,6 +454,10 @@ async fn fetch_gh_release_does_not_hang_on_quick_responses() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("v0.1.181");
 
-    let res = tokio::time::timeout(Duration::from_secs(5), fetch_gh_release_version("stable", &make_config())).await;
+    let res = tokio::time::timeout(
+        Duration::from_secs(5),
+        fetch_gh_release_version("stable", &make_config()),
+    )
+    .await;
     assert!(res.is_ok(), "should not hang");
 }

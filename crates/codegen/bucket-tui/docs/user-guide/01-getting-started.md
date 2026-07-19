@@ -33,11 +33,11 @@ cargo build -p bucket-bin --release
 bucket
 ```
 
-Bucket drops straight to the welcome screen. No browser. No account. To make it useful, configure a model (see below).
+Bucket drops straight to the welcome screen. No browser. No account. No config file required.
 
 ---
 
-## Quickstart with Ollama
+## Quickstart with Ollama (Zero Config)
 
 The fastest path to a working local agent:
 
@@ -46,23 +46,11 @@ The fastest path to a working local agent:
 ollama serve
 ollama pull qwen2.5-coder:latest
 
-# 2. Configure Bucket
-mkdir -p ~/.bucket
-cat > ~/.bucket/config.toml <<'EOF'
-[models]
-default = "ollama-coder"
-
-[model.ollama-coder]
-model    = "qwen2.5-coder:latest"
-base_url = "http://localhost:11434/v1"
-name     = "Qwen 2.5 Coder (Ollama)"
-EOF
-
-# 3. Launch
-bucket
+# 2. Launch Bucket
+bucket --model qwen2.5-coder:latest
 ```
 
-Press `Enter` and start coding. No API keys. No account.
+Press `Enter` and start coding. No API keys. No config files. No account.
 
 ---
 

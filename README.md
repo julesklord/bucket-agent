@@ -56,15 +56,15 @@ cargo check -p bucket-bin            # fast validation
 ```
 
 The binary artifact is named `bucket`. On first launch it drops straight into
-the welcome screen — no browser login required. Configure a model backend in
-`~/.bucket/config.toml` to get started (see
-[Custom Models](crates/codegen/bucket-tui/docs/user-guide/11-custom-models.md)).
+the welcome screen — no browser login required. Simply set an API key environment variable
+or launch Ollama to get started immediately without editing any config files (see
+[Quickstart](#quickstart)).
 
 ---
 
-## Quickstart & Model Configuration
+## Quickstart
 
-Since version `0.1.0` operates without proprietary login servers, model backends are configured directly in `~/.bucket/config.toml`. `bucket` connects natively to **any OpenAI-compatible API** (`/v1/chat/completions`) or local model server.
+`bucket` works out of the box without requiring a configuration file. It connects natively to **any OpenAI-compatible API** (`/v1/chat/completions`), Anthropic, or local model server (Ollama).
 
 ### 1. Install `bucket`
 
@@ -81,22 +81,39 @@ cargo build -p bucket-bin --release
 
 ---
 
-### 2. Configure Your Model (`~/.bucket/config.toml`)
+### 2. Set Your Provider / Model (Zero Config Required)
 
-Create or edit `~/.bucket/config.toml` to specify your models and pick a `default`:
+Choose one of the simple setup methods below — **no config file required**:
 
-#### Option A: Ollama (100% Offline / Local)
-```toml
-[models]
-default = "qwen-local"
+#### Option A: API Key via Environment Variable (Fastest)
+Simply export your API key in your shell:
 
-[model.qwen-local]
-model      = "qwen2.5-coder:latest"
-base_url   = "http://localhost:11434/v1"
-name       = "Qwen 2.5 Coder (Ollama)"
+```sh
+# OpenAI / DeepSeek / Any OpenAI-compatible provider
+export BUCKET_API_KEY="sk-..."
+# or standard provider env vars:
+# export OPENAI_API_KEY="sk-..."
+# export ANTHROPIC_API_KEY="sk-ant-..."
+
+bucket
 ```
 
-#### Option B: DeepSeek API (Ultra-low Cost & High Quality)
+#### Option B: Ollama (100% Local / Offline)
+Start Ollama with your favorite model (e.g. `qwen2.5-coder`):
+
+```sh
+ollama serve
+ollama pull qwen2.5-coder:latest
+
+bucket --model qwen2.5-coder:latest
+```
+
+---
+
+### 3. Optional: Advanced Model Configuration (`~/.bucket/config.toml`)
+
+If you want to save persistent custom endpoints, model aliases, or context windows, you can optionally create `~/.bucket/config.toml`:
+
 ```toml
 [models]
 default = "deepseek"
@@ -104,35 +121,19 @@ default = "deepseek"
 [model.deepseek]
 model        = "deepseek-chat"
 base_url     = "https://api.deepseek.com/v1"
-api_key      = "sk-..." # Or set environment variable BUCKET_API_KEY
+api_key      = "sk-..." # Or use environment variable BUCKET_API_KEY
 api_backend  = "chat_completions"
 name         = "DeepSeek V3"
 context_window = 64000
+
+[model.qwen-local]
+model      = "qwen2.5-coder:latest"
+base_url   = "http://localhost:11434/v1"
+name       = "Qwen 2.5 Coder (Ollama)"
 ```
 
-#### Option C: Official OpenAI (GPT-4o / o3-mini)
+#### Other Popular Providers (OpenRouter, Groq, NVIDIA NIM)
 ```toml
-[models]
-default = "openai-gpt4o"
-
-[model.openai-gpt4o]
-model        = "gpt-4o"
-base_url     = "https://api.openai.com/v1"
-api_key      = "sk-proj-..."
-api_backend  = "chat_completions"
-name         = "GPT-4o"
-```
-
-#### Option D: Groq / OpenRouter / NVIDIA NIM / Custom Endpoints
-```toml
-# Groq (Ultra-fast Llama 3.3)
-[model.groq]
-model        = "llama-3.3-70b-versatile"
-base_url     = "https://api.groq.com/openai/v1"
-api_key      = "gsk_..."
-api_backend  = "chat_completions"
-name         = "Llama 3.3 70B (Groq)"
-
 # OpenRouter (Unified API for Anthropic/Claude, DeepSeek, etc.)
 [model.openrouter]
 model        = "anthropic/claude-3.5-sonnet"
@@ -140,18 +141,26 @@ base_url     = "https://openrouter.ai/api/v1"
 api_key      = "sk-or-v1-..."
 api_backend  = "chat_completions"
 name         = "Claude 3.5 Sonnet (OpenRouter)"
+
+# Groq (Ultra-fast Llama 3.3)
+[model.groq]
+model        = "llama-3.3-70b-versatile"
+base_url     = "https://api.groq.com/openai/v1"
+api_key      = "gsk_..."
+api_backend  = "chat_completions"
+name         = "Llama 3.3 70B (Groq)"
 ```
 
 ---
 
-### 3. Launch `bucket`
+### 4. Launch `bucket`
 
 Run `bucket` in your terminal:
 ```sh
 bucket
 ```
 
-No login screens. No billing checks. Instant terminal AI agent active in your repository.
+No mandatory configuration files. No login screens. Instant terminal AI agent active in your repository.
 
 ---
 

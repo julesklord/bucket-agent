@@ -526,6 +526,8 @@ impl acp::Agent for MvpAgent {
                     auth_method: "api_key".to_string(),
                     user_id: None,
                 });
+                Ok(Default::default())
+            }
             auth_method::LOCAL_METHOD_ID => {
                 self.set_auth_method(arguments.method_id.clone());
                 self.ensure_telemetry_client();

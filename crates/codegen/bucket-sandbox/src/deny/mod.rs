@@ -42,8 +42,9 @@ fn macos_deny_aliases(path: &Path, canonical: &Path) -> Vec<PathBuf> {
     if canonical != path {
         forms.push(canonical.to_path_buf());
     }
-    for form in forms.clone() {
-        if let Some(alias) = toggle_private_prefix(&form)
+    let initial_len = forms.len();
+    for i in 0..initial_len {
+        if let Some(alias) = toggle_private_prefix(&forms[i])
             && !forms.contains(&alias)
         {
             forms.push(alias);

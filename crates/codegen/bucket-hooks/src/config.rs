@@ -113,7 +113,7 @@ where
 }
 
 /// Default timeout in seconds when not specified.
-pub const DEFAULT_TIMEOUT_SECS: u64 = 5;
+pub const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
 /// Default timeout in milliseconds (derived from DEFAULT_TIMEOUT_SECS).
 pub const DEFAULT_TIMEOUT_MS: u64 = DEFAULT_TIMEOUT_SECS * 1000;

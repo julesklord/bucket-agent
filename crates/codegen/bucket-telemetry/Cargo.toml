@@ -33,7 +33,6 @@ reqwest = { workspace = true }
 url = { workspace = true }
 bucket-env = { workspace = true }
 bucket-secrets = { workspace = true }
-bucket-mixpanel = { workspace = true }
 bucket-config = { workspace = true }
 bucket-sampler = { workspace = true }
 bucket-token-estimation = { workspace = true }

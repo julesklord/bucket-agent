@@ -2238,17 +2238,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bucket-mixpanel"
-version = "0.1.0"
-dependencies = [
- "base64",
- "bucket-secrets",
- "reqwest 0.12.24",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "bucket-models"
 version = "0.1.0"
 dependencies = [
@@ -2509,7 +2498,6 @@ dependencies = [
  "bucket-config",
  "bucket-env",
  "bucket-file-utils",
- "bucket-mixpanel",
  "bucket-sampler",
  "bucket-secrets",
  "bucket-token-estimation",

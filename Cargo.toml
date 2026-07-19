@@ -31,7 +31,6 @@ members = [
     "crates/codegen/bucket-mcp",
     "crates/codegen/bucket-memory",
     "crates/codegen/bucket-mermaid",
-    "crates/codegen/bucket-mixpanel",
     "crates/codegen/bucket-models",
     "crates/codegen/bucket-paths",
     "crates/codegen/bucket-plugin-marketplace",
@@ -305,7 +304,6 @@ bucket-workspace = { path = "crates/codegen/bucket-workspace" }
 bucket-workspace-types = { path = "crates/codegen/bucket-workspace-types" }
 bucket-hooks-plugins-types = { path = "crates/codegen/bucket-hooks-plugins-types" }
 bucket-interjection-core = { path = "crates/common/bucket-interjection-core" }
-bucket-mixpanel = { path = "crates/codegen/bucket-mixpanel" }
 bucket-prompt-queue = { path = "crates/codegen/bucket-prompt-queue" }
 bucket-proto-build = { path = "crates/build/bucket-proto-build" }
 bucket-ratatui-inline = { path = "crates/codegen/bucket-ratatui-inline" }

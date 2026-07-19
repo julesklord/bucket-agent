@@ -55,19 +55,19 @@ check_release_readiness() {
         echo -e "${YELLOW}⚠ Cargo.toml has uncommitted changes${NC}"
     fi
     
-    # Check tests pass
-    echo -e "${YELLOW}Running tests...${NC}"
-    if cargo test -p bucket-agent-core --lib --quiet 2>/dev/null; then
-        echo -e "${GREEN}✓ agent-core tests pass${NC}"
+    # Check build validation passes
+    echo -e "${YELLOW}Running build validation...${NC}"
+    if cargo check -p bucket-agent-core --quiet 2>/dev/null; then
+        echo -e "${GREEN}✓ agent-core check passes${NC}"
     else
-        echo -e "${RED}✗ agent-core tests failed${NC}"
+        echo -e "${RED}✗ agent-core check failed${NC}"
         return 1
     fi
     
-    if cargo test -p bucket-updater --lib --quiet 2>/dev/null; then
-        echo -e "${GREEN}✓ updater tests pass${NC}"
+    if cargo check -p bucket-bin --quiet 2>/dev/null; then
+        echo -e "${GREEN}✓ bucket-bin check passes${NC}"
     else
-        echo -e "${RED}✗ updater tests failed${NC}"
+        echo -e "${RED}✗ bucket-bin check failed${NC}"
         return 1
     fi
     

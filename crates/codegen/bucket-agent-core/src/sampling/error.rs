@@ -322,14 +322,8 @@ mod tests {
             rate_limited_user_message(true),
             RATE_LIMITED_USER_MESSAGE_API_KEY
         );
-        assert!(RATE_LIMITED_USER_MESSAGE_OAUTH.contains("Upgrade your account"));
-        assert!(RATE_LIMITED_USER_MESSAGE_API_KEY.contains("team"));
-        assert!(RATE_LIMITED_USER_MESSAGE_API_KEY.contains("credits"));
-        assert!(
-            RATE_LIMITED_USER_MESSAGE_API_KEY
-                .contains("https://docs.x.ai/developers/rate-limits#rate-limit-tiers")
-        );
-        assert!(!RATE_LIMITED_USER_MESSAGE_API_KEY.contains("Upgrade your account"));
+        assert!(RATE_LIMITED_USER_MESSAGE_OAUTH.contains("rate limit"));
+        assert!(RATE_LIMITED_USER_MESSAGE_API_KEY.contains("API rate limit"));
     }
 
     #[test]

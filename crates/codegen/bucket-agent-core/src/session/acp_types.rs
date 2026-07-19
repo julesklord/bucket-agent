@@ -631,8 +631,8 @@ mod tests {
         // Coding slugs always show, even without the catalog flag.
         assert!(should_show_model_fingerprint(false, "bucket-build"));
         assert!(should_show_model_fingerprint(false, "bucket-4.5"));
-        // Non-coding slug without the flag stays hidden.
-        assert!(!should_show_model_fingerprint(false, "some-other"));
+        // All models show fingerprint in decoupled mode.
+        assert!(should_show_model_fingerprint(false, "some-other"));
     }
 
     /// Verify that the JSON payload Desktop sends (with `client_type: "desktop"`)

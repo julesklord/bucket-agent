@@ -119,6 +119,8 @@ fn test_app() -> AppView {
         chat_mode: false,
         subagents: false,
         ask_user: false,
+        provider_capabilities: Default::default(),
+        provider_config_modal: None,
         mouse_captured: true,
         new_worktree_dialog: None,
         contextual_hints: Default::default(),

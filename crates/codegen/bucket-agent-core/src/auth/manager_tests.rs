@@ -86,16 +86,22 @@ fn has_usable_token_covers_memory_and_disk() {
 
 #[test]
 fn auth_scope_uses_oauth2_when_present() {
+    let mut cfg = BucketComConfig::default();
+    cfg.oauth2 = Some(OAuth2ProviderConfig {
+        issuer: "https://auth.example.com".into(),
+        client_id: "client-123".into(),
+        scopes: vec![],
+        principal_type: None,
+        principal_id: None,
+        referrer: None,
+    });
+    assert_eq!(cfg.auth_scope(), "https://auth.example.com::client-123");
+}
+
+#[test]
+fn auth_scope_defaults_to_legacy_when_no_oauth_or_oidc() {
     let cfg = BucketComConfig::default();
-    // Default config always has oauth2 set to the xAI defaults.
-    assert_eq!(
-        cfg.auth_scope(),
-        format!(
-            "{}::{}",
-            crate::auth::config::BUCKET_OAUTH2_ISSUER,
-            obfstr::obfstr!("b1a00492-073a-47ea-816f-4c329264a828"),
-        )
-    );
+    assert_eq!(cfg.auth_scope(), crate::auth::config::LEGACY_AUTH_SCOPE);
 }
 
 #[test]

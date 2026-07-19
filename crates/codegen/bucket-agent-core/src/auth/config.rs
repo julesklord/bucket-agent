@@ -129,13 +129,11 @@ pub struct OAuth2ProviderConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub referrer: Option<String>,
 }
-/// Default OAuth2 issuer for production — overridden by `BUCKET_OIDC_ISSUER` env var.
-pub const BUCKET_OAUTH2_ISSUER: &str = "https://auth.x.ai";
-/// Production accounts-app origin allowlist — the only origins builds without
-/// non-production builds accept. Lives in its own const, referenced by both
-/// profiles below, so the frozen-contract test (monorepo CI compiles with
-/// that feature enabled) still pins this production-origin const.
-const PROD_ACCOUNTS_APP_ORIGINS: &[&str] = &["https://accounts.x.ai"];
+/// Default OAuth2 issuer — empty (no outbound by default).
+/// Configure via `BUCKET_OIDC_ISSUER` env var when needed.
+pub const BUCKET_OAUTH2_ISSUER: &str = "";
+/// Production accounts-app origin allowlist — empty in fork (no outbound).
+const PROD_ACCOUNTS_APP_ORIGINS: &[&str] = &[];
 /// See the opt-in non-production feature variant above — builds without
 /// the feature accept only the production accounts app.
 pub fn allowed_accounts_app_origins() -> Vec<String> {
@@ -189,18 +187,18 @@ pub fn use_local_auth() -> bool {
         .map(|v| !v.is_empty() && v != "0")
         .unwrap_or(false)
 }
-/// Returns `true` if `issuer` matches a recognised xAI OAuth2 issuer
+/// Returns `true` if `issuer` matches a recognised first-party OAuth2 issuer
 /// (production or local-dev). When `BUCKET_OIDC_ISSUER` is configured,
 /// that issuer is also recognised as first-party.
 pub fn is_xai_oauth2_issuer(issuer: &str) -> bool {
     let configured = oidc_issuer();
-    issuer == BUCKET_OAUTH2_ISSUER
+    (!BUCKET_OAUTH2_ISSUER.is_empty() && issuer == BUCKET_OAUTH2_ISSUER)
         || issuer == BUCKET_OAUTH2_LOCAL_ISSUER
         || (!configured.is_empty() && issuer == configured)
 }
 /// auth.json scope key used by the pre-OIDC `bucket login --legacy` flow.
-/// Matches the key format produced by the original `accounts.x.ai` relay auth.
-pub const LEGACY_AUTH_SCOPE: &str = "https://accounts.x.ai/sign-in";
+/// Empty in fork (no outbound to xAI accounts).
+pub const LEGACY_AUTH_SCOPE: &str = "";
 impl BucketComConfig {
     /// Whether `xai.api_key` auth is disabled. Pinning a team
     /// (`force_login_team_uuid`) implies this — team membership can't be verified
@@ -229,7 +227,7 @@ impl BucketComConfig {
         } else if let Some(ref oauth2) = self.oauth2 {
             oauth2.auth_scope()
         } else {
-            unreachable!("oauth2 config is always present (xAI default or env override)")
+            LEGACY_AUTH_SCOPE.to_string()
         }
     }
 }
@@ -295,16 +293,23 @@ impl Default for BucketComConfig {
         let oauth2 = if oidc.is_some() {
             None
         } else {
-            Some(
-                OAuth2ProviderConfig::from_env().unwrap_or_else(|| OAuth2ProviderConfig {
-                    issuer: BUCKET_OAUTH2_ISSUER.to_owned(),
-                    client_id: obfstr::obfstr!("b1a00492-073a-47ea-816f-4c329264a828").to_owned(),
-                    scopes: default_oauth2_scopes(),
-                    principal_type: None,
-                    principal_id: None,
-                    referrer: Some(DEFAULT_OAUTH2_REFERRER.to_owned()),
-                }),
-            )
+            // Only create OAuth2 config when an issuer is available (env var or
+            // non-empty default). Empty issuer means no outbound auth.
+            OAuth2ProviderConfig::from_env().or_else(|| {
+                if BUCKET_OAUTH2_ISSUER.is_empty() {
+                    None
+                } else {
+                    Some(OAuth2ProviderConfig {
+                        issuer: BUCKET_OAUTH2_ISSUER.to_owned(),
+                        client_id: obfstr::obfstr!("b1a00492-073a-47ea-816f-4c329264a828")
+                            .to_owned(),
+                        scopes: default_oauth2_scopes(),
+                        principal_type: None,
+                        principal_id: None,
+                        referrer: Some(DEFAULT_OAUTH2_REFERRER.to_owned()),
+                    })
+                }
+            })
         };
         Self {
             bucket_ws_origin: std::env::var("BUCKET_WS_ORIGIN")
@@ -396,15 +401,10 @@ mod tests {
         };
         assert_eq!(cfg.auth_scope(), "https://auth.x.ai::client-123");
     }
-    /// FROZEN loopback contract: the accounts-app origins the CLI's loopback
-    /// callback server accepts cross-origin requests from. The consent page
-    /// (served from accounts.x.ai) delivers the code via `fetch(..., cors)`, so
-    /// removing an origin breaks loopback delivery for already-installed CLIs.
-    /// Keep in sync with the oauth2-provider / accounts-app deployments.
-    /// Non-production / local-dev origins are opt-in only.
+    /// Fork: accounts-app origins are intentionally empty (no outbound).
     #[test]
-    fn allowed_accounts_app_origins_are_frozen() {
-        assert_eq!(PROD_ACCOUNTS_APP_ORIGINS, &["https://accounts.x.ai"]);
+    fn allowed_accounts_app_origins_are_empty_in_fork() {
+        assert_eq!(PROD_ACCOUNTS_APP_ORIGINS, &[] as &[&str]);
         assert_eq!(allowed_accounts_app_origins(), PROD_ACCOUNTS_APP_ORIGINS);
     }
     /// FROZEN client contract: the 10 scopes the xAI OAuth2 client requests.

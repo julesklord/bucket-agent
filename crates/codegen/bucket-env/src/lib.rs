@@ -20,11 +20,11 @@ pub struct BucketBuildEndpoints {
     pub ws_origin: &'static str,
 }
 const PRODUCTION_ENDPOINTS: BucketBuildEndpoints = BucketBuildEndpoints {
-    cli_chat_proxy_base_url: "https://cli-chat-proxy.bucket.com/v1",
-    asset_server_url: "https://assets.bucket.com",
-    relay_ws_url: "wss://code.bucket.com/ws/code-agent",
-    gateway_ws_url: "wss://bucket.com/ws/gw/",
-    ws_origin: "https://bucket.com",
+    cli_chat_proxy_base_url: "",
+    asset_server_url: "",
+    relay_ws_url: "",
+    gateway_ws_url: "",
+    ws_origin: "",
 };
 pub const PROD_CLI_CHAT_PROXY_BASE_URL: &str = PRODUCTION_ENDPOINTS.cli_chat_proxy_base_url;
 pub const PROD_ASSET_SERVER_URL: &str = PRODUCTION_ENDPOINTS.asset_server_url;
@@ -178,13 +178,17 @@ mod tests {
             "Drop must restore the pre-guard snapshot (was {before:?})"
         );
     }
-    /// Guards against conflating the relay and gateway endpoints (a relay
-    /// loop mistakenly connecting to `wss://bucket.com/ws/gw/`).
+    /// In the fork, production endpoints are intentionally empty (zero
+    /// outbound by default). Verify both resolve to empty strings.
     #[test]
-    fn relay_and_gateway_urls_are_distinct() {
-        assert_ne!(
+    fn relay_and_gateway_urls_are_empty_in_fork() {
+        assert_eq!(
             BucketBuildEnvironment::Production.relay_ws_url(),
+            "",
+        );
+        assert_eq!(
             BucketBuildEnvironment::Production.gateway_ws_url(),
+            "",
         );
     }
     #[test]

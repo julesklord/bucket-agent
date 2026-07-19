@@ -936,7 +936,7 @@ pub struct CompactionConfig {
     pub memory_flush: Option<crate::config::MemoryFlushConfig>,
     pub pruning: Option<crate::config::PruningConfig>,
 }
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CliConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -975,6 +975,26 @@ pub struct CliConfig {
     /// GitHub repo for gh-release installer (owner/repo).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub update_gh_repo: Option<String>,
+}
+impl Default for CliConfig {
+    fn default() -> Self {
+        Self {
+            auto_update: Some(false),
+            dismissed_version: None,
+            installer: None,
+            npm_registry: None,
+            channel: None,
+            use_leader: None,
+            show_tips: None,
+            worktree_type: None,
+            session_registry: None,
+            minimum_version: None,
+            session_picker_grouped: None,
+            update_check_url: None,
+            update_base_urls: None,
+            update_gh_repo: None,
+        }
+    }
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]

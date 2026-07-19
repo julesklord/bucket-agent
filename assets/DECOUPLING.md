@@ -58,14 +58,16 @@ graph TD
 |-------|------|--------|------------|
 | 1 | Naming Cleanup | ✅ DONE | 100% |
 | 2 | Auth & Billing Decoupling | 🟡 PARTIAL | ~90% |
+| 2.5 | Zero Outbound (Default) | ✅ DONE | 100% |
 | 3 | Agent Runtime Decoupling | ✅ DONE | 100% |
 | 4 | Project Infrastructure | 🟡 PARTIAL | ~60% |
 | 5 | Community Extensibility | 🟢 IN PROGRESS | ~40% |
 
-**Key metrics (verified 2026-07-18):**
+**Key metrics (verified 2026-07-19):**
 - Crates in workspace: ~75
 - `.rs` files with `xai`, `x.ai`, `superbucket` references: **0**
 - Phase 3 completion commit: `8c7c1af`
+- **Zero outbound connections by default** (all endpoint URLs empty)
 
 ```mermaid
 pie title Decoupling Progress by Phase
@@ -351,12 +353,78 @@ graph TD
 
 ### Remaining Phase 2 Work
 
-| # | Task | File/Location |
-|---|------|---------------|
-| 1 | Rename `require_xai_auth` → `require_first_party_auth` | Deprecated alias exists, callers still use old name |
-| 2 | Soften `PROD_ACCOUNTS_APP_ORIGINS` hardcoding | Currently fixed to `["https://accounts.x.ai"]` |
-| 3 | Rename `is_xai_oauth2_issuer()` → `is_first_party_issuer()` | Function name still references "xai" |
-| 4 | Make SuperBucket tier strings configurable or remove | Hardcoded tier references |
+| # | Task | File/Location | Status |
+|---|------|---------------|--------|
+| 1 | Rename `require_xai_auth` → `require_first_party_auth` | Deprecated alias exists, callers still use old name | 🟡 |
+| 2 | ~~Soften `PROD_ACCOUNTS_APP_ORIGINS` hardcoding~~ | Now empty `&[]` | ✅ |
+| 3 | Rename `is_xai_oauth2_issuer()` → `is_first_party_issuer()` | Function name still references "xai" | 🟡 |
+| 4 | Make SuperBucket tier strings configurable or remove | Hardcoded tier references | 🟡 |
+
+---
+
+## Phase 2.5 — Zero Outbound by Default ✅ DONE
+
+**Goal:** Running `bucket` with no config file produces zero outbound connections.
+
+### What was done (2026-07-19)
+
+All 5 categories of hardcoded external URLs were neutralized:
+
+| Category | Before | After | File |
+|----------|--------|-------|------|
+| Chat proxy | `https://cli-chat-proxy.bucket.com/v1` | `""` | `bucket-env/src/lib.rs` |
+| Asset server | `https://assets.bucket.com` | `""` | `bucket-env/src/lib.rs` |
+| WebSocket relay | `wss://code.bucket.com/ws/code-agent` | `""` | `bucket-env/src/lib.rs` |
+| Gateway WS | `wss://bucket.com/ws/gw/` | `""` | `bucket-env/src/lib.rs` |
+| WS origin | `https://bucket.com` | `""` | `bucket-env/src/lib.rs` |
+| OAuth2 issuer | `https://auth.x.ai` | `""` | `auth/config.rs` |
+| Accounts app origins | `["https://accounts.x.ai"]` | `[]` | `auth/config.rs` |
+| Legacy auth scope | `https://accounts.x.ai/sign-in` | `""` | `auth/config.rs` |
+| Updater primary URL | `https://x.ai/cli` | `""` | `bucket-updater/version.rs` |
+| Updater GCS fallback | `https://storage.googleapis.com/...` | `""` | `bucket-updater/version.rs` |
+| Auto-update | Enabled by default | Disabled by default | `agent/config.rs` |
+
+### How it works
+
+```mermaid
+graph TD
+    A["bucket starts"] --> B{"Any endpoint URL non-empty?"}
+    B -- "No (default)" --> C["Zero outbound connections"]
+    B -- "Yes (user configured)" --> D["Connects to configured endpoint"]
+    
+    C --> E["Agent works locally with<br/>Ollama / local models"]
+    D --> F["Agent connects to<br/>remote API"]
+    
+    style C fill:#c8e6c9
+    style E fill:#c8e6c9
+```
+
+### Opt-in mechanisms
+
+Users who want remote features can enable them:
+
+```toml
+# ~/.bucket/config.toml
+[cli]
+auto_update = true
+
+[features]
+remote_fetch = true
+
+# Or via env vars:
+# BUCKET_OIDC_ISSUER=https://auth.example.com
+# BUCKET_WS_URL=wss://relay.example.com/ws
+# BUCKET_WS_ORIGIN=https://example.com
+```
+
+### What's already safe (no changes needed)
+
+- **Telemetry**: `TelemetryMode::default() = Disabled` ✅
+- **Mixpanel**: Off by default ✅
+- **Sentry**: Off by default ✅
+- **OTLP**: Off by default ✅
+- **`BUCKET_CODE_BACKEND_URL`**: Already empty ✅
+- **`BUCKET_CODE_WEB_URL`**: Already empty ✅
 
 ---
 
@@ -1030,6 +1098,7 @@ graph TD
 
 | Commit | Phase | Description |
 |--------|-------|-------------|
+| TBD | **2.5** | **feat(decoupling): zero outbound connections by default** |
 | `d905a29` | 4 | fix(release): update release script readiness check |
 | `e229cdb` | 4 | docs(release): prepare v0.1.0 release docs, workflows, installer |
 | `efa6cbf` | 2 | fix(auth): restore missing brace in acp_agent match block |

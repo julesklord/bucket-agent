@@ -15,12 +15,11 @@ const NPM_PACKAGE: &str = "@bucket-official/bucket";
 /// Overridable via `update_gh_repo` config.
 const DEFAULT_GH_RELEASE_REPO: &str = "julesklord/bucket-agent";
 
-/// Default CLI base URLs for internal/GCS installer (xAI upstream).
+/// Default CLI base URLs for internal/GCS installer — empty in fork (no outbound).
 /// Overridable via `update_base_urls` config (comma-separated).
-const DEFAULT_CLI_BASE_URL_PRIMARY: &str = "https://x.ai/cli";
-const DEFAULT_CLI_BASE_URL_FALLBACK: &str =
-    "https://storage.googleapis.com/bucket-build-public-artifacts/cli";
-const DEFAULT_CLI_BASE_URLS: &[&str] = &[DEFAULT_CLI_BASE_URL_PRIMARY, DEFAULT_CLI_BASE_URL_FALLBACK];
+const DEFAULT_CLI_BASE_URL_PRIMARY: &str = "";
+const DEFAULT_CLI_BASE_URL_FALLBACK: &str = "";
+const DEFAULT_CLI_BASE_URLS: &[&str] = &[];
 
 /// Get the GitHub release repo from config or use default.
 pub fn gh_release_repo(config: &UpdateConfig) -> &str {

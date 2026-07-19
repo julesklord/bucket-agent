@@ -17,6 +17,7 @@ Cargo.bak
 .settings/
 .classpath
 .factorypath
+.codegraph/
 
 # --- OS Artifacts ---
 .DS_Store

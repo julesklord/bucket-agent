@@ -950,36 +950,43 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
         Action::ConfigureProvider => dispatch_configure_provider(app),
         Action::ProviderConfigConfirm => {
             if let Some(modal) = app.provider_config_modal.take() {
-                // Determine home dir directly if bucket_config::paths is not available,
-                // or just use bucket_config::paths::bucket_home()
-                if let Ok(home) = std::env::var("BUCKET_HOME")
-                    .map(std::path::PathBuf::from)
-                    .or_else(|_| {
-                        #[allow(deprecated)]
-                        std::env::home_dir()
-                            .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
-                            .ok_or(())
-                    })
-                {
-                    let _ = std::fs::create_dir_all(&home);
-                    let provider_file = home.join("providers.toml");
-                    let mut config_str = String::new();
-                    config_str.push_str("[providers]\n");
-                    let provider = modal.provider_input.trim();
-                    let api_key = modal.api_key_input.trim();
-                    if !provider.is_empty() && !api_key.is_empty() {
+                let provider = modal.provider_input.trim();
+                let mut api_key = modal.api_key_input.trim().to_string();
+                let has_env = modal.provider_has_env_key();
+
+                if api_key.is_empty() && has_env {
+                    api_key = "(api key configured)".to_string();
+                }
+
+                if !provider.is_empty() && (!api_key.is_empty() || has_env) {
+                    if let Ok(home) = std::env::var("BUCKET_HOME")
+                        .map(std::path::PathBuf::from)
+                        .or_else(|_| {
+                            #[allow(deprecated)]
+                            std::env::home_dir()
+                                .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
+                                .ok_or(())
+                        })
+                    {
+                        let _ = std::fs::create_dir_all(&home);
+                        let provider_file = home.join("providers.toml");
+                        let mut config_str = String::new();
+                        config_str.push_str("[providers]\n");
                         config_str.push_str(&format!("{} = \"{}\"\n", provider, api_key));
-                    }
-                    let _ = std::fs::write(&provider_file, config_str);
+                        let _ = std::fs::write(&provider_file, config_str);
 
-                    // Touch config.toml to trigger the config watcher (hot reload)
-                    let config_file = home.join("config.toml");
-                    if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&config_file) {
-                        use std::io::Write;
-                        let _ = writeln!(f, ""); // append empty line to trigger watcher
-                    }
+                        // Apply live environment & base URL settings immediately
+                        bucket_agent_core::util::config::load::map_provider_env(provider, &api_key);
 
-                    app.show_toast("\u{2713} Provider configured. Models reloading...");
+                        // Touch config.toml to trigger the config watcher (hot reload)
+                        let config_file = home.join("config.toml");
+                        if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&config_file) {
+                            use std::io::Write;
+                            let _ = writeln!(f, ""); // append empty line to trigger watcher
+                        }
+
+                        app.show_toast("\u{2713} Provider configured. Models reloading...");
+                    }
                 }
             }
             vec![]

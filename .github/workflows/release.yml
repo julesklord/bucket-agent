@@ -44,7 +44,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Install protobuf compiler (Linux)
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler gcc-aarch64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
         if: runner.os == 'Linux'
 
       - name: Install protobuf compiler (macOS)
@@ -63,6 +63,10 @@ jobs:
           cargo build -p bucket-bin --release --target ${{ matrix.rust_target }}
         env:
           BUCKET_VERSION: ${{ steps.version.outputs.VERSION }}
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
 
       - name: Prepare release artifact
         run: |

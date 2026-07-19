@@ -646,9 +646,57 @@ fn agent_current_model_name(app: &AppView) -> Option<String> {
 ///
 /// Used by the `KnownModel` validator and "resolve user input to
 /// ModelId" path.
+fn fallback_provider_models() -> Vec<(String, acp::ModelId)> {
+    let base_url = std::env::var("BUCKET_MODELS_BASE_URL")
+        .or_else(|_| std::env::var("BUCKET_BUCKET_API_BASE_URL"))
+        .unwrap_or_default()
+        .to_lowercase();
+
+    let model_names: &[&str] = if base_url.contains("anthropic.com")
+        || std::env::var("ANTHROPIC_API_KEY").is_ok()
+    {
+        &[
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "claude-3-7-sonnet-20240229",
+        ]
+    } else if base_url.contains("nvidia.com") || std::env::var("NVIDIA_API_KEY").is_ok() {
+        &[
+            "meta/llama-3.3-70b-instruct",
+            "deepseek-ai/deepseek-r1",
+            "nvidia/llama-3.1-nemotron-70b-instruct",
+        ]
+    } else if base_url.contains("openrouter.ai") || std::env::var("OPENROUTER_API_KEY").is_ok() {
+        &[
+            "anthropic/claude-3.5-sonnet",
+            "openai/gpt-4o",
+            "deepseek/deepseek-r1",
+            "google/gemini-2.0-flash-001",
+        ]
+    } else if base_url.contains("groq.com") || std::env::var("GROQ_API_KEY").is_ok() {
+        &[
+            "llama-3.3-70b-versatile",
+            "deepseek-r1-distill-llama-70b",
+            "mixtral-8x7b-32768",
+        ]
+    } else if base_url.contains("googleapis.com") || std::env::var("GEMINI_API_KEY").is_ok() {
+        &["gemini-2.0-flash", "gemini-1.5-pro"]
+    } else if base_url.contains("11434") {
+        &["llama3.3", "qwen2.5-coder", "deepseek-r1"]
+    } else {
+        &["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"]
+    };
+
+    model_names
+        .iter()
+        .map(|&m| (m.to_string(), acp::ModelId::from(m)))
+        .collect()
+}
+
 fn agent_available_models(app: &AppView) -> Vec<(String, acp::ModelId)> {
     if let ActiveView::Agent(id) = app.active_view
         && let Some(agent) = app.agents.get(&id)
+        && !agent.session.models.available.is_empty()
     {
         return agent
             .session
@@ -658,7 +706,7 @@ fn agent_available_models(app: &AppView) -> Vec<(String, acp::ModelId)> {
             .map(|(id, info)| (info.name.clone(), id.clone()))
             .collect();
     }
-    Vec::new()
+    fallback_provider_models()
 }
 
 /// Build a `PagerLocalSnapshot` from the current `AppView`.

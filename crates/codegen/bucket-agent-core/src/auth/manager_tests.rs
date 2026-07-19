@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::auth::error::RefreshTokenError;
+use crate::auth::OAuth2ProviderConfig;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
 

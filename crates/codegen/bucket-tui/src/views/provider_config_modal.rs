@@ -85,6 +85,30 @@ impl ProviderConfigModalState {
         }
     }
 
+    pub fn provider_has_env_key(&self) -> bool {
+        let p = self.provider_input.trim().to_lowercase();
+        match p.as_str() {
+            "openai" => std::env::var("OPENAI_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            "anthropic" => std::env::var("ANTHROPIC_API_KEY")
+                .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
+            "nvidia_nim" | "nvidia" => std::env::var("NVIDIA_API_KEY")
+                .or_else(|_| std::env::var("NIM_API_KEY"))
+                .or_else(|_| std::env::var("NVAPI_KEY"))
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
+            "openrouter" => std::env::var("OPENROUTER_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            "groq" => std::env::var("GROQ_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            "gemini" | "google" => std::env::var("GEMINI_API_KEY")
+                .or_else(|_| std::env::var("GOOGLE_API_KEY"))
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
+            "ollama" => true,
+            _ => std::env::var("BUCKET_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+        }
+    }
+
     pub fn current_key_example(&self) -> &'static str {
         if self.selected_provider_idx < PRECONFIGURED_PROVIDERS.len() {
             PRECONFIGURED_PROVIDERS[self.selected_provider_idx].key_example
@@ -349,11 +373,20 @@ pub fn render_provider_config_modal(
             .fg(theme.gray_bright)
             .add_modifier(Modifier::BOLD),
     )];
-    let masked_key = "*".repeat(state.api_key_input.len());
-    k_line.push(Span::styled(
-        &masked_key,
-        Style::default().fg(theme.text_primary),
-    ));
+    if state.api_key_input.is_empty() && state.provider_has_env_key() {
+        k_line.push(Span::styled(
+            "(api key configured)",
+            Style::default()
+                .fg(theme.accent_user)
+                .add_modifier(Modifier::BOLD),
+        ));
+    } else {
+        let masked_key = "*".repeat(state.api_key_input.len());
+        k_line.push(Span::styled(
+            &masked_key,
+            Style::default().fg(theme.text_primary),
+        ));
+    }
     if state.focus == 1 {
         k_line.push(Span::styled(
             "\u{2588}",
@@ -473,5 +506,17 @@ mod tests {
             state.current_key_example(),
             "your-api-key-here (e.g. sk-...)"
         );
+    }
+
+    #[test]
+    fn test_provider_has_env_key() {
+        let state = ProviderConfigModalState::new();
+        unsafe {
+            std::env::set_var("OPENAI_API_KEY", "sk-test12345");
+        }
+        assert!(state.provider_has_env_key());
+        unsafe {
+            std::env::remove_var("OPENAI_API_KEY");
+        }
     }
 }

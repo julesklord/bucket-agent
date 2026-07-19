@@ -976,7 +976,7 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
                         let _ = std::fs::write(&provider_file, config_str);
 
                         // Apply live environment & base URL settings immediately
-                        bucket_agent_core::util::config::load::map_provider_env(provider, &api_key);
+                        bucket_agent_core::util::config::map_provider_env(provider, &api_key);
 
                         // Touch config.toml to trigger the config watcher (hot reload)
                         let config_file = home.join("config.toml");

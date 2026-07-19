@@ -373,6 +373,7 @@ pub fn render_provider_config_modal(
             .fg(theme.gray_bright)
             .add_modifier(Modifier::BOLD),
     )];
+    let masked_key = "*".repeat(state.api_key_input.len());
     if state.api_key_input.is_empty() && state.provider_has_env_key() {
         k_line.push(Span::styled(
             "(api key configured)",
@@ -381,7 +382,6 @@ pub fn render_provider_config_modal(
                 .add_modifier(Modifier::BOLD),
         ));
     } else {
-        let masked_key = "*".repeat(state.api_key_input.len());
         k_line.push(Span::styled(
             &masked_key,
             Style::default().fg(theme.text_primary),

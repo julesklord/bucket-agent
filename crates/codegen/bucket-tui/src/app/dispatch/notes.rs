@@ -18,13 +18,12 @@ fn next_rewrite_nonce() -> u64 {
     REWRITE_NONCE.fetch_add(1, Ordering::Relaxed)
 }
 
-/// Enter feedback mode: visual change to prompt bar (teal accent, pencil prefix).
-/// No side effects — the user types feedback text and presses Enter to send.
+/// Enter feedback mode: opens the GitHub feedback issue template in browser.
 pub(super) fn dispatch_enter_feedback_mode(app: &mut AppView) -> Vec<Effect> {
-    with_active_agent(app, |agent| {
-        agent.prompt_input_mode = PromptInputMode::Feedback;
-        agent.prompt.set_text("");
-    });
+    super::ctx::open_url_or_show(
+        app,
+        crate::slash::commands::feedback::FEEDBACK_ISSUE_URL,
+    );
     vec![]
 }
 
@@ -38,8 +37,7 @@ pub(super) fn dispatch_enter_remember_mode(app: &mut AppView) -> Vec<Effect> {
     vec![]
 }
 
-/// Send feedback text to the server. Shows a thank-you message immediately
-/// and fires the HTTP POST as a background effect.
+/// Send feedback text: opens GitHub issue page pre-filled with the feedback title.
 pub(super) fn dispatch_send_feedback(app: &mut AppView, text: String) -> Vec<Effect> {
     let ActiveView::Agent(id) = app.active_view else {
         return vec![];
@@ -54,29 +52,23 @@ pub(super) fn dispatch_send_feedback(app: &mut AppView, text: String) -> Vec<Eff
     agent.ephemeral_tip.clear_on_submit();
 
     let trimmed = text.trim().to_string();
-    if trimmed.is_empty() {
-        agent.scrollback.push_block(RenderBlock::system(
-            "Please provide feedback text.".to_string(),
-        ));
-        return vec![];
-    }
-
-    let Some(session_id) = agent.session.session_id.clone() else {
-        agent
-            .scrollback
-            .push_block(RenderBlock::system("No active session.".to_string()));
-        return vec![];
+    let url = if trimmed.is_empty() {
+        crate::slash::commands::feedback::FEEDBACK_ISSUE_URL.to_string()
+    } else {
+        format!(
+            "{}&title={}",
+            crate::slash::commands::feedback::FEEDBACK_ISSUE_URL,
+            urlencoding::encode(&trimmed)
+        )
     };
 
     agent.scrollback.push_block(RenderBlock::system(
-        "Thanks for the feedback! The Bucket Build team is on it.".to_string(),
+        "Opening GitHub Issue template for feedback...".to_string(),
     ));
 
-    vec![Effect::SendFeedback {
-        agent_id: id,
-        session_id,
-        feedback_text: trimmed,
-    }]
+    agent.open_url_or_show(&url);
+
+    vec![]
 }
 
 /// Send a raw remember note for LLM-powered rewriting via `x.ai/memory/rewrite`.

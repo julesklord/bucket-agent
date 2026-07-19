@@ -17,14 +17,14 @@
 use super::support::*;
 use super::*;
 use crate::session::goal_summarizer::GOAL_SUMMARIZER_SUBAGENT_DESCRIPTION;
-use serial_test::serial;
-use std::collections::VecDeque;
-use std::sync::Arc as StdArc;
-use std::sync::atomic::{AtomicUsize, Ordering as SeqOrd};
 use bucket_tools::implementations::bucket_build::task::types::{
     SubagentCancelOutcome, SubagentEvent, SubagentResult,
 };
 use bucket_tools::implementations::bucket_build::update_goal::UpdateGoalInput;
+use serial_test::serial;
+use std::collections::VecDeque;
+use std::sync::Arc as StdArc;
+use std::sync::atomic::{AtomicUsize, Ordering as SeqOrd};
 
 const ENV_FLAG: &str = "BUCKET_GOAL_CLASSIFIER";
 

@@ -48,14 +48,12 @@ impl SessionActor {
             if entered && turn_in_flight {
                 self.activate_plan_mode_mid_turn().await;
             }
-            bucket_telemetry::session_ctx::log_event(
-                bucket_telemetry::events::PlanModeToggled {
-                    enabled: true,
-                    trigger: bucket_telemetry::events::PlanModeTrigger::User,
-                    turn_in_flight,
-                    was_previously_active: !entered,
-                },
-            );
+            bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::PlanModeToggled {
+                enabled: true,
+                trigger: bucket_telemetry::events::PlanModeTrigger::User,
+                turn_in_flight,
+                was_previously_active: !entered,
+            });
             if entered {
                 tracing::info_span!(
                     "session.permission_mode_changed",
@@ -82,14 +80,12 @@ impl SessionActor {
                 session_id = % self.session_info.id.0, new_mode = % session_mode_id.0,
                 turn_in_flight, "Plan mode toggled OFF"
             );
-            bucket_telemetry::session_ctx::log_event(
-                bucket_telemetry::events::PlanModeToggled {
-                    enabled: false,
-                    trigger: bucket_telemetry::events::PlanModeTrigger::User,
-                    turn_in_flight,
-                    was_previously_active: true,
-                },
-            );
+            bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::PlanModeToggled {
+                enabled: false,
+                trigger: bucket_telemetry::events::PlanModeTrigger::User,
+                turn_in_flight,
+                was_previously_active: true,
+            });
             tracing::info_span!(
                 "session.permission_mode_changed", from_mode = "plan", to_mode = %
                 session_mode_id.0, trigger = "user", enabled = false,

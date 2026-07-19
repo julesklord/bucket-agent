@@ -301,7 +301,10 @@ fn push_interactive_login(
             .expect("enterprise_oidc_issuer is required when has_enterprise_oidc is true");
         methods.push(oidc_auth_method(issuer, login_label));
     } else {
-        methods.push(bucket_com_auth_method(login_label, has_auth_provider_command));
+        methods.push(bucket_com_auth_method(
+            login_label,
+            has_auth_provider_command,
+        ));
     }
 }
 
@@ -448,11 +451,10 @@ pub const PREFERRED_OIDC_UNAVAILABLE: &str =
 pub const LOCAL_METHOD_ID: &str = "local";
 pub fn local_auth_method() -> acp::AuthMethod {
     acp::AuthMethod::Agent(
-        acp::AuthMethodAgent::new(
-            acp::AuthMethodId::new(LOCAL_METHOD_ID),
-            "local".to_string(),
-        )
-        .description(Some("Local / Multi-provider (Ollama, BYOK, etc.)".to_string())),
+        acp::AuthMethodAgent::new(acp::AuthMethodId::new(LOCAL_METHOD_ID), "local".to_string())
+            .description(Some(
+                "Local / Multi-provider (Ollama, BYOK, etc.)".to_string(),
+            )),
     )
 }
 
@@ -501,9 +503,12 @@ pub fn bucket_com_auth_method(
         None
     };
     acp::AuthMethod::Agent(
-        acp::AuthMethodAgent::new(acp::AuthMethodId::new(BUCKET_COM_METHOD_ID), name.to_string())
-            .description(Some(format!("Sign in with {name}")))
-            .meta(meta),
+        acp::AuthMethodAgent::new(
+            acp::AuthMethodId::new(BUCKET_COM_METHOD_ID),
+            name.to_string(),
+        )
+        .description(Some(format!("Sign in with {name}")))
+        .meta(meta),
     )
 }
 

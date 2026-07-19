@@ -116,7 +116,10 @@ impl bucket_tool_runtime::Tool for SchedulerDeleteTool {
             })?;
 
         let removed = reply_rx.await.map_err(|_| {
-            bucket_tool_runtime::ToolError::custom("process_manager", "Scheduler actor dropped reply")
+            bucket_tool_runtime::ToolError::custom(
+                "process_manager",
+                "Scheduler actor dropped reply",
+            )
         })?;
 
         if removed {

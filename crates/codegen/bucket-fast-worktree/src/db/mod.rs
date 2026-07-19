@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
+use bucket_sqlite_journal::JournalMode;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use bucket_sqlite_journal::JournalMode;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -341,7 +341,8 @@ pub fn resolve_bucket_home() -> Result<PathBuf> {
     if let Ok(v) = std::env::var("BUCKET_HOME") {
         return Ok(PathBuf::from(v));
     }
-    let home = PathBuf::from(std::env::var("HOME").context("neither $BUCKET_HOME nor $HOME is set")?);
+    let home =
+        PathBuf::from(std::env::var("HOME").context("neither $BUCKET_HOME nor $HOME is set")?);
     // Canonicalize the home dir so worktree paths share the same physical .bucket
     // tree as trust/hooks even when it is symlinked. The dunce canonicalization
     // must stay in sync with bucket_config::default_bucket_home();
@@ -376,7 +377,9 @@ pub(crate) struct BucketHomeFixture {
 #[cfg(test)]
 impl BucketHomeFixture {
     pub(crate) fn new() -> Self {
-        let lock = BUCKET_HOME_ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let lock = BUCKET_HOME_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let tmp = tempfile::TempDir::new().unwrap();
         let home = tmp.path().join("bucket-home");
         std::fs::create_dir_all(&home).unwrap();

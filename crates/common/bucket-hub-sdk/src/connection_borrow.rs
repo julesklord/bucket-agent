@@ -6,9 +6,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use bucket_tool_protocol::ConnectionKind;
 use tokio_util::sync::CancellationToken;
 use url::Url;
-use bucket_tool_protocol::ConnectionKind;
 
 use crate::auth::AuthProvider;
 use crate::connection::{

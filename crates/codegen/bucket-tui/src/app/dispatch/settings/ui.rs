@@ -214,7 +214,8 @@ pub(in crate::app::dispatch) fn dispatch_open_settings(app: &mut AppView) -> Vec
 
 /// Open the BYOK provider configuration modal.
 pub(in crate::app::dispatch) fn dispatch_configure_provider(app: &mut AppView) -> Vec<Effect> {
-    app.provider_config_modal = Some(crate::views::provider_config_modal::ProviderConfigModalState::new());
+    app.provider_config_modal =
+        Some(crate::views::provider_config_modal::ProviderConfigModalState::new());
     vec![]
 }
 

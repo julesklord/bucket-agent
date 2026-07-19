@@ -12,11 +12,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use agent_client_protocol as acp;
+use bucket_tool_types::{KillTaskOutput, TaskOutputOutput};
 use bucket_tools::types::output::{
     ApplyPatchOutput, CodexGrepFilesOutput, ListDirOutput, MCPOutputDetails, ReadFileOutput,
     SearchReplaceEditContextInformation, SearchReplaceEditDetail, SearchReplaceOutput, ToolOutput,
 };
-use bucket_tool_types::{KillTaskOutput, TaskOutputOutput};
 
 /// Rewrites real worktree paths to display paths in serialized output.
 ///
@@ -600,12 +600,12 @@ pub fn acp_tool_update(
         }
         ToolOutput::ExitPlanMode(exit) => {
             let message = match exit {
-                bucket_tools::types::output::ExitPlanModeOutput::PlanReady {
-                    message, ..
-                } => message.clone(),
-                bucket_tools::types::output::ExitPlanModeOutput::EmptyPlan {
-                    message, ..
-                } => message.clone(),
+                bucket_tools::types::output::ExitPlanModeOutput::PlanReady { message, .. } => {
+                    message.clone()
+                }
+                bucket_tools::types::output::ExitPlanModeOutput::EmptyPlan { message, .. } => {
+                    message.clone()
+                }
             };
             Some(acp::ToolCallUpdate::new(
                 acp::ToolCallId::new(Arc::from(tool_call_id)),
@@ -748,8 +748,8 @@ fn build_apply_patch_edit_details(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
     use bucket_tools::types::output::*;
+    use std::path::PathBuf;
 
     #[test]
     fn test_acp_tool_update_read_file_success() {
@@ -1175,7 +1175,8 @@ mod tests {
         )
         .unwrap();
         // Session directory paths use urlencoding::encode(&cwd)
-        let encoded_overlay = urlencoding::encode("/root/.bucket/worktrees/project/ab-123-a-overlay");
+        let encoded_overlay =
+            urlencoding::encode("/root/.bucket/worktrees/project/ab-123-a-overlay");
         let input = format!(
             "output-file: /root/.bucket/sessions/{}/session-id/terminal/call.log",
             encoded_overlay

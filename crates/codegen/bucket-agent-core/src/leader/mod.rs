@@ -1356,7 +1356,11 @@ fn resolve_binary_with_home(bucket_home: &Path) -> Result<std::path::PathBuf, Co
 }
 /// Binary file name for the managed bucket install (`bucket` / `bucket.exe`).
 fn managed_bucket_bin_name() -> &'static str {
-    if cfg!(windows) { "bucket.exe" } else { "bucket" }
+    if cfg!(windows) {
+        "bucket.exe"
+    } else {
+        "bucket"
+    }
 }
 /// Core leader-binary resolution with the current-exe path injected, for testability.
 fn resolve_binary_impl(
@@ -1394,7 +1398,8 @@ fn spawn_leader_subprocess(env_urls: &LeaderEnvUrls) -> Result<u32, ConnectionEr
     cmd.arg("--no-exit-on-disconnect");
     cmd.arg("--relay-on-demand");
     cmd.arg("--bucket-ws-url").arg(&env_urls.bucket_ws_url);
-    cmd.arg("--bucket-ws-origin").arg(&env_urls.bucket_ws_origin);
+    cmd.arg("--bucket-ws-origin")
+        .arg(&env_urls.bucket_ws_origin);
     if let Some(socket) = std::env::var_os(crate::leader::LEADER_SOCKET_ENV) {
         cmd.env(crate::leader::LEADER_SOCKET_ENV, socket);
     }

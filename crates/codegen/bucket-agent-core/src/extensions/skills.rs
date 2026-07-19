@@ -300,13 +300,11 @@ pub async fn handle(
             })
             .await
             {
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::SkillAdded {
-                        added_count: 0,
-                        total_skills: 0,
-                        success: false,
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::SkillAdded {
+                    added_count: 0,
+                    total_skills: 0,
+                    success: false,
+                });
                 return super::to_ext_response(Err::<SkillsAddResponse, _>(anyhow::anyhow!(
                     "Failed to save config: {e}"
                 )));
@@ -353,9 +351,9 @@ pub async fn handle(
             })
             .await
             {
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::SkillRemoved { success: false },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::SkillRemoved {
+                    success: false,
+                });
                 return super::to_ext_response(Err::<SkillsRemoveResponse, _>(anyhow::anyhow!(
                     "Failed to save config: {e}"
                 )));

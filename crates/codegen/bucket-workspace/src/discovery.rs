@@ -82,9 +82,8 @@ pub async fn discover_agents_md(root_cwd: &Path) -> Vec<Value> {
             if file.file_path.contains("/.bucket/rules/")
                 || file.file_path.contains("/.claude/rules/")
             {
-                file.content = bucket_tools::implementations::skills::skill::extract_skill_body(
-                    &file.content,
-                );
+                file.content =
+                    bucket_tools::implementations::skills::skill::extract_skill_body(&file.content);
             }
             file
         })
@@ -425,7 +424,11 @@ mod tests {
     #[test]
     fn discover_plugins_finds_manifest_plugin() {
         let tmp = tempfile::tempdir().unwrap();
-        let plugins_dir = tmp.path().join(".bucket").join("plugins").join("test-plugin");
+        let plugins_dir = tmp
+            .path()
+            .join(".bucket")
+            .join("plugins")
+            .join("test-plugin");
         fs::create_dir_all(&plugins_dir).unwrap();
         fs::write(
             plugins_dir.join("plugin.json"),
@@ -450,7 +453,11 @@ mod tests {
     #[test]
     fn discover_plugins_json_has_expected_fields() {
         let tmp = tempfile::tempdir().unwrap();
-        let plugins_dir = tmp.path().join(".bucket").join("plugins").join("field-test");
+        let plugins_dir = tmp
+            .path()
+            .join(".bucket")
+            .join("plugins")
+            .join("field-test");
         fs::create_dir_all(plugins_dir.join("skills")).unwrap();
         fs::write(
             plugins_dir.join("plugin.json"),

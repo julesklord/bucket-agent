@@ -327,7 +327,8 @@ pub struct FeedbackClient {
 impl FeedbackClient {
     pub fn new(base_url: impl Into<String>, user_token: Option<String>) -> Self {
         let http = crate::http::shared_client();
-        let credentials = crate::util::bucket_auth_credentials::BucketAuthCredentials::new(user_token);
+        let credentials =
+            crate::util::bucket_auth_credentials::BucketAuthCredentials::new(user_token);
         let client = Self::build_middleware_client(&http, &credentials);
         Self {
             http,
@@ -361,7 +362,8 @@ impl FeedbackClient {
         base_url: impl Into<String>,
         user_token: Option<String>,
     ) -> Self {
-        let credentials = crate::util::bucket_auth_credentials::BucketAuthCredentials::new(user_token);
+        let credentials =
+            crate::util::bucket_auth_credentials::BucketAuthCredentials::new(user_token);
         let client = Self::build_middleware_client(&http, &credentials);
         Self {
             http,

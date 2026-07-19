@@ -1,6 +1,6 @@
 use crate::util::config::RemoteSettings;
-use toml::Value as TomlValue;
 use bucket_tools::implementations::bucket_build::ask_user_question;
+use toml::Value as TomlValue;
 
 /// Resolve whether the bash-harness `find`→`bfs` / `grep`→`ugrep` shadows are
 /// enabled. Precedence (highest first): `requirements.toml` (org policy, wins

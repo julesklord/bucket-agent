@@ -6,11 +6,6 @@
 //! is visible as it generates; finished blocks scroll up into native scrollback
 //! via [`super::commit`]. When idle the tail is empty and only status + prompt
 //! show.
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Clear, Widget};
 use bucket_tui::app::PagerTerminal;
 use bucket_tui::app::app_view::{ActiveView, AppView};
 use bucket_tui::minimal_api;
@@ -20,6 +15,11 @@ use bucket_tui::scrollback::wrappers::EntryRenderer;
 use bucket_tui::theme::Theme;
 use bucket_tui::views::prompt_widget::PromptStyle;
 use bucket_tui::views::turn_status;
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Clear, Widget};
 /// Left inset (columns) for every auxiliary live-region row: the status row,
 /// the info bar, the exit hint, and the todo panel — and the prompt's
 /// `chrome_pad_left`.
@@ -46,9 +46,7 @@ fn inset_left(area: Rect, inset: u16) -> Rect {
 ///
 /// Shared with [`super::overlay::sync_viewport`] so viewport sizing measures the
 /// prompt's height exactly as the live region will draw it.
-pub(super) fn prompt_style(
-    appearance: &bucket_tui::appearance::AppearanceConfig,
-) -> PromptStyle {
+pub(super) fn prompt_style(appearance: &bucket_tui::appearance::AppearanceConfig) -> PromptStyle {
     PromptStyle {
         focused: true,
         show_prefix: appearance.prompt.show_prefix,
@@ -432,9 +430,7 @@ fn minimal_watchers(agent: &bucket_tui::app::agent_view::AgentView) -> turn_stat
             .session
             .bg_tasks
             .values()
-            .filter(|t| {
-                t.is_monitor && t.status == bucket_tui::app::agent::BgTaskStatus::Running
-            })
+            .filter(|t| t.is_monitor && t.status == bucket_tui::app::agent::BgTaskStatus::Running)
             .count(),
         loops: agent.session.scheduled_tasks.len(),
         subagents: agent
@@ -904,10 +900,10 @@ mod tests {
     }
     #[test]
     fn pending_hint_formats_press_again() {
-        use crossterm::event::{KeyCode, KeyModifiers};
         use bucket_tui::app::actions::Action;
         use bucket_tui::app::app_view::PendingAction;
         use bucket_tui::input::key::KeyShortcut;
+        use crossterm::event::{KeyCode, KeyModifiers};
         assert!(minimal_pending_hint(&None).is_none());
         let shortcut = KeyShortcut::new(KeyCode::Char('q'), KeyModifiers::CONTROL);
         let pending = Some(PendingAction::new(Action::Quit, shortcut, "quit"));

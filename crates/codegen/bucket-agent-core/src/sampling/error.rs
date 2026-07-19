@@ -18,8 +18,7 @@ use agent_client_protocol as acp;
 pub const RATE_LIMITED_ERROR_CODE: i32 = -32003;
 
 /// OAuth / session rate-limit copy.
-pub const RATE_LIMITED_USER_MESSAGE_OAUTH: &str =
-    "You\u{2019}ve hit the rate limit for your plan. Try again later or configure a different provider.";
+pub const RATE_LIMITED_USER_MESSAGE_OAUTH: &str = "You\u{2019}ve hit the rate limit for your plan. Try again later or configure a different provider.";
 
 /// API key rate-limit copy.
 pub const RATE_LIMITED_USER_MESSAGE_API_KEY: &str = "You\u{2019}ve hit the API rate limit. Try again later or configure a different provider in your config.toml.";

@@ -2,10 +2,10 @@ use super::support::*;
 use super::*;
 use crate::terminal::AsyncTerminalRunner;
 use crate::terminal::runner::{TerminalError, TerminalRunRequest, TerminalRunResult};
-use tokio::sync::mpsc;
 use bucket_paths::AbsPathBuf;
 use bucket_workspace::file_system::MockFs;
 use bucket_workspace::permission::PermissionHandle;
+use tokio::sync::mpsc;
 #[derive(Debug)]
 struct DummyTerminal;
 #[async_trait::async_trait]
@@ -1221,7 +1221,8 @@ async fn reasoning_only_doomloop_turn_captures_every_generation_as_segments() {
                 panic!("a reasoning_only empty response must be a terminal error, not recoverable");
             };
             let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<SessionCommand>();
-            let (_chat_tx, chat_rx) = mpsc::unbounded_channel::<bucket_chat_state::ChatStateEvent>();
+            let (_chat_tx, chat_rx) =
+                mpsc::unbounded_channel::<bucket_chat_state::ChatStateEvent>();
             let codebase_indexes = Arc::new(parking_lot::Mutex::new(
                 bucket_workspace::file_system::CodebaseIndexManager::new(),
             ));

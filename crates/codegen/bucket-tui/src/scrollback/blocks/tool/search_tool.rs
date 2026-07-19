@@ -1,8 +1,8 @@
 //! SearchToolCallBlock — integration tool discovery results.
 
+use bucket_workspace::permission::mcp_titleize_segment;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span, Text};
-use bucket_workspace::permission::mcp_titleize_segment;
 
 use super::TOOL_HEADER_RANGE;
 use crate::render::line_utils::truncate_str;

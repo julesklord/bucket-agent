@@ -671,10 +671,13 @@ mod tests {
             use_id_keyed_format: false,
         };
 
-        let result =
-            bucket_tool_runtime::Tool::run(&tool, test_ctx_with_call_id(shared, "test-call"), input)
-                .await
-                .unwrap();
+        let result = bucket_tool_runtime::Tool::run(
+            &tool,
+            test_ctx_with_call_id(shared, "test-call"),
+            input,
+        )
+        .await
+        .unwrap();
 
         match result {
             AskUserQuestionOutput::QuestionsSent {
@@ -699,10 +702,13 @@ mod tests {
             use_id_keyed_format: false,
         };
 
-        let result =
-            bucket_tool_runtime::Tool::run(&tool, test_ctx_with_call_id(shared, "test-call"), input)
-                .await
-                .unwrap();
+        let result = bucket_tool_runtime::Tool::run(
+            &tool,
+            test_ctx_with_call_id(shared, "test-call"),
+            input,
+        )
+        .await
+        .unwrap();
 
         match result {
             AskUserQuestionOutput::QuestionsSent {
@@ -760,10 +766,13 @@ mod tests {
             use_id_keyed_format: false,
         };
 
-        let err =
-            bucket_tool_runtime::Tool::run(&tool, test_ctx_with_call_id(shared, "test-call"), input)
-                .await
-                .unwrap_err();
+        let err = bucket_tool_runtime::Tool::run(
+            &tool,
+            test_ctx_with_call_id(shared, "test-call"),
+            input,
+        )
+        .await
+        .unwrap_err();
 
         let msg = err.to_string();
         assert!(msg.contains("Duplicate question text"), "got: {msg}");
@@ -991,8 +1000,12 @@ mod tests {
         let handle = tokio::spawn({
             let shared = shared.clone();
             async move {
-                bucket_tool_runtime::Tool::run(&tool, test_ctx_with_call_id(shared, "tc-short"), input)
-                    .await
+                bucket_tool_runtime::Tool::run(
+                    &tool,
+                    test_ctx_with_call_id(shared, "tc-short"),
+                    input,
+                )
+                .await
             }
         });
 

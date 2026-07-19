@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, bail};
-use clap::{Subcommand, ValueEnum};
 use bucket_agent_core::util::config::{McpServerConfig, McpServerTransportConfig};
+use clap::{Subcommand, ValueEnum};
 
 use crate::util::display_user_bucket_path;
 
@@ -551,7 +551,9 @@ async fn run_remove(name: &str, requested_scope: Option<McpScope>) -> Result<()>
             eprintln!("MCP server '{name}' exists in multiple scopes:");
             eprintln!("  user: {}", display_user_bucket_path("config.toml"));
             eprintln!("  project: {}", project_path.display());
-            eprintln!("Specify which one to remove, e.g.: bucket mcp remove {name} --scope project");
+            eprintln!(
+                "Specify which one to remove, e.g.: bucket mcp remove {name} --scope project"
+            );
             std::process::exit(1);
         }
     };
@@ -949,7 +951,16 @@ mod tests {
 
     #[test]
     fn add_validates_name_env_and_headers() {
-        let add = parse_add(&["bucket", "mcp", "add", "fs", "-e", "NOT_A_PAIR", "--", "npx"]);
+        let add = parse_add(&[
+            "bucket",
+            "mcp",
+            "add",
+            "fs",
+            "-e",
+            "NOT_A_PAIR",
+            "--",
+            "npx",
+        ]);
         let err = resolve_add(&add).expect_err("malformed env must fail");
         assert!(
             err.to_string()

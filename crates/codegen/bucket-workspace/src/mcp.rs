@@ -6,7 +6,6 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use bucket_hub_mcp_adapter::{
     McpBridgeConfig, McpCallResult, McpContent, McpServerInfo, McpToolDefinition, McpToolHandler,
     McpTransport,
@@ -17,6 +16,7 @@ use bucket_mcp::servers::McpClient;
 use bucket_tool_protocol::ToolId;
 use bucket_tool_runtime::{ToolCallContext, ToolStream, TypedToolOutput};
 use bucket_tool_types::ToolDescription;
+use serde_json::Value;
 
 /// Adapts [`McpClient`] to the [`McpTransport`] trait for [`McpBridge`].
 pub(crate) struct McpClientTransportAdapter {
@@ -47,9 +47,7 @@ impl McpTransport for McpClientTransportAdapter {
         })
     }
 
-    async fn list_tools(
-        &self,
-    ) -> Result<Vec<McpToolDefinition>, bucket_hub_mcp_adapter::McpError> {
+    async fn list_tools(&self) -> Result<Vec<McpToolDefinition>, bucket_hub_mcp_adapter::McpError> {
         let service = self
             .client
             .ensure_initialized()

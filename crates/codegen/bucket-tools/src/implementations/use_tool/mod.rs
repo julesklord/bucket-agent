@@ -87,7 +87,9 @@ async fn dispatch_local_mcp(
     ctx: bucket_tool_runtime::ToolCallContext,
 ) -> Result<ToolOutput, bucket_tool_runtime::ToolError> {
     let tool_id = bucket_tool_protocol::ToolId::new(tool_name).map_err(|_| {
-        bucket_tool_runtime::ToolError::invalid_arguments(format!("invalid tool name: '{tool_name}'"))
+        bucket_tool_runtime::ToolError::invalid_arguments(format!(
+            "invalid tool name: '{tool_name}'"
+        ))
     })?;
     let typed = dispatch.0.call_terminal(tool_id, tool_input, ctx).await?;
     serde_json::from_value(typed.value)
@@ -403,9 +405,9 @@ mod tests {
         ) -> bucket_tool_runtime::ToolStream<bucket_tool_runtime::TypedToolOutput> {
             assert_eq!(tool_id.as_str(), self.expected_tool_name);
             let value = serde_json::to_value(self.return_output.clone()).unwrap();
-            bucket_tool_runtime::terminal_only(Ok(bucket_tool_runtime::TypedToolOutput::from_value(
-                tool_id, value,
-            )))
+            bucket_tool_runtime::terminal_only(Ok(
+                bucket_tool_runtime::TypedToolOutput::from_value(tool_id, value),
+            ))
         }
     }
 
@@ -434,9 +436,9 @@ mod tests {
             }
             *self.captured_args.lock().unwrap() = Some(args);
             let value = serde_json::to_value(ToolOutput::Text("ok".into())).unwrap();
-            bucket_tool_runtime::terminal_only(Ok(bucket_tool_runtime::TypedToolOutput::from_value(
-                tool_id, value,
-            )))
+            bucket_tool_runtime::terminal_only(Ok(
+                bucket_tool_runtime::TypedToolOutput::from_value(tool_id, value),
+            ))
         }
     }
 
@@ -475,9 +477,9 @@ mod tests {
             _args: serde_json::Value,
             _ctx: bucket_tool_runtime::ToolCallContext,
         ) -> bucket_tool_runtime::ToolStream<bucket_tool_runtime::TypedToolOutput> {
-            bucket_tool_runtime::terminal_only(Err(bucket_tool_runtime::ToolError::invalid_arguments(
-                "local validation failed",
-            )))
+            bucket_tool_runtime::terminal_only(Err(
+                bucket_tool_runtime::ToolError::invalid_arguments("local validation failed"),
+            ))
         }
     }
 
@@ -532,7 +534,10 @@ mod tests {
         .await;
 
         let err = result.unwrap_err();
-        assert_eq!(err.kind, bucket_tool_runtime::ToolErrorKind::InvalidArguments);
+        assert_eq!(
+            err.kind,
+            bucket_tool_runtime::ToolErrorKind::InvalidArguments
+        );
         assert!(err.detail.contains("not a valid MCP tool name"));
         assert!(err.detail.contains("read_file"));
     }
@@ -553,7 +558,10 @@ mod tests {
         .await;
 
         let err = result.unwrap_err();
-        assert_eq!(err.kind, bucket_tool_runtime::ToolErrorKind::InvalidArguments);
+        assert_eq!(
+            err.kind,
+            bucket_tool_runtime::ToolErrorKind::InvalidArguments
+        );
         assert!(err.detail.contains("inner_dispatch not set"));
     }
 
@@ -951,7 +959,10 @@ mod tests {
         .await;
 
         let err = result.unwrap_err();
-        assert_eq!(err.kind, bucket_tool_runtime::ToolErrorKind::InvalidArguments);
+        assert_eq!(
+            err.kind,
+            bucket_tool_runtime::ToolErrorKind::InvalidArguments
+        );
         assert!(err.detail.contains("local validation failed"));
         assert!(gateway_captured.lock().unwrap().is_none());
     }
@@ -1580,7 +1591,10 @@ mod tests {
         .await;
 
         let err = result.unwrap_err();
-        assert_eq!(err.kind, bucket_tool_runtime::ToolErrorKind::InvalidArguments);
+        assert_eq!(
+            err.kind,
+            bucket_tool_runtime::ToolErrorKind::InvalidArguments
+        );
         assert!(err.detail.contains("native tool"), "got: {}", err.detail);
         assert!(err.detail.contains("scheduler_create"));
         assert!(err.detail.contains("directly"));

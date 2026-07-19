@@ -24,17 +24,17 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use agent_client_protocol as acp;
+use bucket_agent_core::session::info::Info;
+use bucket_agent_core::session::persistence::Summary;
+use bucket_agent_core::session::storage::{JsonlStorageAdapter, StorageAdapter};
+use bucket_agent_core::session::unified_list::{ListReq, UnifiedListResult, build_unified_list};
+use bucket_fast_worktree::{ListFilter, WorktreeDb, WorktreeKind, WorktreeRecord, WorktreeStatus};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use criterion::{
     BenchmarkId, Criterion, SamplingMode, Throughput, criterion_group, criterion_main,
 };
 use filetime::{FileTime, set_file_mtime};
 use tempfile::TempDir;
-use bucket_fast_worktree::{ListFilter, WorktreeDb, WorktreeKind, WorktreeRecord, WorktreeStatus};
-use bucket_agent_core::session::info::Info;
-use bucket_agent_core::session::persistence::Summary;
-use bucket_agent_core::session::storage::{JsonlStorageAdapter, StorageAdapter};
-use bucket_agent_core::session::unified_list::{ListReq, UnifiedListResult, build_unified_list};
 
 const WORKSPACE_COUNT: usize = 3_000;
 // Bump whenever workload semantics change, even if aggregate counts do not.
@@ -196,10 +196,11 @@ impl Fixture {
     }
 
     fn assert_correct(&self, runtime: &tokio::runtime::Runtime) {
-        let discovered = bucket_agent_core::session::worktree::candidate_worktree_cwds_for_same_repo(
-            Path::new(&self.picker_cwd),
-        )
-        .expect("discover same-repo candidate cwd paths");
+        let discovered =
+            bucket_agent_core::session::worktree::candidate_worktree_cwds_for_same_repo(Path::new(
+                &self.picker_cwd,
+            ))
+            .expect("discover same-repo candidate cwd paths");
         assert_eq!(discovered, self.same_repo_cwds);
 
         for (index, (cwd, expected_label)) in self
@@ -557,7 +558,10 @@ fn bench_session_list(c: &mut Criterion) {
     unsafe {
         std::env::set_var("BUCKET_HOME", home.path());
     }
-    assert_eq!(bucket_agent_core::util::bucket_home::bucket_home(), home.path());
+    assert_eq!(
+        bucket_agent_core::util::bucket_home::bucket_home(),
+        home.path()
+    );
     let fixture = Fixture::new(home);
 
     let runtime = tokio::runtime::Builder::new_current_thread()

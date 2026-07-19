@@ -19,13 +19,13 @@
 
 use std::path::Path;
 
+use bucket_ratatui_textarea::{ElementId, ElementKind, TextArea, TextAreaState, TextElement};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidgetRef;
-use bucket_ratatui_textarea::{ElementId, ElementKind, TextArea, TextAreaState, TextElement};
 
 use crate::clipboard::{SystemClipboard, system_clipboard_get};
 use crate::input::key::key;

@@ -322,7 +322,10 @@ impl UnauthorizedRecovery {
                 RecoveryStep::DevboxRecovery => {
                     self.step = RecoveryStep::Done;
                     // preferred_method=api_key forbids automatic OIDC mint.
-                    if !self.auth_manager.bucket_com_config().blocks_automatic_oidc()
+                    if !self
+                        .auth_manager
+                        .bucket_com_config()
+                        .blocks_automatic_oidc()
                         && self.auth_manager.is_devbox_environment()
                         && let Ok(auth) = self.auth_manager.try_devbox_recovery().await
                     {
@@ -638,7 +641,9 @@ mod tests {
 
     /// Run one recovery against a counting refresher; return the outcome and
     /// how many times the authority was consulted.
-    async fn recover_with_ok_refresher(m: &Arc<AuthManager>) -> (Result<BucketAuth, AuthError>, u32) {
+    async fn recover_with_ok_refresher(
+        m: &Arc<AuthManager>,
+    ) -> (Result<BucketAuth, AuthError>, u32) {
         let calls = Arc::new(AtomicU32::new(0));
         m.set_refresher(Arc::new(OkRefresher {
             calls: calls.clone(),

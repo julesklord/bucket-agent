@@ -266,7 +266,9 @@ mod tests {
             match ns {
                 ToolNamespace::BucketBuild => ("bucket_build", "BucketBuild"),
                 ToolNamespace::BucketBuildConcise => ("bucket_build_concise", "BucketBuildConcise"),
-                ToolNamespace::BucketBuildHashline => ("bucket_build_hashline", "BucketBuildHashline"),
+                ToolNamespace::BucketBuildHashline => {
+                    ("bucket_build_hashline", "BucketBuildHashline")
+                }
                 ToolNamespace::Codex => ("codex", "Codex"),
                 ToolNamespace::OpenCode => ("opencode", "OpenCode"),
                 ToolNamespace::MCP => ("mcp", "MCP"),

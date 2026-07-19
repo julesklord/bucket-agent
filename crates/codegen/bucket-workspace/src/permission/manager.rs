@@ -3,9 +3,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use agent_client_protocol as acp;
+use bucket_acp::AcpAgentGatewaySender as GatewaySender;
 use chrono::Utc;
 use tokio::sync::{mpsc, oneshot};
-use bucket_acp::AcpAgentGatewaySender as GatewaySender;
 
 use crate::permission::bash_command_splitting::{
     all_commands_from_script, is_setup_command, unwrap_wrappers,

@@ -1,10 +1,10 @@
 use crate::session::user_message::user_query;
 use agent_client_protocol::{self as acp, ImageContent};
-use serde::Deserialize;
-use std::path::PathBuf;
 use bucket_workspace::file_system::{
     FileReference, render_embedded_resource, render_file_reference,
 };
+use serde::Deserialize;
+use std::path::PathBuf;
 /// Parsed prompt with context and query kept separate.
 ///
 /// Some templates put `<user_query>` last (context first); Bucket puts it first.

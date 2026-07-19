@@ -9,13 +9,13 @@
 use crate::capability::{CapabilityMode, kind_allowed};
 use crate::config::SessionContextFactory;
 use crate::error::{WorkspaceError, WorkspaceResult};
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
 use bucket_tools::registry::types::{
     FinalizedToolset, ToolConfig, ToolRegistryBuilder, ToolServerConfig,
 };
 use bucket_tools::types::tool::ToolKind;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 /// Create-shaped entry of the resolution pipeline: run
 /// [`resolve_session_toolset_rebuild`] around a FRESH factory-built
 /// session-lifetime terminal backend, and return that backend so the caller
@@ -521,21 +521,22 @@ fn build_web_fetch_config() -> bucket_tools::implementations::bucket_build::web_
     WebFetchConfig::Enabled { params }
 }
 fn default_web_search_model() -> String {
-    std::env::var("BUCKET_WEB_SEARCH_MODEL").unwrap_or_else(|_| "bucket-4.20-multi-agent".to_string())
+    std::env::var("BUCKET_WEB_SEARCH_MODEL")
+        .unwrap_or_else(|_| "bucket-4.20-multi-agent".to_string())
 }
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support {
     use crate::config::SessionContextFactory;
-    use std::collections::HashMap;
-    use std::path::PathBuf;
-    use std::sync::Arc;
-    use tempfile::TempDir;
     use bucket_tools::computer::local::{LocalFs, LocalTerminalBackend};
     use bucket_tools::notification::ToolNotificationHandle;
     use bucket_tools::registry::types::{
         SessionContext, ToolConfig, ToolRegistryBuilder, ToolServerConfig,
     };
     use bucket_tools::types::tool::ToolKind;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use tempfile::TempDir;
     /// Test factory: builds a `SessionContext` rooted at a per-test temp dir.
     pub struct TestSessionContextFactory {
         pub temp: TempDir,
@@ -625,10 +626,10 @@ pub mod test_support {
 mod tests {
     use super::*;
     use crate::config::SessionContextFactory;
+    use bucket_tools::types::tool::ToolKind;
     use std::collections::HashMap;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use bucket_tools::types::tool::ToolKind;
     fn factory_for_test() -> Arc<dyn SessionContextFactory> {
         Arc::new(test_support::TestSessionContextFactory::new())
     }

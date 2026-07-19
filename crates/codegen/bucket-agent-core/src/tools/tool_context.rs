@@ -9,13 +9,13 @@
 //! Note: Could be renamed to `SessionConfig` or flattened onto `SessionActor` in a future PR.
 use crate::terminal::AsyncTerminalRunner;
 use agent_client_protocol as acp;
-use std::collections::HashMap;
-use std::sync::Arc;
 use bucket_acp::AcpAgentGatewaySender as GatewaySender;
+use bucket_hunk_tracker::HunkTrackerHandle;
 use bucket_paths::AbsPathBuf;
 use bucket_workspace::file_system::{AsyncFileSystem, AsyncFsWrapper};
 use bucket_workspace::session::file_state::FileStateHandle;
-use bucket_hunk_tracker::HunkTrackerHandle;
+use std::collections::HashMap;
+use std::sync::Arc;
 /// RAII marker: the turn is blocked inside an interruptible wait. Increments
 /// [`ToolContext::blocking_wait_depth`] for its lifetime; `Drop` decrements
 /// (a cancelled turn can't leak the count).
@@ -79,8 +79,7 @@ pub struct ToolContext {
         Option<bucket_tools::implementations::bucket_build::task::types::MonitorEventBuffer>,
     /// Shared set of IDs delivered via auto-wake synthetic prompts.
     /// Used by `TaskCompletionReminder` to suppress duplicate reminders.
-    pub auto_wake_delivered:
-        Option<bucket_tools::reminders::task_completion::AutoWakeDeliveredIds>,
+    pub auto_wake_delivered: Option<bucket_tools::reminders::task_completion::AutoWakeDeliveredIds>,
     /// Channel for requesting trace uploads for synthetic auto-wake turns.
     pub(crate) synthetic_trace_tx:
         Option<tokio::sync::mpsc::UnboundedSender<crate::upload::turn::SyntheticTurnTraceRequest>>,
@@ -207,11 +206,11 @@ impl ToolContext {
 #[cfg(test)]
 mod tests {
     use crate::{terminal::AsyncTerminalRunner, tools::ToolContext};
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use bucket_hunk_tracker::HunkTrackerHandle;
     use bucket_paths::AbsPathBuf;
     use bucket_workspace::file_system::{AsyncFileSystem, AsyncFsWrapper};
-    use bucket_hunk_tracker::HunkTrackerHandle;
+    use std::collections::HashMap;
+    use std::sync::Arc;
     impl ToolContext {
         pub fn new_local_context(
             cwd: AbsPathBuf,

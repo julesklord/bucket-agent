@@ -26,15 +26,6 @@ mod jemalloc_malloc_conf {
     static MALLOC_CONF: MallocConfPtr = MallocConfPtr(CONF.as_ptr());
 }
 use anyhow::Result;
-use std::env;
-use std::net::SocketAddr;
-use tokio_util::sync::CancellationToken;
-use bucket_tui::app::{
-    AgentCmd, Command, HeadlessArgs, LeaderMgmtArgs, LeaderMgmtCommand, LeaderTargetArgs,
-    PagerArgs, join_early_prefetch, resolve_use_leader,
-};
-use bucket_tui::app::{WorkspaceMgmtArgs, WorkspaceMgmtCommand, WorkspaceStartArgs};
-use bucket_tui::client_identity::PAGER_CLIENT_VERSION;
 use bucket_agent_core::agent::app::{run_headless, run_leader, run_stdio_agent};
 use bucket_agent_core::agent::config::Config as AgentConfig;
 use bucket_agent_core::leader::{
@@ -44,7 +35,16 @@ use bucket_agent_core::leader::{
 use bucket_agent_core::leader::{
     ControlPayload, LeaderClient, LeaderEnvUrls, connect_or_spawn, socket_path_for_ws_url,
 };
+use bucket_tui::app::{
+    AgentCmd, Command, HeadlessArgs, LeaderMgmtArgs, LeaderMgmtCommand, LeaderTargetArgs,
+    PagerArgs, join_early_prefetch, resolve_use_leader,
+};
+use bucket_tui::app::{WorkspaceMgmtArgs, WorkspaceMgmtCommand, WorkspaceStartArgs};
+use bucket_tui::client_identity::PAGER_CLIENT_VERSION;
 use bucket_updater::{UpdateConfig, auto_update, enforce_minimum_version_or_exit};
+use std::env;
+use std::net::SocketAddr;
+use tokio_util::sync::CancellationToken;
 /// Apply headless args to an existing config, only overriding values that are
 /// explicitly set. This allows environment defaults to be preserved when
 /// specific args are not provided.
@@ -57,10 +57,7 @@ fn apply_headless_args_to_config(args: &HeadlessArgs, config: &mut AgentConfig) 
     }
 }
 /// Apply global endpoint CLI args to an existing config.
-fn apply_agent_endpoint_args(
-    agent_args: &bucket_tui::app::AgentArgs,
-    config: &mut AgentConfig,
-) {
+fn apply_agent_endpoint_args(agent_args: &bucket_tui::app::AgentArgs, config: &mut AgentConfig) {
     if let Some(v) = &agent_args.cli_chat_proxy_base_url {
         config.endpoints.cli_chat_proxy_base_url = Some(v.clone());
     }
@@ -103,8 +100,8 @@ fn print_serve_startup_info(bind_addr: SocketAddr, secret: &str) {
 const HEADLESS_ENTRYPOINT: &str = "headless";
 /// Initialize simple tracing for non-TUI agent modes.
 fn init_tracing_simple(app_entrypoint: &'static str) {
-    use tracing_subscriber::{EnvFilter, Layer as _, fmt, layer::SubscriberExt as _};
     use bucket_telemetry::debug_log::RMCP_SSE_NOISE_TARGET;
+    use tracing_subscriber::{EnvFilter, Layer as _, fmt, layer::SubscriberExt as _};
     let default_filter = if app_entrypoint == HEADLESS_ENTRYPOINT {
         "off"
     } else {
@@ -299,7 +296,9 @@ async fn kill_leaders() -> Result<()> {
 fn resolve_target(args: &LeaderTargetArgs) -> LeaderTarget {
     match args.pid {
         Some(pid) => LeaderTarget::Pid(pid),
-        None => LeaderTarget::Environment(bucket_agent_core::env::BucketBuildEnvironment::Production),
+        None => {
+            LeaderTarget::Environment(bucket_agent_core::env::BucketBuildEnvironment::Production)
+        }
     }
 }
 async fn connect_to_leader(
@@ -1058,21 +1057,23 @@ async fn run_agent_command(
     }
     apply_agent_endpoint_args(&agent_args, &mut agent_config);
     agent_config.remote_settings = remote_settings.clone();
-    agent_config.resolve_runtime_fields(&bucket_agent_core::agent::config::RuntimeResolutionContext {
-        raw_config: &raw_config,
-        remote_settings: remote_settings.as_ref(),
-        cwd: None,
-        is_headless: !is_leader,
-        cli_subagents: None,
-        cli_web_search_model: None,
-        cli_session_summary_model: None,
-        cli_experimental_memory: false,
-        cli_no_memory: false,
-        disable_web_search,
-        todo_gate: false,
-        laziness_debug_log: None,
-        storage_mode: None,
-    });
+    agent_config.resolve_runtime_fields(
+        &bucket_agent_core::agent::config::RuntimeResolutionContext {
+            raw_config: &raw_config,
+            remote_settings: remote_settings.as_ref(),
+            cwd: None,
+            is_headless: !is_leader,
+            cli_subagents: None,
+            cli_web_search_model: None,
+            cli_session_summary_model: None,
+            cli_experimental_memory: false,
+            cli_no_memory: false,
+            disable_web_search,
+            todo_gate: false,
+            laziness_debug_log: None,
+            storage_mode: None,
+        },
+    );
     let agent_memory_config = agent_config.memory_config.clone();
     let leader_eligible = matches!(
         &agent_args.mode,
@@ -1113,18 +1114,19 @@ async fn run_agent_command(
         if !agent_args.plugin_dirs.is_empty() {
             eprintln!("{PLUGIN_DIR_LEADER_WARNING}");
         }
-        use std::sync::Arc;
-        use tokio::io::AsyncWriteExt;
-        use tokio::sync::Mutex as TokioMutex;
         use bucket_agent_core::leader::{
             ClientCapabilities, ClientMode, LeaderReconnector, ReconnectPolicy, connect_or_spawn,
         };
+        use std::sync::Arc;
+        use tokio::io::AsyncWriteExt;
+        use tokio::sync::Mutex as TokioMutex;
         let mode = match &agent_args.mode {
             Some(AgentCmd::Stdio) => ClientMode::Stdio,
             Some(AgentCmd::Headless(_)) | None => ClientMode::Headless,
             _ => ClientMode::Stdio,
         };
-        let env_urls = bucket_agent_core::leader::LeaderEnvUrls::from(&agent_config.bucket_com_config);
+        let env_urls =
+            bucket_agent_core::leader::LeaderEnvUrls::from(&agent_config.bucket_com_config);
         let default_model = agent_config
             .default_model_override
             .clone()
@@ -1329,14 +1331,16 @@ async fn run_agent_command(
                     check_fn: Box::new(move || {
                         let uc = update_config_for_leader.clone();
                         Box::pin(async move {
-                            let current_config = bucket_agent_core::util::config::load_config().await;
+                            let current_config =
+                                bucket_agent_core::util::config::load_config().await;
                             if current_config.cli.auto_update == Some(false) {
                                 return false;
                             }
                             match auto_update::ensure_latest_on_disk(&uc).await {
                                 Ok(outcome) => {
                                     if let Some(v) = &outcome.installed {
-                                        if let Err(e) = bucket_agent_core::managed_config::sync().await
+                                        if let Err(e) =
+                                            bucket_agent_core::managed_config::sync().await
                                         {
                                             tracing::warn!(
                                                 "Leader auto-update: managed config refresh failed: {e}"
@@ -1674,7 +1678,10 @@ async fn async_main() -> Result<()> {
     }
     if args.chat() {
         unsafe {
-            std::env::set_var(bucket_agent_core::agent::chat_modes::BUCKET_CHAT_MODE_ENV, "1");
+            std::env::set_var(
+                bucket_agent_core::agent::chat_modes::BUCKET_CHAT_MODE_ENV,
+                "1",
+            );
         }
     }
     if let Some(ref socket) = args.leader_socket {
@@ -2411,8 +2418,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn is_managed_install_matches_only_the_bin_bucket_target() {
-        let home =
-            std::env::temp_dir().join(format!("bucket-pager-managed-install-{}", std::process::id()));
+        let home = std::env::temp_dir().join(format!(
+            "bucket-pager-managed-install-{}",
+            std::process::id()
+        ));
         let _ = std::fs::remove_dir_all(&home);
         std::fs::create_dir_all(home.join("bin")).unwrap();
         std::fs::create_dir_all(home.join("downloads")).unwrap();

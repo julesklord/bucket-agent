@@ -119,7 +119,9 @@ async fn resolve_to_data_url(value: &str) -> Result<String, bucket_tool_runtime:
 
     let raw_bytes = if value.starts_with("data:image/") {
         let comma = value.find(',').ok_or_else(|| {
-            bucket_tool_runtime::ToolError::invalid_arguments("malformed data URL in image reference")
+            bucket_tool_runtime::ToolError::invalid_arguments(
+                "malformed data URL in image reference",
+            )
         })?;
         if !value[..comma].contains(";base64") {
             return Err(bucket_tool_runtime::ToolError::invalid_arguments(

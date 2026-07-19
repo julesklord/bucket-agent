@@ -18,9 +18,9 @@ use serial_test::serial;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use common::{reset_home, test_home};
 use bucket_updater::UpdateConfig;
 use bucket_updater::auto_update::{install_internal_from_base, install_internal_from_bases};
+use common::{reset_home, test_home};
 
 fn host_platform() -> String {
     let os = if cfg!(target_os = "macos") {
@@ -108,7 +108,10 @@ async fn install_internal_pinned_version_writes_binary_and_symlink() {
     let agent_link = home.join("bin").join("agent");
     assert!(agent_link.is_symlink(), "agent symlink created");
     let agent_target = std::fs::read_link(&agent_link).unwrap();
-    assert_eq!(agent_target, target, "agent and bucket point at same target");
+    assert_eq!(
+        agent_target, target,
+        "agent and bucket point at same target"
+    );
 }
 
 /// Regression: pre-existing `agent` symlink from a prior install must be
@@ -438,15 +441,21 @@ async fn install_internal_cleans_up_old_versions_keeping_n_minus_one() {
     let home = test_home();
     let downloads = home.join("downloads");
     assert!(
-        downloads.join(format!("bucket-0.1.181-{platform}")).exists(),
+        downloads
+            .join(format!("bucket-0.1.181-{platform}"))
+            .exists(),
         "current"
     );
     assert!(
-        downloads.join(format!("bucket-0.1.180-{platform}")).exists(),
+        downloads
+            .join(format!("bucket-0.1.180-{platform}"))
+            .exists(),
         "N-1 retained"
     );
     assert!(
-        !downloads.join(format!("bucket-0.1.179-{platform}")).exists(),
+        !downloads
+            .join(format!("bucket-0.1.179-{platform}"))
+            .exists(),
         "oldest deleted"
     );
 

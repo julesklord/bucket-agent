@@ -685,7 +685,10 @@ mod tests {
         let json =
             r#"{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"x.sh"}]}]}}"#;
         let (specs, _) = parse_hook_file(json, Path::new("/home/user/.bucket/hooks/safety.json"));
-        assert_eq!(specs[0].source_dir, PathBuf::from("/home/user/.bucket/hooks"));
+        assert_eq!(
+            specs[0].source_dir,
+            PathBuf::from("/home/user/.bucket/hooks")
+        );
     }
 
     #[test]

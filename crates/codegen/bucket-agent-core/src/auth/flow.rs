@@ -676,7 +676,8 @@ async fn run_auth_flow_inner(
 /// Returns `None` when no valid credentials can be obtained non-interactively.
 pub async fn try_ensure_fresh_auth(bucket_com_config: &BucketComConfig) -> Option<BucketAuth> {
     let bucket_home = bucket_home::bucket_home();
-    let auth_manager = std::sync::Arc::new(AuthManager::new(&bucket_home, bucket_com_config.clone()));
+    let auth_manager =
+        std::sync::Arc::new(AuthManager::new(&bucket_home, bucket_com_config.clone()));
 
     // auth() handles cached-valid (fast path), OIDC refresh, external
     // binary -- all through refresh_chain (single mutation point).
@@ -881,10 +882,15 @@ pub async fn run_cli_login(
     } else if cli_should_use_device(&config.bucket_com_config, login_override).await {
         if config.bucket_com_config.oauth2.is_none() {
             // No OIDC and no oauth2 here, so `--oauth` can't help.
-            anyhow::bail!("Sign-in is not available for this deployment. Set BUCKET_API_KEY instead.");
+            anyhow::bail!(
+                "Sign-in is not available for this deployment. Set BUCKET_API_KEY instead."
+            );
         }
         let bucket_home = bucket_home::bucket_home();
-        let auth_manager = Arc::new(AuthManager::new(&bucket_home, config.bucket_com_config.clone()));
+        let auth_manager = Arc::new(AuthManager::new(
+            &bucket_home,
+            config.bucket_com_config.clone(),
+        ));
         // Route through the shared inner flow (not `run_device_code_login`
         // directly) so the external auth provider and devbox auto-migration run
         // before the interactive device login. `force_interactive` skips the

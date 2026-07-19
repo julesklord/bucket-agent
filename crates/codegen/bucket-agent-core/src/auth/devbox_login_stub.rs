@@ -32,6 +32,8 @@ pub(super) async fn mint_devbox_auth_raw() -> anyhow::Result<BucketAuth> {
 }
 
 /// `bucket login --devbox` entry point: always errors in this build.
-pub async fn run_devbox_login(_config: &crate::agent::config::Config) -> anyhow::Result<BucketAuth> {
+pub async fn run_devbox_login(
+    _config: &crate::agent::config::Config,
+) -> anyhow::Result<BucketAuth> {
     anyhow::bail!(UNAVAILABLE)
 }

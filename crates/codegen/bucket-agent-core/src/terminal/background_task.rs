@@ -275,7 +275,10 @@ impl BackgroundTaskRegistry {
 pub fn get_task_output_path(session_id: &str, task_id: &str) -> PathBuf {
     use crate::util::bucket_home::bucket_home;
 
-    let tasks_dir = bucket_home().join("sessions").join(session_id).join("tasks");
+    let tasks_dir = bucket_home()
+        .join("sessions")
+        .join(session_id)
+        .join("tasks");
     // Create directory (ignore errors - will fail on write if dir creation fails)
     std::fs::create_dir_all(&tasks_dir).ok();
     tasks_dir.join(format!("{}.log", task_id))

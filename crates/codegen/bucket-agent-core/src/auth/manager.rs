@@ -1176,11 +1176,7 @@ impl AuthManager {
             DiskAuthState::FileMissing
             | DiskAuthState::EntryMissing
             | DiskAuthState::Unreadable => {
-                bucket_telemetry::unified_log::warn(
-                    "auth disk state: entry lost",
-                    None,
-                    Some(ctx),
-                );
+                bucket_telemetry::unified_log::warn("auth disk state: entry lost", None, Some(ctx));
             }
         }
     }

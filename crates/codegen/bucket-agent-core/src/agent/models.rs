@@ -13,8 +13,8 @@ use crate::agent::config::{self, ModelEntry, resolve_credentials, sampling_confi
 use crate::auth::{AuthManager, BucketAuth, BucketComConfig};
 use crate::remote::{FetchModelsResult, fetch_models_blocking};
 use crate::sampling::SamplerConfig as SamplingConfig;
-use globset::{Glob, GlobSet, GlobSetBuilder};
 use bucket_sampling_types::{ReasoningEffort, ReasoningEffortOption};
+use globset::{Glob, GlobSet, GlobSetBuilder};
 
 // ── Auth method for model fetching ──────────────────────────────────────────
 
@@ -1576,7 +1576,9 @@ pub fn start_early_prefetch_with_auth(auth: Option<BucketAuth>) -> Option<EarlyP
 ///
 /// Convenience wrapper that reads cached auth from disk. Prefer
 /// `start_early_prefetch_with_auth` when you have pre-resolved credentials.
-pub fn start_early_prefetch(bucket_com_config: Option<BucketComConfig>) -> Option<EarlyPrefetchHandle> {
+pub fn start_early_prefetch(
+    bucket_com_config: Option<BucketComConfig>,
+) -> Option<EarlyPrefetchHandle> {
     let env = resolve_prefetch_env(bucket_com_config)?;
     Some(spawn_prefetch_thread(env))
 }
@@ -2296,8 +2298,8 @@ mod tests {
 
     #[test]
     fn reasoning_effort_override_skips_models_that_do_not_offer_level() {
-        use indexmap::IndexMap;
         use bucket_sampling_types::ReasoningEffortOption;
+        use indexmap::IndexMap;
 
         let cfg = config::Config {
             reasoning_effort_override: Some(ReasoningEffort::None),
@@ -3113,8 +3115,8 @@ mod tests {
 
     // ── ModelFetchAuth::resolve priority tests ──────────────────────
 
-    use serial_test::serial;
     use bucket_test_support::EnvGuard;
+    use serial_test::serial;
 
     #[test]
     #[serial]
@@ -3510,7 +3512,10 @@ mod tests {
             "default-bucket-build".to_string(),
             make_model_entry("bucket-4.5"),
         );
-        models.insert("user-bucket-build".to_string(), make_model_entry("bucket-4.5"));
+        models.insert(
+            "user-bucket-build".to_string(),
+            make_model_entry("bucket-4.5"),
+        );
 
         let persisted = acp::ModelId::new("bucket-4.5");
         let key = resolve_catalog_key(&models, &persisted).expect("slug must resolve");

@@ -12,10 +12,13 @@ use super::*;
 // Re-exported for `acp_session.rs` which does `pub(crate) use interjection::*;`
 // so retained code and co-located tests keep resolving by `acp_session::` path.
 #[allow(unused_imports)]
-pub(crate) use bucket_interjection_core::{InterjectionBuffer, drain_formatted, format_interjection};
+pub(crate) use bucket_interjection_core::{
+    InterjectionBuffer, drain_formatted, format_interjection,
+};
 
 /// Shell instantiation of the shared entry type: images are ACP content.
-pub(crate) type PendingInterjection = bucket_interjection_core::PendingInterjection<acp::ImageContent>;
+pub(crate) type PendingInterjection =
+    bucket_interjection_core::PendingInterjection<acp::ImageContent>;
 
 /// Prompt-id prefix for interjections that missed their turn and were
 /// converted into standalone prompt turns (arrived while idle, or after the
@@ -253,18 +256,14 @@ impl SessionActor {
         // turn, which this skill did not start. `SkillDispatched` still
         // carries `plugin_source`, so dispatch counts stay complete.
         for sk in &parsed {
-            bucket_telemetry::session_ctx::log_event(
-                bucket_telemetry::events::SlashCommandUsed {
-                    command: sk.name.clone(),
-                    args_provided: !sk.args.is_empty(),
-                },
-            );
-            bucket_telemetry::session_ctx::log_event(
-                bucket_telemetry::events::SkillDispatched {
-                    skill_name: sk.name.clone(),
-                    plugin_source: sk.plugin_name.clone(),
-                },
-            );
+            bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::SlashCommandUsed {
+                command: sk.name.clone(),
+                args_provided: !sk.args.is_empty(),
+            });
+            bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::SkillDispatched {
+                skill_name: sk.name.clone(),
+                plugin_source: sk.plugin_name.clone(),
+            });
         }
         slash_commands::build_skill_information_for_refs(
             &parsed,

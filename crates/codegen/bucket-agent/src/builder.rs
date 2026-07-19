@@ -7,14 +7,14 @@ use crate::discovery::{SubagentEntry, SubagentSource};
 use crate::error::AgentBuildError;
 use crate::prompt::context::PromptContext;
 use crate::system_reminder::ReminderPolicy;
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
 use bucket_tools::bridge::ToolBridge;
 use bucket_tools::computer::types::{AsyncFileSystem, TerminalBackend};
 use bucket_tools::notification::ToolNotificationHandle;
 use bucket_tools::registry::types::SessionContext;
 use bucket_tools::types::tool::ToolKind;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 /// The Bucket [`ToolKind`] a vendor-compat `tools:` allowlist entry resolves to, so
 /// a plugin's upstream allowlist still binds. Backed by the shared vendor-to-Bucket
 /// tool registry in `bucket-tools` (also used by the hook matcher).
@@ -563,10 +563,7 @@ impl AgentBuilder {
     /// Set the resolved vendor-compat config. Threaded into both startup
     /// discovery (`list_skills_with_plugins` / `read_agents_config_with_paths`)
     /// and the dynamic-discovery seeds (`SkillManager` / `AgentsMdTracker`).
-    pub fn with_compat_config(
-        mut self,
-        compat: bucket_tools::types::compat::CompatConfig,
-    ) -> Self {
+    pub fn with_compat_config(mut self, compat: bucket_tools::types::compat::CompatConfig) -> Self {
         self.compat = compat;
         self
     }
@@ -704,7 +701,9 @@ impl AgentBuilder {
             }
             if self.web_search_config.is_enabled() {
                 use bucket_tools::implementations::bucket_build;
-                tool_config.tools.push((&bucket_build::WebSearchTool).into());
+                tool_config
+                    .tools
+                    .push((&bucket_build::WebSearchTool).into());
             }
             if self.web_fetch_config.is_enabled() {
                 use bucket_tools::implementations::bucket_build;
@@ -1196,14 +1195,15 @@ impl AgentBuilder {
     }
 }
 /// CLI naming for the shared [`bucket_tool_types::build_task_description`] builder.
-const TASK_TOOL_NAMING: bucket_tool_types::TaskToolNaming<'static> = bucket_tool_types::TaskToolNaming {
-    task_tool: "${{ tools.by_kind.task }}",
-    subagent_type_param: "${{ params.task.subagent_type }}",
-    run_in_background_param: "${{ params.task.run_in_background }}",
-    resume_from_param: "${{ params.task.resume_from }}",
-    background_retrieval_tool: "${{ tools.by_kind.background_task_action }}",
-    isolation_param: "${{ params.task.isolation }}",
-};
+const TASK_TOOL_NAMING: bucket_tool_types::TaskToolNaming<'static> =
+    bucket_tool_types::TaskToolNaming {
+        task_tool: "${{ tools.by_kind.task }}",
+        subagent_type_param: "${{ params.task.subagent_type }}",
+        run_in_background_param: "${{ params.task.run_in_background }}",
+        resume_from_param: "${{ params.task.resume_from }}",
+        background_retrieval_tool: "${{ tools.by_kind.background_task_action }}",
+        isolation_param: "${{ params.task.isolation }}",
+    };
 /// Concise task-tool description for child sessions. Delegation from a child
 /// is possible but discouraged — prefer doing the work directly.
 ///
@@ -1295,7 +1295,8 @@ pub(crate) fn build_task_description(
             }
         })
         .collect();
-    let mut description = bucket_tool_types::build_task_description(&descriptors, &TASK_TOOL_NAMING);
+    let mut description =
+        bucket_tool_types::build_task_description(&descriptors, &TASK_TOOL_NAMING);
     description.push_str(&task_model_guidance(model_slugs));
     description
 }

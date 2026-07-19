@@ -169,8 +169,12 @@ fn parse_diff_name_status_line(
     let path = parts.next()?;
 
     match status.chars().next()? {
-        'A' => Some(bucket_codebase_graph::FileEvent::created(repo_root.join(path))),
-        'D' => Some(bucket_codebase_graph::FileEvent::removed(repo_root.join(path))),
+        'A' => Some(bucket_codebase_graph::FileEvent::created(
+            repo_root.join(path),
+        )),
+        'D' => Some(bucket_codebase_graph::FileEvent::removed(
+            repo_root.join(path),
+        )),
         'R' | 'C' => {
             let new_path = parts.next()?;
             Some(bucket_codebase_graph::FileEvent::renamed(
@@ -344,8 +348,8 @@ mod tests {
 
     #[test]
     fn parse_diff_name_status_all_variants() {
-        use std::path::Path;
         use bucket_codebase_graph::FileEventKind;
+        use std::path::Path;
         let root = Path::new("/repo");
 
         let ev = parse_diff_name_status_line("M\tsrc/main.rs", root).unwrap();

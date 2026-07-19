@@ -464,7 +464,9 @@ mod tests {
     fn anchors_for(content: &str) -> Vec<String> {
         use crate::implementations::bucket_build_hashline::anchor::split_lines;
         use crate::implementations::bucket_build_hashline::edit::apply::anchor_suffix;
-        use crate::implementations::bucket_build_hashline::scheme::{AnchorScheme, ChunkFingerprint};
+        use crate::implementations::bucket_build_hashline::scheme::{
+            AnchorScheme, ChunkFingerprint,
+        };
         let scheme = ChunkFingerprint::with_params(3, 8);
         let lines = split_lines(content);
         scheme
@@ -487,9 +489,10 @@ mod tests {
             }],
         };
 
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::FileNotFound(msg) => {
@@ -525,9 +528,10 @@ mod tests {
             ],
         };
 
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         assert!(
             matches!(
@@ -564,9 +568,10 @@ mod tests {
             }],
         };
 
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         assert!(
             matches!(
@@ -620,7 +625,8 @@ mod tests {
 
     // -- Diff detail tests (multi-edit compactness) -------------------------
 
-    fn test_scheme() -> Box<dyn crate::implementations::bucket_build_hashline::scheme::AnchorScheme> {
+    fn test_scheme() -> Box<dyn crate::implementations::bucket_build_hashline::scheme::AnchorScheme>
+    {
         crate::implementations::bucket_build_hashline::config::HashlineSchemeParams::default()
             .build_scheme()
             .unwrap()

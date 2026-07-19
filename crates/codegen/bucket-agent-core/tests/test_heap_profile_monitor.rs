@@ -14,7 +14,6 @@ use std::sync::Once;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use chrono::{Duration as ChronoDuration, Utc};
 use bucket_agent_core::auth::{AuthManager, AuthMode, BucketAuth, BucketComConfig};
 use bucket_agent_core::heap_profile::{
     self, HeapProfileHooks, HeapProfileMonitor, HeapProfileUploadHandles,
@@ -25,6 +24,7 @@ use bucket_agent_core::session::repo_changes::UploadMethod;
 use bucket_agent_core::util::config::RemoteSettings;
 use bucket_test_support::{EnvGuard, MockInferenceServer};
 use bucket_version::TEST_VERSION_ENV;
+use chrono::{Duration as ChronoDuration, Utc};
 
 const SID: &str = "11111111-1111-4111-8111-111111111111";
 const TEST_VERSION: &str = "9.9.9-heaptest";

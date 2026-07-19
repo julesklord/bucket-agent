@@ -36,13 +36,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use bucket_fast_worktree::{WorktreeBuilder, WorktreeSync};
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
-use bucket_fast_worktree::{WorktreeBuilder, WorktreeSync};
 
 const WORKTREE_POOL_LOG: &str = "xai_worktree_pool";
-use crate::util::config::PoolConfig;
 use crate::util::bucket_home::bucket_home;
+use crate::util::config::PoolConfig;
 
 use bucket_tty_utils::git_command;
 
@@ -1748,7 +1748,8 @@ async fn remove_worktree_registration(path: &Path) {
 
     let path_owned = path.to_path_buf();
     let result =
-        tokio::task::spawn_blocking(move || bucket_fast_worktree::remove_worktree(&path_owned)).await;
+        tokio::task::spawn_blocking(move || bucket_fast_worktree::remove_worktree(&path_owned))
+            .await;
     let deregister_ms = deregister_start.elapsed().as_millis() as u64;
     tracing::info!(
         target: WORKTREE_POOL_LOG,

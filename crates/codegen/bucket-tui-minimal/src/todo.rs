@@ -13,8 +13,8 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
-use bucket_tui::theme::Theme;
 use bucket_agent_core::tools::TodoStatus;
+use bucket_tui::theme::Theme;
 
 /// Default cap on visible todo rows (the last becomes a `+N more` overflow row);
 /// `Ctrl+T` expands past it.
@@ -156,8 +156,8 @@ fn truncate_chars(s: &str, max: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bucket_tui::minimal_api;
     use bucket_agent_core::tools::{TodoItem, TodoPriority};
+    use bucket_tui::minimal_api;
 
     fn agent() -> bucket_tui::app::agent_view::AgentView {
         minimal_api::test_agent_view(Some("s1"), std::path::PathBuf::from("/tmp"))

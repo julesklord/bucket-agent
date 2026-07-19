@@ -574,9 +574,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "same", "same");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
@@ -595,9 +596,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("subdir", "old", "new");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
@@ -618,9 +620,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -643,9 +646,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("new_file.txt", "", "new content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -668,9 +672,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("existing.txt", "", "new content");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::FileAlreadyExists(msg) => {
@@ -689,9 +694,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("nonexistent.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::FileNotFound(msg) => {
@@ -712,9 +718,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "xyz", "abc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::NoMatchesFound(ref e) => {
@@ -736,9 +743,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "aaa", "ccc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
@@ -773,9 +781,10 @@ mod tests {
         ));
 
         let input = make_input("test.txt", "aaa", "ccc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
@@ -806,9 +815,10 @@ mod tests {
             new_string: "ccc".to_string(),
             replace_all: Some(true),
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -836,9 +846,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "line2\nline3\n", "replaced_a\nreplaced_b\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
@@ -860,9 +871,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "last", "end");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
@@ -889,9 +901,10 @@ mod tests {
             "old_line\n",
             "new_line_1\nnew_line_2\nnew_line_3\n",
         );
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
@@ -914,9 +927,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("a/b/c/new.txt", "", "nested content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -943,9 +957,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "beta", "BETA");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -980,9 +995,10 @@ mod tests {
             new_string: "qux".to_string(),
             replace_all: Some(true),
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -1011,9 +1027,10 @@ mod tests {
 
         // old_string="" on an empty file should succeed (treated as creation).
         let input = make_input("empty.txt", "", "new content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -1039,9 +1056,10 @@ mod tests {
 
         // Pass a relative path — should resolve against Cwd.
         let input = make_input("src/lib.rs", "fn main() {}", "fn main() { /* edited */ }");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -1066,9 +1084,10 @@ mod tests {
 
         // Replace the middle line.
         let input = make_input("test.txt", "line3\n", "REPLACED\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {

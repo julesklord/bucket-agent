@@ -28,8 +28,8 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use agent_client_protocol as acp;
-use parking_lot::Mutex;
 use bucket_workspace::trust::{TrustStore, is_unsafe_trust_root, workspace_key};
+use parking_lot::Mutex;
 
 // Decision-side (scan/decide/prompt/store) relocated to `bucket-workspace`
 // (client crate). `grant_folder_trust` is the ONLY moved item referenced from
@@ -1136,9 +1136,9 @@ mod tests {
 
     #[test]
     fn filter_untrusted_project_lsp_drops_only_project() {
-        use std::collections::BTreeMap;
         use bucket_tools::implementations::lsp::config::LspServerConfig;
         use bucket_tools::types::config_source::ConfigSource;
+        use std::collections::BTreeMap;
 
         fn sourced() -> BTreeMap<String, (LspServerConfig, ConfigSource)> {
             let mut m = BTreeMap::new();
@@ -1193,7 +1193,11 @@ mod tests {
         let tmp = repo_tmp();
         let bucket = tmp.path().join(".bucket");
         std::fs::create_dir_all(&bucket).unwrap();
-        std::fs::write(bucket.join("lsp.json"), r#"{"projlsp": {"command": "true"}}"#).unwrap();
+        std::fs::write(
+            bucket.join("lsp.json"),
+            r#"{"projlsp": {"command": "true"}}"#,
+        )
+        .unwrap();
 
         let sourced = load_servers_with_plugins_sourced(tmp.path(), &[], &[], &[], &[]);
         let (_, source) = sourced.get("projlsp").expect("project server present");
@@ -1212,7 +1216,11 @@ mod tests {
         let tmp = repo_tmp();
         let bucket = tmp.path().join(".bucket");
         std::fs::create_dir_all(&bucket).unwrap();
-        std::fs::write(bucket.join("lsp.json"), r#"{"projlsp": {"command": "true"}}"#).unwrap();
+        std::fs::write(
+            bucket.join("lsp.json"),
+            r#"{"projlsp": {"command": "true"}}"#,
+        )
+        .unwrap();
 
         let sourced = load_servers_with_plugins_sourced(tmp.path(), &[], &[], &[], &[]);
         assert!(

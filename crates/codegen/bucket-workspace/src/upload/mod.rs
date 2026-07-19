@@ -1,15 +1,15 @@
 pub(crate) mod environment;
 use crate::telemetry::dc_log;
-use environment::WorkspaceIdentity;
-use prometheus::{IntCounterVec, IntGauge, register_int_counter_vec, register_int_gauge};
-use std::sync::Arc;
-use std::sync::LazyLock;
-use bucket_hub_sdk::auth::{AuthCredential, AuthProvider};
+use bucket_auth::{AuthCredentialProvider, CredentialSnapshot};
 use bucket_file_utils::gcs::StorageConfig;
 use bucket_file_utils::queue::{EnqueueOutcome, TraceExportSource, UploadQueue};
 use bucket_file_utils::storage_client::Auth401AttributionCallback;
 use bucket_file_utils::{TraceExportConfig, UploadMethod};
-use bucket_auth::{AuthCredentialProvider, CredentialSnapshot};
+use bucket_hub_sdk::auth::{AuthCredential, AuthProvider};
+use environment::WorkspaceIdentity;
+use prometheus::{IntCounterVec, IntGauge, register_int_counter_vec, register_int_gauge};
+use std::sync::Arc;
+use std::sync::LazyLock;
 /// `…_pending_bytes` is the series the mandatory queue-memory alert fires on.
 static UPLOAD_QUEUE_PENDING_BYTES: LazyLock<IntGauge> = LazyLock::new(|| {
     register_int_gauge!(

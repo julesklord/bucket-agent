@@ -26,13 +26,13 @@ use crate::cpu_profile::{
     ShutdownStopDisposition,
 };
 use agent_client_protocol::AGENT_METHOD_NAMES;
+use bucket_hub_sdk::{AuthCredential, AuthIdentity, AuthProvider};
+use bucket_workspace::WorkspaceHandle;
 use kanal::{AsyncReceiver, AsyncSender};
 use parking_lot::Mutex;
 use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, trace, warn};
-use bucket_hub_sdk::{AuthCredential, AuthIdentity, AuthProvider};
-use bucket_workspace::WorkspaceHandle;
 const REGISTRATION_TIMEOUT: Duration = Duration::from_secs(30);
 /// Separator for namespacing request IDs. Using pipe character which is:
 /// - Valid in JSON strings (no escaping needed)
@@ -2429,7 +2429,8 @@ mod tests {
             "stdio registration must not signal relay demand"
         );
         let _headless =
-            connect_and_register_with_mode(&sock_path, "bucket-headless", ClientMode::Headless).await;
+            connect_and_register_with_mode(&sock_path, "bucket-headless", ClientMode::Headless)
+                .await;
         tokio::time::timeout(Duration::from_secs(5), relay_demand_rx.wait_for(|d| *d))
             .await
             .expect("relay demand must flip after headless registration")
@@ -3721,7 +3722,8 @@ mod tests {
             r#"{"jsonrpc":"2.0","method":"x.ai/yolo_mode_changed","params":{"yolo_mode":true}}"#,
         );
         assert!(inject_client_identity_into_yolo_notification(
-            &mut json, "bucket-tui"
+            &mut json,
+            "bucket-tui"
         ));
         assert_eq!(json["params"]["clientIdentifier"], "bucket-tui");
         assert_eq!(json["params"]["yolo_mode"], true);
@@ -3731,7 +3733,8 @@ mod tests {
         let mut json = pv(r#"{"jsonrpc":"2.0","method":"x.ai/other","params":{"data":1}}"#);
         let before = json.clone();
         assert!(!inject_client_identity_into_yolo_notification(
-            &mut json, "bucket-tui"
+            &mut json,
+            "bucket-tui"
         ));
         assert_eq!(json, before);
     }

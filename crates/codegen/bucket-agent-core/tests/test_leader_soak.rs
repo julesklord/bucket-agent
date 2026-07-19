@@ -18,10 +18,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use agent_client_protocol as acp;
-use tempfile::TempDir;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-use tokio_util::sync::CancellationToken;
 use bucket_acp::{
     AcpAgentGatewayReceiver as GatewayReceiver, AcpAgentGatewaySender as GatewaySender,
     LineBufferedRead,
@@ -32,6 +28,10 @@ use bucket_agent_core::leader::{
     ClientCapabilities, ClientMode, LeaderClient, LeaderServerControlState, LeaderServerMetadata,
     run_leader_server,
 };
+use tempfile::TempDir;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
+use tokio_util::sync::CancellationToken;
 
 const SIMPLEX_BUF: usize = 8 * 1024 * 1024;
 

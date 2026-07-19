@@ -677,15 +677,13 @@ impl SessionActor {
             } else {
                 (None, None)
             };
-            bucket_telemetry::session_ctx::log_event(
-                bucket_telemetry::events::ToolCallCompleted {
-                    tool_name: prepared.tool_name.clone(),
-                    outcome: tool_outcome,
-                    duration_ms,
-                    file_path: ext_file_path,
-                    parameters: ext_parameters,
-                },
-            );
+            bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::ToolCallCompleted {
+                tool_name: prepared.tool_name.clone(),
+                outcome: tool_outcome,
+                duration_ms,
+                file_path: ext_file_path,
+                parameters: ext_parameters,
+            });
             tracing::info_span!(
                 "tool.execution", tool_name = % prepared.tool_name, tool_use_id = %
                 prepared.call_id, tool_input_size_bytes = prepared.raw_arguments.len() as
@@ -1110,14 +1108,12 @@ impl SessionActor {
                     bucket_telemetry::events::PermissionOutcome::Deny,
                     Some(reason.to_string()),
                 ),
-                Decision::Cancelled => (
-                    bucket_telemetry::events::PermissionOutcome::Cancelled,
-                    None,
-                ),
-                Decision::FollowupMessage(_) => (
-                    bucket_telemetry::events::PermissionOutcome::Followup,
-                    None,
-                ),
+                Decision::Cancelled => {
+                    (bucket_telemetry::events::PermissionOutcome::Cancelled, None)
+                }
+                Decision::FollowupMessage(_) => {
+                    (bucket_telemetry::events::PermissionOutcome::Followup, None)
+                }
             };
             tracing::info_span!(
                 "tool.decision", tool_name = % call.function.name, tool_use_id = % call
@@ -1962,9 +1958,7 @@ impl SessionActor {
                 }
                 if ops.pr_merged {
                     self.signals_handle().record_pr_merged();
-                    bucket_telemetry::session_ctx::log_event(
-                        bucket_telemetry::events::PrMerged {},
-                    );
+                    bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::PrMerged {});
                 }
             }
             bucket_tools::types::output::ToolOutput::MCP(m)
@@ -2900,8 +2894,8 @@ mod wait_interrupt_tests {
         BlockingWaitGuard, interrupted_wait_tool_result, is_interruptible_wait_tool,
         wait_for_pending_interjection,
     };
-    use bucket_tools::types::output::ToolOutput;
     use bucket_tool_types::TaskOutputOutput;
+    use bucket_tools::types::output::ToolOutput;
     /// The interruptible-wait select arms: a pending interjection aborts an
     /// in-flight wait, and `biased` prefers an already-completed wait result
     /// over the abort. (Unit-level: the full dispatch loop has no test seam.)

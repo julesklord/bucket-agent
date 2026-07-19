@@ -510,13 +510,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use bucket_acp::{
     AcpAgentGatewayReceiver as GatewayReceiver, AcpAgentGatewaySender as GatewaySender,
     LineBufferedRead,
 };
 use bucket_agent_core::agent::config::Config as AgentConfig;
 use bucket_agent_core::agent::mvp_agent::MvpAgent;
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 const DUPLEX_BUFFER_BYTES: usize = 16 * 1024 * 1024;
 

@@ -1,6 +1,6 @@
 use agent_client_protocol as acp;
-use serde::Serialize;
 use bucket_sampling_types::{ReasoningEffort, ReasoningEffortOption};
+use serde::Serialize;
 
 use crate::session::unified_list::SessionKind;
 

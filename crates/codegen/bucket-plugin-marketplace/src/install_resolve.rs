@@ -469,7 +469,10 @@ mod tests {
                 "Mirror A",
                 "https://github.com/bucket-org/plugin-marketplace.git",
             ),
-            git_source("Mirror B", "git@github.com:bucket-org/plugin-marketplace.git"),
+            git_source(
+                "Mirror B",
+                "git@github.com:bucket-org/plugin-marketplace.git",
+            ),
         ];
         assert_eq!(
             resolve_qualified_source("bucket-org/plugin-marketplace", &sources),

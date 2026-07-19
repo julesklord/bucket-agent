@@ -8,11 +8,11 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
-use tracing::{debug, info, warn};
 use bucket_tool_protocol::{McpBlock, SessionId, ToolId, ToolOutputWire};
 use bucket_tool_runtime::{ToolCallContext, ToolError, ToolStream, TypedToolOutput, terminal_only};
 use bucket_tool_types::ToolDescription;
+use serde_json::Value;
+use tracing::{debug, info, warn};
 
 use crate::transport::McpTransport;
 use crate::types::{McpCallResult, McpContent, McpError, McpServerInfo, McpToolDefinition};
@@ -502,8 +502,8 @@ mod tests {
             .find(|h| h.tool_id.as_str() == "search")
             .unwrap();
 
-        use futures::StreamExt;
         use bucket_hub_sdk::ToolServerHandler;
+        use futures::StreamExt;
 
         let ctx = ToolCallContext::default();
         let args = serde_json::json!({"query": "test"});
@@ -545,8 +545,8 @@ mod tests {
         let handle = McpBridge::connect(transport, &config).await.unwrap();
         let handler = &handle.bridge.handlers()[0];
 
-        use futures::StreamExt;
         use bucket_hub_sdk::ToolServerHandler;
+        use futures::StreamExt;
 
         let ctx = ToolCallContext::default();
         let mut stream = handler
@@ -594,8 +594,8 @@ mod tests {
         let handle = McpBridge::connect(transport, &config).await.unwrap();
         let handler = &handle.bridge.handlers()[0];
 
-        use futures::StreamExt;
         use bucket_hub_sdk::ToolServerHandler;
+        use futures::StreamExt;
 
         let ctx = ToolCallContext::default();
         let mut stream = handler.handle_call(ctx, Value::Null).await;
@@ -624,8 +624,8 @@ mod tests {
         let handle = McpBridge::connect(transport, &config).await.unwrap();
         let handler = &handle.bridge.handlers()[0];
 
-        use futures::StreamExt;
         use bucket_hub_sdk::ToolServerHandler;
+        use futures::StreamExt;
 
         let ctx = ToolCallContext::default();
         let mut stream = handler.handle_call(ctx, Value::Null).await;

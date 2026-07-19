@@ -1,6 +1,6 @@
+pub mod bucket_home;
 pub mod changelog;
 pub mod event_id;
-pub mod bucket_home;
 pub mod secure_file;
 pub mod tips;
 pub mod uname;

@@ -440,7 +440,10 @@ fn one_failed_turn_increments_error_count_exactly_once() {
         .map(|e| e.0.clone())
         .collect();
     assert_eq!(
-        names.iter().filter(|n| *n == "bucket_code.api_error").count(),
+        names
+            .iter()
+            .filter(|n| *n == "bucket_code.api_error")
+            .count(),
         2
     );
     // …but error.count incremented exactly once.
@@ -478,7 +481,10 @@ fn turn_error_increments_error_count() {
     );
     let mut names = exported_metric_names(&stream);
     names.sort();
-    assert_eq!(names, vec!["bucket_code.error.count", "bucket_code.turn.count"]);
+    assert_eq!(
+        names,
+        vec!["bucket_code.error.count", "bucket_code.turn.count"]
+    );
 }
 
 #[test]

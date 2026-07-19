@@ -14,8 +14,8 @@ use crate::version::{
     UpdateConfig, fetch_latest_version, get_installed_bucket_version, get_latest_version,
     is_version_cache_fresh, try_fetch_stable_pointer, write_version_cache,
 };
-use bucket_agent_core::util::config;
 use bucket_agent_core::util::bucket_home::{bucket_application, bucket_home};
+use bucket_agent_core::util::config;
 
 #[derive(Clone, Copy, Debug)]
 pub enum UpdateRunMode {
@@ -98,7 +98,10 @@ pub fn print_update_status(status: &UpdateStatus, json: bool) -> anyhow::Result<
         return Ok(());
     }
 
-    println!("Bucket Build - v{}{}", status.current_version, channel_label);
+    println!(
+        "Bucket Build - v{}{}",
+        status.current_version, channel_label
+    );
     Ok(())
 }
 
@@ -1271,7 +1274,10 @@ async fn regenerate_completions(binary: &std::path::Path, bucket_home: &std::pat
     let completions: &[(&str, std::path::PathBuf)] = &[
         ("bash", bucket_home.join("completions/bash/bucket.bash")),
         ("zsh", bucket_home.join("completions/zsh/_bucket")),
-        ("fish", user_home.join(".config/fish/completions/bucket.fish")),
+        (
+            "fish",
+            user_home.join(".config/fish/completions/bucket.fish"),
+        ),
     ];
 
     for (shell, dest) in completions {
@@ -1347,7 +1353,11 @@ async fn swap_managed_bin_links(
     binary_path: &std::path::Path,
     bin_dir: &std::path::Path,
 ) -> Result<std::path::PathBuf> {
-    let bucket_name = if cfg!(windows) { "bucket.exe" } else { "bucket" };
+    let bucket_name = if cfg!(windows) {
+        "bucket.exe"
+    } else {
+        "bucket"
+    };
     let agent_name = if cfg!(windows) { "agent.exe" } else { "agent" };
     let bucket_link = bin_dir.join(bucket_name);
     let agent_link = bin_dir.join(agent_name);
@@ -2388,8 +2398,10 @@ mod tests {
         // name onto a single `bucket-0.1.tmp`; the helper must keep distinct
         // versions distinct AND make repeated attempts (same process, e.g.
         // concurrent tokio tasks) unique.
-        let dest_181 = std::path::Path::new("/home/u/.bucket/downloads/bucket-0.1.181-linux-x86_64");
-        let dest_182 = std::path::Path::new("/home/u/.bucket/downloads/bucket-0.1.182-linux-x86_64");
+        let dest_181 =
+            std::path::Path::new("/home/u/.bucket/downloads/bucket-0.1.181-linux-x86_64");
+        let dest_182 =
+            std::path::Path::new("/home/u/.bucket/downloads/bucket-0.1.182-linux-x86_64");
 
         let a = tmp_download_path(dest_181);
         let b = tmp_download_path(dest_182);
@@ -2940,7 +2952,11 @@ mod tests {
         std::fs::write(d.join("bucket-0.1.140-macos-aarch64"), "old-bucket").unwrap();
         std::fs::write(d.join("bucket-0.1.141-macos-aarch64"), "current-bucket").unwrap();
         std::fs::write(d.join("bucket-pager-0.1.140-macos-aarch64"), "old-pager").unwrap();
-        std::fs::write(d.join("bucket-pager-0.1.141-macos-aarch64"), "current-pager").unwrap();
+        std::fs::write(
+            d.join("bucket-pager-0.1.141-macos-aarch64"),
+            "current-pager",
+        )
+        .unwrap();
 
         // Cleanup only bucket — pager files must be untouched.
         make_all_stale(d);
@@ -3126,7 +3142,10 @@ mod tests {
         cleanup_old_downloads(d, "bucket-pager", "0.1.151").await;
 
         assert!(d.join("bucket-pager-0.1.151-linux-x64").exists(), "current");
-        assert!(d.join("bucket-pager-0.1.150-linux-x64").exists(), "N-1 kept");
+        assert!(
+            d.join("bucket-pager-0.1.150-linux-x64").exists(),
+            "N-1 kept"
+        );
         assert!(
             !d.join("bucket-pager-0.1.149-linux-x64").exists(),
             "0.1.149 deleted"
@@ -3165,9 +3184,21 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let d = dir.path();
 
-        std::fs::write(d.join("bucket-0.1.148-alpha.1-macos-aarch64"), "alpha-148-1").unwrap();
-        std::fs::write(d.join("bucket-0.1.148-alpha.2-macos-aarch64"), "alpha-148-2").unwrap();
-        std::fs::write(d.join("bucket-0.1.149-alpha.1-macos-aarch64"), "alpha-149-1").unwrap();
+        std::fs::write(
+            d.join("bucket-0.1.148-alpha.1-macos-aarch64"),
+            "alpha-148-1",
+        )
+        .unwrap();
+        std::fs::write(
+            d.join("bucket-0.1.148-alpha.2-macos-aarch64"),
+            "alpha-148-2",
+        )
+        .unwrap();
+        std::fs::write(
+            d.join("bucket-0.1.149-alpha.1-macos-aarch64"),
+            "alpha-149-1",
+        )
+        .unwrap();
         // Current version is the newest alpha.
         std::fs::write(d.join("bucket-0.1.150-alpha.1-macos-aarch64"), "current").unwrap();
 

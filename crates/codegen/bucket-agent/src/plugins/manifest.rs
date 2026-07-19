@@ -611,7 +611,8 @@ mod tests {
 
     #[test]
     fn substitute_env_vars_replaces_all() {
-        let input = "${BUCKET_PLUGIN_ROOT}/bin:${CLAUDE_PLUGIN_ROOT}/lib:${BUCKET_PLUGIN_DATA}/cache";
+        let input =
+            "${BUCKET_PLUGIN_ROOT}/bin:${CLAUDE_PLUGIN_ROOT}/lib:${BUCKET_PLUGIN_DATA}/cache";
         let result = substitute_env_vars(input, "/home/user/plugin", "/home/user/.data/plugin");
         assert_eq!(
             result,

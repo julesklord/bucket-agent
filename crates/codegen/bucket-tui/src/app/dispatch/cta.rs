@@ -45,7 +45,10 @@ pub(super) fn cta_settle_installed(
 
 pub(super) fn plugin_cta_candidates(
     response: bucket_hooks_plugins_types::MarketplaceListResponse,
-) -> (Vec<bucket_hooks_plugins_types::MarketplacePluginEntry>, bool) {
+) -> (
+    Vec<bucket_hooks_plugins_types::MarketplacePluginEntry>,
+    bool,
+) {
     let mut candidates = Vec::new();
     let mut official_source_present = false;
     for source in response.sources {
@@ -254,7 +257,9 @@ pub(super) fn handle_cta_plugin_reload_done(
     // Mirror the install handler: a non-Success outcome is a failure, not
     // a reason to advance into the post-install pipeline.
     let reload_result = match result {
-        Ok(outcome) if outcome.status == bucket_hooks_plugins_types::OutcomeStatus::Success => Ok(()),
+        Ok(outcome) if outcome.status == bucket_hooks_plugins_types::OutcomeStatus::Success => {
+            Ok(())
+        }
         Ok(outcome) => Err(crate::app::effects::sanitize_user_error(&outcome.message)),
         Err(e) => Err(e),
     };

@@ -108,9 +108,7 @@ pub async fn fetch_merged(
 
     let repo_urls_fut = async {
         cwd.map(|c| {
-            bucket_workspace::session::git::resolve_normalized_remote_urls(std::path::Path::new(
-                c,
-            ))
+            bucket_workspace::session::git::resolve_normalized_remote_urls(std::path::Path::new(c))
         })
         .unwrap_or_default()
     };

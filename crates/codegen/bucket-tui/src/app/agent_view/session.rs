@@ -741,9 +741,9 @@ impl AgentView {
                 snap.free_tokens = bucket_token_estimation::free_tokens(snap.total, used);
             }
             None => {
-                self.context_state = Some(bucket_agent_core::session::ContextInfo::from_notification(
-                    used, total,
-                ));
+                self.context_state = Some(
+                    bucket_agent_core::session::ContextInfo::from_notification(used, total),
+                );
             }
         }
     }

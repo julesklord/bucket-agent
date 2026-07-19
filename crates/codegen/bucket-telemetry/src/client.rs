@@ -6,7 +6,7 @@
 //! injected via [`init`]/[`init_if_needed`] so this crate avoids depending on
 //! shell's `User-Agent` builder (which couples to the `permission` module).
 
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock};
 
 use chrono::{Local, SecondsFormat};
 use serde_json::json;
@@ -56,7 +56,6 @@ impl std::fmt::Debug for TelemetryClient {
                 "events_api_key",
                 &self.events_api_key.as_ref().map(|_| "***"),
             )
-            .field("mixpanel", &self.mixpanel.as_ref().map(|_| "configured"))
             .finish()
     }
 }

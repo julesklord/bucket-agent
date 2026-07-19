@@ -3,8 +3,8 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use fs2::FileExt;
 use bucket_workspace::util::is_lock_contended;
+use fs2::FileExt;
 
 use crate::util::bucket_home::bucket_home;
 

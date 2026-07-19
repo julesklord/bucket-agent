@@ -6,11 +6,11 @@
 use super::commands::SessionCommand;
 use super::persistence::{LocalFeedbackEntry, PersistenceMsg};
 use agent_client_protocol as acp;
+use bucket_file_utils::queue::UploadQueue;
+use bucket_hunk_tracker::HunkTrackerHandle;
+use bucket_sampling_types::ReasoningEffort;
 use std::collections::{HashMap, HashSet};
 use tokio::sync::{mpsc, oneshot};
-use bucket_file_utils::queue::UploadQueue;
-use bucket_sampling_types::ReasoningEffort;
-use bucket_hunk_tracker::HunkTrackerHandle;
 /// Coarse lifecycle state of a session as known to the leader/agent.
 ///
 /// A bucket session has no

@@ -551,8 +551,8 @@ fn rehydrate_worktree_from_ref_inner(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use bucket_test_utils::git::{git_commit_all, init_git_repo};
+    use tempfile::TempDir;
 
     #[test]
     fn test_git_reset_hard_command() {
@@ -1054,7 +1054,8 @@ mod tests {
         // Build a PARENTLESS commit holding the same working state, so its `^`
         // never resolves — exercising the base-unreachable fallback without
         // depending on gc to prune a real base.
-        let snap = snapshot_worktree_to_ref(&wt, "refs/bucket/snapshots/orphan-src", "src").unwrap();
+        let snap =
+            snapshot_worktree_to_ref(&wt, "refs/bucket/snapshots/orphan-src", "src").unwrap();
         let tree = git_capture_in(&wt, &["rev-parse", &format!("{snap}^{{tree}}")], &[]).unwrap();
         let ident = [
             ("GIT_AUTHOR_NAME", "T"),

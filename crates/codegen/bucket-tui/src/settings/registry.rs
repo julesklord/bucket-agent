@@ -1280,10 +1280,8 @@ mod tests {
         }
         assert!(saw_auto, "settings must offer System (auto)");
 
-        let crate_codes: HashSet<&str> = bucket_voice::STT_LANGUAGES
-            .iter()
-            .map(|l| l.code)
-            .collect();
+        let crate_codes: HashSet<&str> =
+            bucket_voice::STT_LANGUAGES.iter().map(|l| l.code).collect();
         assert_eq!(
             setting_codes, crate_codes,
             "settings concrete languages must match bucket_voice::STT_LANGUAGES exactly"

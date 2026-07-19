@@ -1,13 +1,13 @@
 use agent_client_protocol as acp;
 use anyhow::Result;
+use bucket_agent::prompt::skills::SkillsConfig;
+use bucket_tools::types::compat::{CompatConfig, CompatConfigToml};
 use indexmap::IndexMap;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use toml::Value as TomlValue;
 use toml::map::Map as TomlMap;
-use bucket_agent::prompt::skills::SkillsConfig;
-use bucket_tools::types::compat::{CompatConfig, CompatConfigToml};
 
 pub use bucket_mcp::oauth_config::{McpOAuthConfig, McpOAuthConfigMap};
 // MCP server config value types extracted to `bucket-config-types` (config

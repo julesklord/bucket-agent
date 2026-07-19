@@ -1,5 +1,5 @@
-use ratatui::layout::Rect;
 use bucket_tui::scrollback::text_selection::ResolvedSelectionModel;
+use ratatui::layout::Rect;
 
 #[test]
 fn resolved_selection_model_supports_exhaustive_external_literals() {

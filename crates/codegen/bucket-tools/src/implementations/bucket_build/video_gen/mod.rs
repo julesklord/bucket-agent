@@ -458,7 +458,9 @@ impl VideoGenClient {
     /// Download video bytes from a pre-signed temporary URL (no auth headers).
     async fn download_video(&self, url: &str) -> Result<Vec<u8>, bucket_tool_runtime::ToolError> {
         let response = self.download_http.get(url).send().await.map_err(|e| {
-            bucket_tool_runtime::ToolError::invalid_arguments(format!("Failed to download video: {e}"))
+            bucket_tool_runtime::ToolError::invalid_arguments(format!(
+                "Failed to download video: {e}"
+            ))
         })?;
 
         if !response.status().is_success() {
@@ -771,7 +773,9 @@ async fn resolve_image_reference(value: &str) -> Result<String, bucket_tool_runt
 
     if value.starts_with("data:image/") {
         let comma = value.find(',').ok_or_else(|| {
-            bucket_tool_runtime::ToolError::invalid_arguments("malformed data URL in image reference")
+            bucket_tool_runtime::ToolError::invalid_arguments(
+                "malformed data URL in image reference",
+            )
         })?;
         if !value[..comma].contains(";base64") {
             return Err(bucket_tool_runtime::ToolError::invalid_arguments(
@@ -798,7 +802,9 @@ async fn resolve_image_reference(value: &str) -> Result<String, bucket_tool_runt
 
     let (_w, _h, mime) =
         crate::util::image_validate::validate_image_bytes(&raw_bytes).map_err(|e| {
-            bucket_tool_runtime::ToolError::invalid_arguments(format!("invalid image reference: {e}"))
+            bucket_tool_runtime::ToolError::invalid_arguments(format!(
+                "invalid image reference: {e}"
+            ))
         })?;
     let b64 = base64::engine::general_purpose::STANDARD.encode(&raw_bytes);
     Ok(format!("data:{mime};base64,{b64}"))

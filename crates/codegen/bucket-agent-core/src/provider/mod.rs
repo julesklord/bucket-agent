@@ -2,8 +2,8 @@ pub mod capabilities;
 pub use capabilities::ProviderCapabilities;
 
 use async_trait::async_trait;
+use bucket_sampler::{RequestId, SamplerConfig, SamplerHandle};
 use bucket_sampling_types::{ConversationRequest, ConversationResponse, SamplingError};
-use bucket_sampler::{SamplerConfig, SamplerHandle, RequestId};
 
 /// Provider-agnostic interface for chat inference.
 ///

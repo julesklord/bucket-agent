@@ -7,7 +7,6 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
 use bucket_tool_protocol::{
     AttachRoute, ConnectionId, ConnectionKind, ERROR_CODES, FrameSeq, HelloAckMsg, HelloMsg,
     HookEvent, HookFrame, HookKind, JsonRpcId, JsonRpcVersion, KNOWN_NOTIFICATION_KINDS, LastSeq,
@@ -25,6 +24,7 @@ use bucket_tool_protocol::{
     WireCustomNotification, WireToolNotification, error_codes,
 };
 use bucket_tool_types::ToolDescription;
+use serde_json::{Value, json};
 
 fn roundtrip<T>(value: &T) -> Value
 where

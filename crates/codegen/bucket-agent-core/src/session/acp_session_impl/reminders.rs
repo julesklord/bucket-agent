@@ -306,13 +306,13 @@ impl SessionActor {
                     )
                     .await;
                 let read_tool_name =
-                    bucket_tools::reminders::task_completion::resolve_read_tool_name(&bridge)
-                        .await;
-                let reminder = bucket_tools::reminders::task_completion::format_between_turn_bash_completions(
-                    &bash_completions,
-                    task_output_name.as_deref(),
-                    read_tool_name.as_deref(),
-                );
+                    bucket_tools::reminders::task_completion::resolve_read_tool_name(&bridge).await;
+                let reminder =
+                    bucket_tools::reminders::task_completion::format_between_turn_bash_completions(
+                        &bash_completions,
+                        task_output_name.as_deref(),
+                        read_tool_name.as_deref(),
+                    );
                 self.push_system_reminder(&reminder);
             }
         }
@@ -417,9 +417,7 @@ impl SessionActor {
         self.push_system_reminder(&reminder);
     }
     /// Turn-end TodoGate config, or `None` when [`todo_gate_active`] is false.
-    pub(super) fn todo_gate_policy(
-        &self,
-    ) -> Option<bucket_agent::system_reminder::TodoGateConfig> {
+    pub(super) fn todo_gate_policy(&self) -> Option<bucket_agent::system_reminder::TodoGateConfig> {
         let goal_status = self.goal_tracker.lock().status();
         let agent = self.agent.borrow();
         let policy = agent.reminder_policy();

@@ -22,7 +22,10 @@ fn add_cli_chat_proxy_headers_blocking(
 ) -> reqwest::blocking::RequestBuilder {
     let mut builder = builder
         .header("Authorization", format!("Bearer {}", &auth.key))
-        .header("X-BUCKET-Token-Auth", BucketComConfig::default().token_header)
+        .header(
+            "X-BUCKET-Token-Auth",
+            BucketComConfig::default().token_header,
+        )
         .header("x-userid", &auth.user_id)
         .header("x-bucket-client-version", bucket_version::VERSION);
     if let Some(email) = &auth.email {
@@ -151,14 +154,13 @@ async fn fetch_bundle_inner(
     let archive_url = format!("{}/bundle/archive", cli_chat_proxy_base_url);
     let raw_client = crate::http::shared_client();
     let client: reqwest_middleware::ClientWithMiddleware = if let Some(am) = auth_manager {
-        let provider: std::sync::Arc<dyn bucket_auth::AuthCredentialProvider> =
-            std::sync::Arc::new(
-                crate::auth::credential_provider::ShellAuthCredentialProvider::new(
-                    am.clone(),
-                    deployment_key.map(str::to_owned),
-                    alpha_test_key.map(str::to_owned),
-                ),
-            );
+        let provider: std::sync::Arc<dyn bucket_auth::AuthCredentialProvider> = std::sync::Arc::new(
+            crate::auth::credential_provider::ShellAuthCredentialProvider::new(
+                am.clone(),
+                deployment_key.map(str::to_owned),
+                alpha_test_key.map(str::to_owned),
+            ),
+        );
         crate::http::with_auth_retry(raw_client, provider)
     } else {
         reqwest_middleware::ClientBuilder::new(raw_client).build()
@@ -406,7 +408,10 @@ impl BackendClient {
         };
         headers.insert(
             "X-BUCKET-Token-Auth",
-            required(&BucketComConfig::default().token_header, "X-BUCKET-Token-Auth")?,
+            required(
+                &BucketComConfig::default().token_header,
+                "X-BUCKET-Token-Auth",
+            )?,
         );
         headers.insert("x-userid", required(&auth.user_id, "x-userid")?);
         if let Some(email) = &auth.email
@@ -1310,7 +1315,8 @@ mod tests {
     }
     fn test_auth_manager() -> Arc<crate::auth::AuthManager> {
         let dir = tempfile::tempdir().unwrap();
-        let mgr = crate::auth::AuthManager::new(dir.path(), crate::auth::BucketComConfig::default());
+        let mgr =
+            crate::auth::AuthManager::new(dir.path(), crate::auth::BucketComConfig::default());
         mgr.hot_swap(test_auth());
         std::mem::forget(dir);
         Arc::new(mgr)
@@ -1716,7 +1722,10 @@ mod tests {
     #[test]
     fn inference_url_defaults_to_proxy() {
         let ep = endpoints("https://proxy.bucket.com/v1", None, None);
-        assert_eq!(ep.resolve_inference_base_url(), "https://proxy.bucket.com/v1");
+        assert_eq!(
+            ep.resolve_inference_base_url(),
+            "https://proxy.bucket.com/v1"
+        );
     }
     #[test]
     fn inference_url_uses_models_base_url() {

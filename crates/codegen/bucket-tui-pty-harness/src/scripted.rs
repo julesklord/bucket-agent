@@ -537,8 +537,9 @@ impl ScriptedScenarioRunner {
 
         if let Some(config_toml) = &scenario.environment.config_toml {
             let bucket_home = content.home().join(".bucket");
-            fs::create_dir_all(&bucket_home)
-                .with_context(|| format!("create scenario BUCKET_HOME {}", bucket_home.display()))?;
+            fs::create_dir_all(&bucket_home).with_context(|| {
+                format!("create scenario BUCKET_HOME {}", bucket_home.display())
+            })?;
             fs::write(bucket_home.join("config.toml"), config_toml)
                 .context("write scenario config.toml")?;
         }

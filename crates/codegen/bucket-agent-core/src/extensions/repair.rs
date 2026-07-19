@@ -13,9 +13,9 @@
 //! on disk via the atomic `replace_chat_history`.
 
 use agent_client_protocol as acp;
+use bucket_chat_state::compaction_utils::HistoryRepairReport;
 use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
-use bucket_chat_state::compaction_utils::HistoryRepairReport;
 
 use super::{ExtResult, parse_params, to_raw_response};
 use crate::agent::MvpAgent;
@@ -106,7 +106,11 @@ async fn handle_session_repair(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtR
 /// Repair a non-resident session's history on disk: load via the resume
 /// path's corruption-tolerant reader (legacy upgrades apply), repair, write
 /// back atomically. `bucket_root` is injectable for tests.
-async fn repair_on_disk(bucket_root: &std::path::Path, session_id: &str, dry_run: bool) -> ExtResult {
+async fn repair_on_disk(
+    bucket_root: &std::path::Path,
+    session_id: &str,
+    dry_run: bool,
+) -> ExtResult {
     let summary = crate::session::persistence::find_summary_by_session_id_in_root(
         session_id,
         &bucket_root.join("sessions"),
@@ -152,8 +156,8 @@ mod tests {
     use crate::sampling::ConversationItem;
     use crate::session::info::Info;
     use crate::session::persistence::default_model_id;
-    use tempfile::TempDir;
     use bucket_sampling_types::ToolCall;
+    use tempfile::TempDir;
 
     const SESSION_ID: &str = "019f3df7-3d70-7f60-8ca0-a38d2d005670";
 

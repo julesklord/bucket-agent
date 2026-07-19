@@ -133,7 +133,8 @@ fn finish_transcript(app: &mut AppView, id: bucket_tui::app::agent::AgentId, out
         }
         return;
     }
-    let path = std::env::temp_dir().join(format!("bucket-transcript-{}.ansi", uuid::Uuid::new_v4()));
+    let path =
+        std::env::temp_dir().join(format!("bucket-transcript-{}.ansi", uuid::Uuid::new_v4()));
     match std::fs::write(&path, out) {
         Ok(()) => {
             app.pending_pager_path = Some(path);
@@ -141,11 +142,11 @@ fn finish_transcript(app: &mut AppView, id: bucket_tui::app::agent::AgentId, out
         }
         Err(e) => {
             if let Some(agent) = app.agents.get_mut(&id) {
-                agent.scrollback.push_block(
-                    bucket_tui::scrollback::block::RenderBlock::system(format!(
+                agent
+                    .scrollback
+                    .push_block(bucket_tui::scrollback::block::RenderBlock::system(format!(
                         "Failed to write transcript: {e}"
-                    )),
-                );
+                    )));
             }
         }
     }

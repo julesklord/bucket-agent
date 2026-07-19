@@ -37,13 +37,13 @@ use std::path::Path;
 
 use serial_test::serial;
 
+use bucket_updater::auto_update::{ensure_latest_on_disk, install_internal_from_base, run_update};
+use bucket_updater::version::installed_on_disk_version;
 use common::artifact_server::ArtifactServer;
 use common::{
     FakeBinGuard, can_exec_shell_scripts, host_platform, make_update_config, reset_home,
     set_test_version, small_good_artifact, test_home,
 };
-use bucket_updater::auto_update::{ensure_latest_on_disk, install_internal_from_base, run_update};
-use bucket_updater::version::installed_on_disk_version;
 
 /// Assert the active `~/.bucket/bin/bucket` resolves to the expected versioned
 /// binary, actually runs, and has exactly the expected content (the content

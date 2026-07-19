@@ -1,9 +1,9 @@
 //! Display-refresh probe + auto-cadence policy resolve and pure cadence derivation.
 
 use crate::util::config::RemoteSettings;
+use bucket_config_types::DisplayRefreshSettings;
 use serde::Deserialize;
 use toml::Value as TomlValue;
-use bucket_config_types::DisplayRefreshSettings;
 
 pub const ENV_DISPLAY_REFRESH_PROBE_ENABLED: &str = "BUCKET_DISPLAY_REFRESH_PROBE_ENABLED";
 pub const ENV_DISPLAY_REFRESH_AUTO_CADENCE: &str = "BUCKET_DISPLAY_REFRESH_AUTO_CADENCE";

@@ -14,9 +14,9 @@ pub use mcp::*;
 mod permission;
 pub use permission::*;
 mod pool;
+use bucket_announcements::RemoteAnnouncement;
 pub use pool::*;
 use serde::{Deserialize, Serialize};
-use bucket_announcements::RemoteAnnouncement;
 /// A remote `campaigns[]` entry: an `id` gate plus a full-power
 /// flattened config patch (the JSON sibling of a `[[campaigns]]` TOML override).
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -971,7 +971,10 @@ mod tests {
     fn remote_settings_prompt_suggestion_model_round_trip() {
         let json = r#"{"prompt_suggestion_model": "bucket-build-0.1"}"#;
         let s: RemoteSettings = serde_json::from_str(json).unwrap();
-        assert_eq!(s.prompt_suggestion_model.as_deref(), Some("bucket-build-0.1"));
+        assert_eq!(
+            s.prompt_suggestion_model.as_deref(),
+            Some("bucket-build-0.1")
+        );
         let out = serde_json::to_string(&s).unwrap();
         let s2: RemoteSettings = serde_json::from_str(&out).unwrap();
         assert_eq!(s2.prompt_suggestion_model, s.prompt_suggestion_model);

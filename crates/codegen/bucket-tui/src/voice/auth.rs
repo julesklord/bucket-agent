@@ -38,7 +38,9 @@ impl VoiceAuthProvider for AuthManagerVoiceAuth {
 ///
 /// Works for every auth method: OAuth / bucket.com / OIDC session tokens and
 /// `BUCKET_API_KEY` / per-model BYOK keys.
-pub fn build_voice_auth(auth_manager: Arc<bucket_agent_core::auth::AuthManager>) -> SharedVoiceAuth {
+pub fn build_voice_auth(
+    auth_manager: Arc<bucket_agent_core::auth::AuthManager>,
+) -> SharedVoiceAuth {
     Arc::new(AuthManagerVoiceAuth(
         bucket_agent_core::auth::shared_api_key_provider(auth_manager),
     ))

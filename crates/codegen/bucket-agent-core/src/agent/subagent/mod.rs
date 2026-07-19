@@ -27,6 +27,10 @@ use crate::upload::trace::{
 };
 use crate::upload::turn::{PromptTraceContext, complete_prompt_trace};
 use agent_client_protocol as acp;
+use bucket_acp::AcpAgentGatewaySender as GatewaySender;
+use bucket_hunk_tracker::HunkTrackerHandle;
+use bucket_tools::implementations::bucket_build::task::types::*;
+use bucket_workspace::file_system::AsyncFileSystem;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -34,10 +38,6 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use tokio::sync::{Notify, mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
-use bucket_acp::AcpAgentGatewaySender as GatewaySender;
-use bucket_tools::implementations::bucket_build::task::types::*;
-use bucket_workspace::file_system::AsyncFileSystem;
-use bucket_hunk_tracker::HunkTrackerHandle;
 mod coordinator_lifecycle;
 mod coordinator_query;
 mod handle_request;
@@ -349,8 +349,7 @@ pub(crate) struct SubagentSpawnContext {
     /// skills / rules / AGENTS.md discovery honors the same vendor toggles.
     pub parent_compat: bucket_tools::types::compat::CompatConfig,
     /// Shared set of IDs delivered via auto-wake synthetic prompts.
-    pub auto_wake_delivered:
-        Option<bucket_tools::reminders::task_completion::AutoWakeDeliveredIds>,
+    pub auto_wake_delivered: Option<bucket_tools::reminders::task_completion::AutoWakeDeliveredIds>,
     /// Channel for requesting trace uploads for synthetic auto-wake turns.
     pub synthetic_trace_tx:
         Option<tokio::sync::mpsc::UnboundedSender<crate::upload::turn::SyntheticTurnTraceRequest>>,
@@ -1308,7 +1307,8 @@ async fn bootstrap_initial_context(
                         ));
                     }
                 };
-                let estimated_tokens = bucket_chat_state::estimate_conversation_tokens(&conversation);
+                let estimated_tokens =
+                    bucket_chat_state::estimate_conversation_tokens(&conversation);
                 const SAFE_RESUME_PERCENT: u64 = 80;
                 let threshold = child_context_window * SAFE_RESUME_PERCENT / 100;
                 if estimated_tokens > threshold {
@@ -1729,8 +1729,8 @@ fn resolve_subagent_toolset(
 fn summarize_tool_config(
     config: &bucket_tools::registry::types::ToolServerConfig,
 ) -> SubagentTypeSummary {
-    use std::collections::HashMap;
     use bucket_tools::types::tool::ToolKind;
+    use std::collections::HashMap;
     let mut tool_names: HashMap<ToolKind, String> = HashMap::new();
     for tc in &config.tools {
         let Some(kind) = tc.kind else { continue };
@@ -1864,8 +1864,7 @@ fn resolve_subagent_permission_mode(
 /// Main repo root for a subagent's source: the durable repo a completion snapshot is transferred into and the repo a resume rehydrates from — both arms MUST resolve this identically.
 fn resolve_subagent_source_repo(ctx: &SubagentSpawnContext) -> std::path::PathBuf {
     let source_cwd = parent_source_cwd(ctx);
-    bucket_workspace::session::git::find_main_repo_root_from_path(&source_cwd)
-        .unwrap_or(source_cwd)
+    bucket_workspace::session::git::find_main_repo_root_from_path(&source_cwd).unwrap_or(source_cwd)
 }
 enum SubagentWaitOutcome {
     Cancelled,

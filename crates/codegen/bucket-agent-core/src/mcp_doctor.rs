@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use serde::Serialize;
 use bucket_tools::types::config_source::ConfigSource;
+use serde::Serialize;
 
 use crate::auth::BucketComConfig;
 use crate::session::managed_mcp;
@@ -273,7 +273,10 @@ fn managed_found(
 async fn try_discover_managed_servers() -> (ConfigSourceStatus, Vec<DiscoveredServer>) {
     let bucket_home = bucket_tools::util::bucket_home::bucket_home();
     let bucket_com_config = BucketComConfig::default();
-    let auth_manager = Arc::new(crate::auth::AuthManager::new(&bucket_home, bucket_com_config));
+    let auth_manager = Arc::new(crate::auth::AuthManager::new(
+        &bucket_home,
+        bucket_com_config,
+    ));
 
     let Some(snapshot) = auth_manager.current_or_expired() else {
         return managed_skipped("not logged in");

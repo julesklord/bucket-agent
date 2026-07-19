@@ -2573,7 +2573,10 @@ mod tests {
         assert!(al.is_server_denied(&http_named("foo", "https://x.example.com/mcp")));
         assert!(al.is_server_denied(&http_named("bucket_com_foo", "https://x.example.com/mcp")));
         assert!(!al.is_server_denied(&http_named("foobar", "https://x.example.com/mcp")));
-        assert!(!al.is_server_denied(&http_named("bucket_com_foobar", "https://x.example.com/mcp")));
+        assert!(!al.is_server_denied(&http_named(
+            "bucket_com_foobar",
+            "https://x.example.com/mcp"
+        )));
     }
 
     #[test]

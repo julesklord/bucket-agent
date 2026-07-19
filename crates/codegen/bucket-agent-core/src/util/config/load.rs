@@ -63,7 +63,9 @@ pub async fn load_config() -> Config {
         .map(std::path::PathBuf::from)
         .or_else(|_| {
             #[allow(deprecated)]
-            std::env::home_dir().map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket")).ok_or(())
+            std::env::home_dir()
+                .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
+                .ok_or(())
         })
     {
         let provider_file = home.join("providers.toml");
@@ -75,7 +77,7 @@ pub async fn load_config() -> Config {
                     // This is a minimal hook to override if there is no env override.
                     let custom_provider_env = std::env::var("BUCKET_PROVIDER").ok();
                     let custom_model_env = std::env::var("BUCKET_MODEL").ok();
-                    
+
                     // We only apply this if there isn't a custom env var overriding it,
                     // as requested: "solo se podra hacer override si hay una variable de entorno"
                     if custom_provider_env.is_none() && custom_model_env.is_none() {
@@ -86,27 +88,39 @@ pub async fn load_config() -> Config {
                                 unsafe {
                                     std::env::set_var("BUCKET_API_KEY", api_key);
                                 }
-                                
+
                                 // Map known providers to base URLs
                                 match provider_name.to_lowercase().as_str() {
-                                    "openai" => {
-                                        unsafe {
-                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "https://api.openai.com/v1");
-                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.openai.com/v1");
-                                        }
-                                    }
-                                    "anthropic" => {
-                                        unsafe {
-                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "https://api.anthropic.com/v1");
-                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.anthropic.com/v1");
-                                        }
-                                    }
-                                    "ollama" => {
-                                        unsafe {
-                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "http://localhost:11434/v1");
-                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "http://localhost:11434/v1");
-                                        }
-                                    }
+                                    "openai" => unsafe {
+                                        std::env::set_var(
+                                            "BUCKET_MODELS_BASE_URL",
+                                            "https://api.openai.com/v1",
+                                        );
+                                        std::env::set_var(
+                                            "BUCKET_BUCKET_API_BASE_URL",
+                                            "https://api.openai.com/v1",
+                                        );
+                                    },
+                                    "anthropic" => unsafe {
+                                        std::env::set_var(
+                                            "BUCKET_MODELS_BASE_URL",
+                                            "https://api.anthropic.com/v1",
+                                        );
+                                        std::env::set_var(
+                                            "BUCKET_BUCKET_API_BASE_URL",
+                                            "https://api.anthropic.com/v1",
+                                        );
+                                    },
+                                    "ollama" => unsafe {
+                                        std::env::set_var(
+                                            "BUCKET_MODELS_BASE_URL",
+                                            "http://localhost:11434/v1",
+                                        );
+                                        std::env::set_var(
+                                            "BUCKET_BUCKET_API_BASE_URL",
+                                            "http://localhost:11434/v1",
+                                        );
+                                    },
                                     _ => {
                                         // Assume the provider name is the URL if it doesn't match known ones?
                                         // Or maybe don't set it if it's unknown.
@@ -170,11 +184,11 @@ pub fn load_config_from_toml(root: &TomlValue) -> Config {
             .and_then(|v| v.clone().try_into().ok())
             .unwrap_or_default(),
     };
-    
+
     if let Ok(model) = std::env::var("BUCKET_MODEL") {
         config.models.default = Some(model);
     }
-    
+
     config
 }
 /// Resolve permission config with project override semantics.

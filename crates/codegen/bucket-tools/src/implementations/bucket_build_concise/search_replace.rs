@@ -1,6 +1,8 @@
 //! Concise variant of the `search_replace` tool.
 
-use crate::implementations::bucket_build::search_replace::{SearchReplaceInput, run_search_replace};
+use crate::implementations::bucket_build::search_replace::{
+    SearchReplaceInput, run_search_replace,
+};
 
 /// Concise description — no read-before-edit enforcement, simplified formatting guidance.
 const DESCRIPTION_CONCISE: &str = r#"Replace an exact string in a file.
@@ -152,9 +154,10 @@ mod tests {
         let resources = test_resources(tmp.path());
 
         let input = make_input("test.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
@@ -183,9 +186,10 @@ mod tests {
             new_string: "ccc".to_string(),
             replace_all: true,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
 
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {

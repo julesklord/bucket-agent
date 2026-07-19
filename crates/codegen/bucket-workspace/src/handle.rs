@@ -1,4 +1,7 @@
 //! [`WorkspaceHandle`] -- public handle to a workspace instance.
+use bucket_hunk_tracker::{HunkTrackerActor, HunkTrackerHandle, TrackingMode};
+use bucket_tool_protocol::ToolServerStatusPayload;
+use bucket_tool_protocol::turn_hook::TurnHookOutcome;
 use fastrace::future::FutureExt as _;
 use fastrace::local::LocalSpan;
 use prometheus::{
@@ -7,9 +10,6 @@ use prometheus::{
 };
 use std::path::PathBuf;
 use std::sync::Arc;
-use bucket_hunk_tracker::{HunkTrackerActor, HunkTrackerHandle, TrackingMode};
-use bucket_tool_protocol::ToolServerStatusPayload;
-use bucket_tool_protocol::turn_hook::TurnHookOutcome;
 /// Default SIGTERM drain budget (ms); override via
 /// `BUCKET_WORKSPACE_TERMINATION_GRACE_MS`. 45s fits under the K8s grace period.
 const DEFAULT_TERMINATION_GRACE_MS: u64 = 45_000;
@@ -2514,9 +2514,9 @@ impl WorkspaceHandle {
         let mcp_results: Vec<
             Result<bucket_mcp::servers::McpClient, bucket_mcp::servers::McpError>,
         > = tokio::task::spawn_blocking(move || {
-            use std::collections::HashMap;
             use bucket_mcp::oauth_config::McpOAuthConfigMap;
             use bucket_mcp::servers::{McpClientTimeoutOverrides, McpMetaConfigMap};
+            use std::collections::HashMap;
             let overrides_map: HashMap<String, McpClientTimeoutOverrides> = HashMap::new();
             let meta_config_map = McpMetaConfigMap::new();
             let oauth_config_map = McpOAuthConfigMap::new();
@@ -2625,12 +2625,12 @@ impl WorkspaceHandle {
             "session MCP servers initialized"
         );
         if !started.is_empty() {
-            let _ =
-                self.shared
-                    .events
-                    .send(bucket_workspace_types::WorkspaceEvent::ToolsChanged {
-                        session_id: session_id.to_owned(),
-                    });
+            let _ = self
+                .shared
+                .events
+                .send(bucket_workspace_types::WorkspaceEvent::ToolsChanged {
+                    session_id: session_id.to_owned(),
+                });
         }
         Ok(McpStartResult { started, failed })
     }
@@ -3995,7 +3995,9 @@ async fn enqueue_workspace_tool_definitions(
 /// Single source of truth for mapping a turn-hook outcome to the `events.jsonl`
 /// [`TurnOutcomeLabel`]. Kept as one `match` so the two enums cannot drift and
 /// the mapping is never duplicated across call sites.
-fn turn_outcome_label(outcome: bucket_tool_protocol::turn_hook::TurnHookOutcome) -> TurnOutcomeLabel {
+fn turn_outcome_label(
+    outcome: bucket_tool_protocol::turn_hook::TurnHookOutcome,
+) -> TurnOutcomeLabel {
     use bucket_tool_protocol::turn_hook::TurnHookOutcome;
     match outcome {
         TurnHookOutcome::Completed => TurnOutcomeLabel::Completed,
@@ -4354,10 +4356,10 @@ pub(crate) mod tests {
     use crate::session::tool_config::test_support::{
         TestSessionContextFactory, baseline_config, tc,
     };
-    use std::sync::Arc;
     use bucket_tools::registry::types::ToolServerConfig;
     use bucket_tools::types::tool::ToolKind;
     use bucket_workspace_types::WorkspaceEvent;
+    use std::sync::Arc;
     /// Create a test workspace handle with a "main" session pre-created.
     pub(crate) fn make_handle() -> WorkspaceHandle {
         make_handle_with_rewind_all_outcomes(false)
@@ -4517,8 +4519,8 @@ pub(crate) mod tests {
             Item = bucket_tool_runtime::ToolStreamItem<bucket_tool_runtime::TypedToolOutput>,
         > + Unpin,
     ) -> bucket_tool_runtime::TypedToolOutput {
-        use futures::StreamExt;
         use bucket_tool_runtime::ToolStreamItem;
+        use futures::StreamExt;
         while let Some(item) = stream.next().await {
             match item {
                 ToolStreamItem::Terminal(Ok(t)) => return t,
@@ -5961,7 +5963,9 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn events_jsonl_captures_turn_tool_toggle_and_mcp_variants() {
         use bucket_file_utils::events::ToolOutcome;
-        use bucket_tool_protocol::turn_hook::{AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome};
+        use bucket_tool_protocol::turn_hook::{
+            AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome,
+        };
         let (handle, home) = make_handle_with_events();
         let sid = "sess-int";
         handle
@@ -6154,7 +6158,9 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn events_disabled_keeps_noop_and_writes_nothing() {
         use bucket_file_utils::events::ToolOutcome;
-        use bucket_tool_protocol::turn_hook::{AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome};
+        use bucket_tool_protocol::turn_hook::{
+            AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome,
+        };
         let handle = make_handle();
         assert!(
             !handle.shared().events_enabled,
@@ -6570,9 +6576,8 @@ pub(crate) mod tests {
             confine_fs_to_workspace_root: false,
         };
         let home = tempfile::tempdir().expect("workspace home tempdir");
-        let auth: bucket_hub_sdk::SharedAuthProvider = Arc::new(
-            bucket_hub_sdk::auth::AuthCredential::bearer("test-token"),
-        );
+        let auth: bucket_hub_sdk::SharedAuthProvider =
+            Arc::new(bucket_hub_sdk::auth::AuthCredential::bearer("test-token"));
         let proxy = Arc::new(crate::upload::ProxyStorageConfig::new(
             auth,
             "http://127.0.0.1:1/v1".to_string(),
@@ -7494,9 +7499,8 @@ pub(crate) mod tests {
         let service_auth: bucket_hub_sdk::SharedAuthProvider = Arc::new(
             bucket_hub_sdk::auth::AuthCredential::bearer("bucket-service-token"),
         );
-        let hub_auth: bucket_hub_sdk::SharedAuthProvider = Arc::new(
-            bucket_hub_sdk::auth::AuthCredential::bearer("hub-token"),
-        );
+        let hub_auth: bucket_hub_sdk::SharedAuthProvider =
+            Arc::new(bucket_hub_sdk::auth::AuthCredential::bearer("hub-token"));
         let hub_cfg = crate::hub::HubConfig {
             url: url::Url::parse("ws://127.0.0.1:9/ws").unwrap(),
             auth: hub_auth.clone(),
@@ -7934,9 +7938,7 @@ pub(crate) mod tests {
     }
     /// Build the resolver exactly the way `connect_hub` does: session catalog
     /// handlers + the workspace RPC handler.
-    fn bind_resolver_fixture(
-        handle: &WorkspaceHandle,
-    ) -> bucket_hub_sdk::SessionHandlerResolver {
+    fn bind_resolver_fixture(handle: &WorkspaceHandle) -> bucket_hub_sdk::SessionHandlerResolver {
         let catalog_toolset = handle.session("main").expect("main session").toolset();
         let mut catalog = build_session_routed_handlers(&catalog_toolset, handle);
         let rpc_handler: Arc<dyn bucket_hub_sdk::ToolServerHandler> =
@@ -8726,7 +8728,9 @@ pub(crate) mod tests {
     /// and the context object passes through verbatim.
     #[tokio::test]
     async fn after_turn_decodes_cancellation_fields_into_events_jsonl() {
-        use bucket_tool_protocol::turn_hook::{AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome};
+        use bucket_tool_protocol::turn_hook::{
+            AfterTurnPayload, BeforeTurnPayload, TurnHookOutcome,
+        };
         let (handle, home) = make_handle_with_events();
         let sid = "sess-cancel";
         handle

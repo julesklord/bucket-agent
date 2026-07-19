@@ -17,15 +17,15 @@
 use super::support::*;
 use super::*;
 use crate::session::PromptOrigin;
+use bucket_tools::implementations::bucket_build::task::types::{
+    SubagentCancelOutcome, SubagentEvent, SubagentResult,
+};
+use bucket_tools::implementations::bucket_build::update_goal::{RejectReason, UpdateGoalInput};
 use serial_test::serial;
 use std::collections::VecDeque;
 use std::sync::Arc as StdArc;
 use std::sync::atomic::{AtomicUsize, Ordering as SeqOrd};
 use tokio::sync::Notify;
-use bucket_tools::implementations::bucket_build::task::types::{
-    SubagentCancelOutcome, SubagentEvent, SubagentResult,
-};
-use bucket_tools::implementations::bucket_build::update_goal::{RejectReason, UpdateGoalInput};
 const ENV_FLAG: &str = "BUCKET_GOAL_CLASSIFIER";
 /// Canned subagent response for a single verifier-skeptic spawn.
 /// Constructors mirror the verification-stage contract: each

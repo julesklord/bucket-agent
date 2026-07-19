@@ -37,13 +37,7 @@ fn ensure_local_pager_binary(binary: &std::path::Path) -> Result<()> {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     let mut cmd = Command::new(&cargo);
     cmd.current_dir(workspace_root()?)
-        .args([
-            "build",
-            "-p",
-            "bucket-bin",
-            "--bin",
-            "bucket-tui",
-        ])
+        .args(["build", "-p", "bucket-bin", "--bin", "bucket-tui"])
         .stdin(Stdio::null())
         .envs(bucket_tty_utils::pager_env());
     bucket_tty_utils::detach_std_command(&mut cmd);

@@ -20,11 +20,11 @@ use std::time::Duration;
 
 use serial_test::serial;
 
-use common::FakeBinGuard;
 use bucket_updater::auto_update::install_npm_for_test;
 use bucket_updater::version::{
     fetch_gh_release_version, fetch_npm_tag_for_test, fetch_npm_version_for_test,
 };
+use common::FakeBinGuard;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // fetch_npm_tag — reads a single dist-tag from `npm view`.
@@ -217,7 +217,10 @@ async fn install_npm_calls_npm_with_version_arg() {
     assert_eq!(log.len(), 1, "exactly one npm invocation");
     let args = &log[0];
     assert!(args.contains("i -g"), "args: {args}");
-    assert!(args.contains("@bucket-official/bucket@0.1.181"), "args: {args}");
+    assert!(
+        args.contains("@bucket-official/bucket@0.1.181"),
+        "args: {args}"
+    );
 }
 
 #[tokio::test]

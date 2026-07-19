@@ -18,9 +18,9 @@
 //! cargo test -p bucket-agent-core --test test_agent_type_invariant -- --ignored
 //! ```
 use agent_client_protocol::Agent as _;
+use bucket_test_support::*;
 use std::future::Future;
 use std::time::Duration;
-use bucket_test_support::*;
 async fn with_local_set<F, Fut>(f: F)
 where
     F: FnOnce() -> Fut,

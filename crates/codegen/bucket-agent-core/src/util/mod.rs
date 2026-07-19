@@ -1,5 +1,5 @@
-pub mod config;
 pub mod bucket_auth_credentials;
+pub mod config;
 pub mod hooks;
 
 // The foundation utilities live in `bucket-agent-base` (upstream of this

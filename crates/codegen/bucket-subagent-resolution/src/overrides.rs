@@ -5,9 +5,9 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use serde::de::DeserializeOwned;
-use bucket_tools::implementations::bucket_build::task::types::SubagentRuntimeOverrides;
 use bucket_tool_types::{SubagentCapabilityMode, SubagentIsolationMode};
+use bucket_tools::implementations::bucket_build::task::types::SubagentRuntimeOverrides;
+use serde::de::DeserializeOwned;
 
 use crate::config::{SubagentPersona, SubagentRole};
 use crate::types::EffectiveRuntimeConfig;

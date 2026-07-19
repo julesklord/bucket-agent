@@ -648,9 +648,11 @@ pub fn filter_skills(skills: Vec<SkillInfo>, ignore_paths: &[String]) -> Vec<Ski
 /// Format a skill for prompt injection (if body is populated).
 /// Injects plain markdown body — no XML envelope.
 pub(crate) fn format_skill_for_injection(skill: &SkillInfo) -> Option<String> {
-    skill.body.as_ref().filter(|b| !b.is_empty()).map(|body| {
-        bucket_tools::implementations::skills::skill::build_skill_message(skill, body)
-    })
+    skill
+        .body
+        .as_ref()
+        .filter(|b| !b.is_empty())
+        .map(|body| bucket_tools::implementations::skills::skill::build_skill_message(skill, body))
 }
 
 /// Format multiple skills for prompt injection.
@@ -711,11 +713,11 @@ pub(crate) async fn resolve_preloaded_skills(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use bucket_tools::implementations::skills::discovery::{
         MAX_BODY_PEEK_BYTES, MAX_SKILL_WALK_DEPTH, SkillParseError, extract_first_paragraph,
         is_valid_skill_name, normalize_skill_name, parse_skill_frontmatter,
     };
+    use std::fs;
 
     /// Helper: create a minimal valid SKILL.md with the given name.
     fn write_skill_md(dir: &Path, name: &str) {
@@ -735,7 +737,10 @@ mod tests {
         write_skill_md(&server.path().join("dup"), "dup");
 
         let cwd = tempfile::tempdir().unwrap();
-        write_skill_md(&cwd.path().join(".bucket").join("skills").join("dup"), "dup");
+        write_skill_md(
+            &cwd.path().join(".bucket").join("skills").join("dup"),
+            "dup",
+        );
 
         let config = SkillsConfig {
             server_skill_dirs: vec![server.path().to_string_lossy().into_owned()],
@@ -771,7 +776,10 @@ mod tests {
         write_skill_md(&bundled.path().join("dup"), "dup");
 
         let cwd = tempfile::tempdir().unwrap();
-        write_skill_md(&cwd.path().join(".bucket").join("skills").join("dup"), "dup");
+        write_skill_md(
+            &cwd.path().join(".bucket").join("skills").join("dup"),
+            "dup",
+        );
 
         let config = SkillsConfig {
             bundled_skill_dirs: vec![bundled.path().to_string_lossy().into_owned()],
@@ -1108,7 +1116,8 @@ mod tests {
 
     #[test]
     fn parse_model_and_effort() {
-        let content = "---\nname: my-skill\ndescription: test\nmodel: bucket-3\neffort: high\n---\n";
+        let content =
+            "---\nname: my-skill\ndescription: test\nmodel: bucket-3\neffort: high\n---\n";
         let parsed = parse_skill_frontmatter(content, None).unwrap();
         assert_eq!(parsed.model.as_deref(), Some("bucket-3"));
         assert_eq!(parsed.effort.as_deref(), Some("high"));
@@ -1884,7 +1893,10 @@ mod tests {
         fs::create_dir_all(&repo_root).unwrap();
         init_git_repo(&repo_root);
 
-        let auto_dir = repo_root.join(".bucket").join("skills").join("overlap-skill");
+        let auto_dir = repo_root
+            .join(".bucket")
+            .join("skills")
+            .join("overlap-skill");
         write_skill_md(&auto_dir, "overlap-skill");
 
         let config = SkillsConfig {

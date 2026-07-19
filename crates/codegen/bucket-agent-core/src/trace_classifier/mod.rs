@@ -17,10 +17,10 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
-use serde::{Deserialize, Serialize};
 use bucket_sampling_types::{
     ContentPart, ConversationItem, ConversationRequest, SystemItem, UserItem,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::session::{
     CollectedTodoGateInput, DebugDecision, LAZINESS_CLASSIFIER_PROMPT,
@@ -2299,7 +2299,8 @@ mod tests {
         // `with_no_env` returns sync; we re-implement the clearing
         // inline so we can `.await` the resolver.
         let key =
-            with_env_isolated(async { resolve_api_key(None, bucket_home).await.expect("ok") }).await;
+            with_env_isolated(async { resolve_api_key(None, bucket_home).await.expect("ok") })
+                .await;
         assert_eq!(key, "from-auth-json", "auth.json is the third source");
     }
 
@@ -2393,7 +2394,8 @@ mod tests {
         let bucket_home = tmp.path();
         write_fresh_oidc_auth_json(bucket_home, "fresh-oidc-key");
         let key =
-            with_env_isolated(async { resolve_api_key(None, bucket_home).await.expect("ok") }).await;
+            with_env_isolated(async { resolve_api_key(None, bucket_home).await.expect("ok") })
+                .await;
         assert_eq!(key, "fresh-oidc-key");
     }
 

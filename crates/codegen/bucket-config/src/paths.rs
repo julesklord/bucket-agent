@@ -82,7 +82,6 @@ fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result
     Ok(())
 }
 
-
 /// The user-global bucket home, but only when one genuinely resolves: `Some` when
 /// `$BUCKET_HOME` is set or a home directory is found, `None` otherwise. Unlike
 /// [`bucket_home()`], this never falls back to a cwd-relative `.bucket`, so callers
@@ -101,7 +100,11 @@ pub fn bucket_application() -> PathBuf {
 
 /// [`bucket_application`] under an explicit home instead of `$BUCKET_HOME`.
 pub fn bucket_application_in(home: &std::path::Path) -> PathBuf {
-    let name = if cfg!(windows) { "bucket.exe" } else { "bucket" };
+    let name = if cfg!(windows) {
+        "bucket.exe"
+    } else {
+        "bucket"
+    };
     home.join("bin").join(name)
 }
 

@@ -1,8 +1,8 @@
 //! End-to-end smoke test exercising the full active_sessions lifecycle.
 
+use bucket_agent_core::active_sessions::*;
 use chrono::Utc;
 use tempfile::TempDir;
-use bucket_agent_core::active_sessions::*;
 
 fn session(id: &str, pid: u32) -> ActiveSession {
     ActiveSession {

@@ -163,11 +163,11 @@ fn seed_trust_state(
     app: &mut AppView,
     remote: Option<&bucket_agent_core::util::config::RemoteSettings>,
 ) {
-    use std::io::IsTerminal;
     use bucket_workspace::folder_trust::{
         TrustOutcome, decide, decide_inputs_with_interactive, feature_enabled,
     };
     use bucket_workspace::trust::workspace_key;
+    use std::io::IsTerminal;
 
     let feature = feature_enabled(remote);
     if !feature {
@@ -696,7 +696,8 @@ pub(crate) async fn run(
             // preferred_method pin unavailable — no advertised method to start.
             app.auth_state = super::app_view::AuthState::Pending {
                 error: Some(
-                    bucket_agent_core::agent::auth_method::PREFERRED_API_KEY_UNAVAILABLE.to_string(),
+                    bucket_agent_core::agent::auth_method::PREFERRED_API_KEY_UNAVAILABLE
+                        .to_string(),
                 ),
             };
             vec![]
@@ -769,12 +770,11 @@ pub(crate) async fn run(
         effective_config.as_ref().ok_or(()),
         remote_settings.as_ref(),
     );
-    app.foreign_session_compat =
-        bucket_workspace::foreign_sessions::EnabledForeignSessionSources {
-            claude: compat.claude.sessions,
-            codex: compat.codex.sessions,
-            cursor: compat.cursor.sessions,
-        };
+    app.foreign_session_compat = bucket_workspace::foreign_sessions::EnabledForeignSessionSources {
+        claude: compat.claude.sessions,
+        codex: compat.codex.sessions,
+        cursor: compat.cursor.sessions,
+    };
 
     // Load notification config from [ui.notifications] in config.toml.
     if let Some(ref raw) = effective_config {

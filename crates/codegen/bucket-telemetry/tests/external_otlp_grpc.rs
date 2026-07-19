@@ -101,7 +101,9 @@ fn external_stream_grpc_end_to_end() {
 
     let metrics = col::metric_points(&collected);
     assert!(
-        metrics.iter().any(|p| p.name == "bucket_code.session.count"),
+        metrics
+            .iter()
+            .any(|p| p.name == "bucket_code.session.count"),
         "missing session.count in {metrics:?}"
     );
     assert!(

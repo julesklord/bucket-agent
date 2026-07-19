@@ -178,7 +178,9 @@ fn external_stream_end_to_end() {
         }
     }
     assert!(
-        metric_names.iter().any(|n| n == "bucket_code.session.count"),
+        metric_names
+            .iter()
+            .any(|n| n == "bucket_code.session.count"),
         "missing session.count in {metric_names:?}"
     );
     assert!(metric_names.iter().any(|n| n == "bucket_code.token.usage"));

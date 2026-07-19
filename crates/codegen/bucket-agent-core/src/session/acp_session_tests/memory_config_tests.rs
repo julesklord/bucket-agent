@@ -1,9 +1,9 @@
 use super::support::*;
 use super::*;
-use tokio::sync::mpsc;
 use bucket_paths::AbsPathBuf;
 use bucket_workspace::file_system::MockFs;
 use bucket_workspace::permission::PermissionHandle;
+use tokio::sync::mpsc;
 #[test]
 fn initial_injection_backend_params_use_override_min_score() {
     let params = crate::session::memory::MemoryBackendParams {

@@ -10,17 +10,17 @@ use crate::config::{MemoryConfig, SessionContextFactory};
 use crate::file_system::{AsyncFsWrapper, LocalFs};
 use crate::hub::{HubConfig, HubHandle};
 use crate::session::file_state::FileStateTracker;
+use bucket_hub_mcp_adapter::McpBridgeHandle;
+use bucket_hunk_tracker::HunkTrackerHandle;
+use bucket_mcp::servers::McpState;
+use bucket_tool_protocol::ToolId;
+use bucket_tool_runtime::WorkspaceViewerContext;
+use bucket_tools::notification::types::{ToolNotification, ToolNotificationHandle};
+use bucket_tools::registry::types::{FinalizedToolset, ToolConfig, ToolServerConfig};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use bucket_hub_mcp_adapter::McpBridgeHandle;
-use bucket_mcp::servers::McpState;
-use bucket_tools::notification::types::{ToolNotification, ToolNotificationHandle};
-use bucket_tools::registry::types::{FinalizedToolset, ToolConfig, ToolServerConfig};
-use bucket_hunk_tracker::HunkTrackerHandle;
-use bucket_tool_protocol::ToolId;
-use bucket_tool_runtime::WorkspaceViewerContext;
 /// Minimal result types for git error reporting (duplicated from shell session/result).
 pub mod result {
     use serde::Serialize;
@@ -903,8 +903,8 @@ pub(crate) fn get_or_open_session_writer(
 #[cfg(test)]
 mod tests {
     use super::get_or_open_session_writer;
-    use dashmap::DashMap;
     use bucket_file_utils::events::{Event, EventWriter};
+    use dashmap::DashMap;
     fn count_lines(path: &std::path::Path) -> usize {
         std::fs::read_to_string(path)
             .unwrap()

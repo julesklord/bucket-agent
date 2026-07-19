@@ -745,9 +745,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileNotFound(msg) => {
                 assert!(msg.contains("does not exist"), "got: {msg}");
@@ -798,9 +799,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::IsADirectory(msg) => {
                 assert!(msg.contains("is a directory, not a file"), "got: {msg}");
@@ -821,9 +823,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert_eq!(content.content, "");
@@ -847,9 +850,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert!(content.content.contains("2"));
@@ -873,9 +877,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert!(content.raw_output.contains("content"));
@@ -896,9 +901,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert_eq!(content.content, "1→hello\n");
@@ -920,9 +926,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 let concise = content.content_concise.unwrap();
@@ -952,9 +959,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileTooLarge(msg) => {
                 assert!(msg.contains("exceeds maximum allowed tokens"));
@@ -988,9 +996,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileTooLarge(msg) => {
                 assert!(msg.contains("requested line range"));
@@ -1177,9 +1186,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert!(
@@ -1213,9 +1223,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileReadError(msg) => {
                 assert!(
@@ -1283,9 +1294,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert!(content.raw_output.contains("fn main()"));
@@ -1311,9 +1323,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(content) => {
                 assert!(content.raw_output.contains("log data for read_file test"));
@@ -1341,9 +1354,10 @@ mod tests {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(_) => {}
             other => {
@@ -1661,9 +1675,10 @@ pub fn verify(req: &HttpRequest) -> Result<Claims, Error> {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             ReadFileOutput::FileContent(fc) => {
                 assert!(
@@ -1705,9 +1720,10 @@ pub fn verify(req: &HttpRequest) -> Result<Claims, Error> {
             pages: None,
             format: None,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         assert!(
             matches!(result, ReadFileOutput::FileContent(_)),
             "SKILL.md should not be truncated, got {:?}",

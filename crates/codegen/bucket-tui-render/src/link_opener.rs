@@ -490,7 +490,11 @@ mod tests {
     fn ensure_query_param_preserves_fragment() {
         // The current remote settings value uses a hash fragment for client-side
         // routing (`bucket.com/#superbucket`); we still want the referrer attached.
-        let out = ensure_query_param("https://bucket.com/#superbucket", "referrer", "bucket-build");
+        let out = ensure_query_param(
+            "https://bucket.com/#superbucket",
+            "referrer",
+            "bucket-build",
+        );
         assert_eq!(out, "https://bucket.com/?referrer=bucket-build#superbucket");
     }
 

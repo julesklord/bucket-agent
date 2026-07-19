@@ -29,11 +29,11 @@ use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
+use bucket_mcp::servers::{ClientStateKind, HttpConfig, McpClient};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use bucket_mcp::servers::{ClientStateKind, HttpConfig, McpClient};
 
 const MANAGED: &str = "bucket_com_testconnector";
 

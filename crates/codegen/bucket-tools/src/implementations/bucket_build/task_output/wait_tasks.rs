@@ -35,11 +35,13 @@ impl crate::types::tool_metadata::ToolMetadata for WaitTasksTool {
         // renders it context-aware from the finalized toolset. This static
         // fallback mirrors the default bucket-build toolset.
         static DESC: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-            bucket_tool_types::build_wait_tasks_description(&bucket_tool_types::WaitTasksToolNaming {
-                background_retrieval_tool: "get_command_or_subagent_output",
-                bash_background_param: Some("is_background"),
-                subagent_background_param: Some("run_in_background"),
-            })
+            bucket_tool_types::build_wait_tasks_description(
+                &bucket_tool_types::WaitTasksToolNaming {
+                    background_retrieval_tool: "get_command_or_subagent_output",
+                    bash_background_param: Some("is_background"),
+                    subagent_background_param: Some("run_in_background"),
+                },
+            )
         });
         &DESC
     }
@@ -169,8 +171,9 @@ impl bucket_tool_runtime::Tool for WaitTasksTool {
         }
 
         // wait_any: keep legacy event-driven path (not exposed on get_task_output).
-        let timeout =
-            crate::implementations::bucket_build::task_output::capped_wait_timeout(input.timeout_ms);
+        let timeout = crate::implementations::bucket_build::task_output::capped_wait_timeout(
+            input.timeout_ms,
+        );
 
         let (terminal, backend, read_file_name, max_output_bytes) = {
             let res = resources.lock().await;

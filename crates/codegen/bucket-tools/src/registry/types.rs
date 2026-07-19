@@ -1,7 +1,7 @@
 use crate::{
     computer::types::{AsyncFileSystem, TerminalBackend},
     implementations::{
-        codex, bucket_build, bucket_build_concise, bucket_build_hashline, opencode,
+        bucket_build, bucket_build_concise, bucket_build_hashline, codex, opencode,
         skills::types::SkillInfo,
     },
     notification::ToolNotificationHandle,
@@ -390,7 +390,9 @@ struct ToolEntry {
     /// Noop when `T::Params = ()`.
     register_params: Box<dyn Fn(&mut Resources) + Send + Sync>,
     parse_input: Box<
-        dyn Fn(serde_json::Value) -> Result<ToolInput, bucket_tool_runtime::ToolError> + Send + Sync,
+        dyn Fn(serde_json::Value) -> Result<ToolInput, bucket_tool_runtime::ToolError>
+            + Send
+            + Sync,
     >,
     /// Registers this tool into a `LocalRegistry` using the concrete type.
     /// Captured at `register::<T>()` time when T is known.
@@ -430,7 +432,9 @@ struct FinalizedTool {
     reverse_params: HashMap<String, String>,
     /// useful for parsing input to specific type
     parse_input: Arc<
-        dyn Fn(serde_json::Value) -> Result<ToolInput, bucket_tool_runtime::ToolError> + Send + Sync,
+        dyn Fn(serde_json::Value) -> Result<ToolInput, bucket_tool_runtime::ToolError>
+            + Send
+            + Sync,
     >,
     /// Resolved behavior contract version for this tool (e.g. `"current"`,
     /// `"legacy-0.4.10"`). `None` for unmanaged tools and dynamically
@@ -666,7 +670,8 @@ impl ToolRegistryBuilder {
                 bucket_build::SearchReplaceTool,
                 bucket_build::search_replace::SearchReplaceParams,
             >();
-        b.register_with_params::<bucket_build::ListDirTool, bucket_build::list_dir::ListDirParams>();
+        b.register_with_params::<bucket_build::ListDirTool, bucket_build::list_dir::ListDirParams>(
+        );
         b.register_with_params::<bucket_build::GrepTool, bucket_build::grep::GrepParams>();
         b.register::<bucket_build::KillTaskTool>();
         b.register::<bucket_build::KillTerminalCommandTool>();
@@ -1585,8 +1590,9 @@ impl FinalizedToolset {
         output_converter: &OutputConverter,
         effective_tool_name: Option<String>,
     ) -> Result<ToolRunResult, bucket_tool_runtime::ToolError> {
-        let output = (output_converter)(value)
-            .map_err(|e| bucket_tool_runtime::ToolError::custom("output_decoding", e.to_string()))?;
+        let output = (output_converter)(value).map_err(|e| {
+            bucket_tool_runtime::ToolError::custom("output_decoding", e.to_string())
+        })?;
         let reminders_enabled;
         {
             reminders_enabled = self
@@ -2013,7 +2019,8 @@ mod tests {
             video_gen_config:
                 crate::implementations::bucket_build::video_gen::VideoGenConfig::default(),
             app_builder_deployer_config:
-                crate::implementations::bucket_build::deploy_app::AppBuilderDeployerConfig::default(),
+                crate::implementations::bucket_build::deploy_app::AppBuilderDeployerConfig::default(
+                ),
             api_key_provider: None,
             auth_provider: None,
             attribution_callback: None,
@@ -2969,9 +2976,11 @@ mod tests {
             _input: serde_json::Value,
         ) -> bucket_tool_runtime::ToolStream<String> {
             Box::pin(futures::stream::iter(vec![
-                bucket_tool_runtime::ToolStreamItem::Progress(bucket_tool_runtime::ToolProgress::Text {
-                    text: "progress-1".into(),
-                }),
+                bucket_tool_runtime::ToolStreamItem::Progress(
+                    bucket_tool_runtime::ToolProgress::Text {
+                        text: "progress-1".into(),
+                    },
+                ),
                 bucket_tool_runtime::ToolStreamItem::Terminal(Ok("terminal-value".to_string())),
             ]))
         }
@@ -3244,9 +3253,9 @@ mod tests {
         };
         let errors = builder.validate_config(&config);
         assert!(
-            errors
-                .iter()
-                .any(|e| e.tool == "BucketBuild:task" && e.message.contains("BucketBuild:kill_task")),
+            errors.iter().any(
+                |e| e.tool == "BucketBuild:task" && e.message.contains("BucketBuild:kill_task")
+            ),
             "task tool should be rejected without kill_task: {errors:?}",
         );
     }
@@ -3280,10 +3289,8 @@ mod tests {
         };
         let errors = builder.validate_config(&config);
         assert!(
-            errors
-                .iter()
-                .any(|e| e.tool == "BucketBuild:task"
-                    && e.message.contains("BucketBuild:get_task_output")),
+            errors.iter().any(|e| e.tool == "BucketBuild:task"
+                && e.message.contains("BucketBuild:get_task_output")),
             "task tool should be rejected without get_task_output: {errors:?}",
         );
     }

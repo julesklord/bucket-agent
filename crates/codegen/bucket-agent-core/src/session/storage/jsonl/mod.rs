@@ -8,11 +8,11 @@ use crate::session::persistence::{CHAT_FORMAT_VERSION, Summary};
 use crate::tools::todo::TodoState;
 use agent_client_protocol as acp;
 use async_trait::async_trait;
+use bucket_workspace::session::file_state::RewindPoint;
 use std::fs::OpenOptions;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use tokio::io::AsyncWriteExt;
-use bucket_workspace::session::file_state::RewindPoint;
 /// How the adapter resolves the session directory on disk.
 ///
 /// - `FromRoot` (default): computes `{root}/sessions/{urlencoded(cwd)}/{session_id}/`
@@ -715,7 +715,8 @@ impl JsonlStorageAdapter {
             transform_conversation_cwd(&mut chat_to_copy, &source_info.cwd, &target_info.cwd);
         }
         if options.strip_reasoning {
-            chat_to_copy = bucket_chat_state::compaction_utils::strip_reasoning_blocks(chat_to_copy);
+            chat_to_copy =
+                bucket_chat_state::compaction_utils::strip_reasoning_blocks(chat_to_copy);
         }
         let num_chat_messages = chat_to_copy.len();
         let num_messages = updates_to_copy.len();
@@ -1404,11 +1405,11 @@ impl StorageAdapter for JsonlStorageAdapter {
         info: &Info,
         segment: &crate::extensions::notification::CompactionSegmentFile,
     ) -> io::Result<()> {
-        use tokio::io::AsyncWriteExt;
         use bucket_chat_state::compaction_transcript::{
             COMPACTION_DIR, INDEX_FILE, INDEX_HEADER, extract_keywords, render_index_row,
             render_segment_md, segment_filename,
         };
+        use tokio::io::AsyncWriteExt;
         let base = self.session_dir(info).join(COMPACTION_DIR);
         tokio::fs::create_dir_all(&base).await?;
         let index = next_compaction_segment_index(&base).await;

@@ -35,7 +35,12 @@ pub fn cli_base_urls(config: &UpdateConfig) -> Vec<String> {
         .update_base_urls
         .as_ref()
         .map(|s| s.split(',').map(|s| s.trim().to_owned()).collect())
-        .unwrap_or_else(|| DEFAULT_CLI_BASE_URLS.iter().map(|s| s.to_string()).collect())
+        .unwrap_or_else(|| {
+            DEFAULT_CLI_BASE_URLS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        })
 }
 
 /// Get the custom update check URL if configured.
@@ -624,12 +629,15 @@ mod tests {
             // Pre-releases must round-trip whole — truncating to "0.1.220"
             // would make an alpha install masquerade as the release and
             // mask alpha → stable updates.
-            ("bucket-0.1.220-alpha.4-linux-x86_64", Some("0.1.220-alpha.4")),
+            (
+                "bucket-0.1.220-alpha.4-linux-x86_64",
+                Some("0.1.220-alpha.4"),
+            ),
             ("bucket-0.1.220-alpha.4", Some("0.1.220-alpha.4")), // npm layout
             ("bucket-pager-0.1.5-darwin-arm64", None),           // "pager" is not a version
             ("bucket-garbage-darwin-arm64", None),               // unparseable version
             ("bucket-0.2.46", Some("0.2.46")),                   // no platform suffix
-            ("other-0.2.46-darwin-arm64", None),               // wrong prefix
+            ("other-0.2.46-darwin-arm64", None),                 // wrong prefix
             ("bucket-latest", None),                             // symlink alias, not a version
             ("bucket", None),                                    // bare name
             ("", None),

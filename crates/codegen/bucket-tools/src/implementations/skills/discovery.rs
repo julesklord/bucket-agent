@@ -1525,7 +1525,11 @@ model: test-model
         .unwrap();
         let bucket_skill = sub.join(".bucket").join("skills").join("bucket-dyn");
         std::fs::create_dir_all(&bucket_skill).unwrap();
-        std::fs::write(bucket_skill.join("SKILL.md"), "---\nname: bucket-dyn\n---\n").unwrap();
+        std::fs::write(
+            bucket_skill.join("SKILL.md"),
+            "---\nname: bucket-dyn\n---\n",
+        )
+        .unwrap();
 
         let file = sub.join("file.rs");
         std::fs::write(&file, "fn main() {}").unwrap();

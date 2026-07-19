@@ -9,9 +9,9 @@ use crate::session::normalize_cache::{
 };
 use agent_client_protocol::ImageContent;
 use base64::Engine as _;
+use bucket_tools::util::image_compress::{FilterType, ReEncodeParams, re_encode_under_limit};
 use bytes::Bytes;
 use std::borrow::Cow;
-use bucket_tools::util::image_compress::{FilterType, ReEncodeParams, re_encode_under_limit};
 /// Decoded attachment bytes above this are re-encoded to fit this cap.
 ///
 /// Kept low so many images fit under the inference proxy's ~50 MB request-body
@@ -257,8 +257,8 @@ pub fn render_compression_notice(compressed: &[ImageCompressionInfo], is_cursor:
 /// strips an image — the strip is re-persisted (irreversible), so the
 /// evidence must reach logs.
 pub(crate) fn persisted_image_reject_reason(bytes: &[u8]) -> Option<String> {
-    use image::ImageFormat as F;
     use bucket_tools::util::image_validate as iv;
+    use image::ImageFormat as F;
     let Ok(format) = image::guess_format(bytes) else {
         return Some(format!("unrecognized format ({} bytes)", bytes.len()));
     };
@@ -310,8 +310,7 @@ pub(crate) fn inline_attach_verdict(data_b64: &str) -> InlineAttachVerdict {
     let Ok(raw) = base64::engine::general_purpose::STANDARD.decode(data_b64) else {
         return InlineAttachVerdict::Unreadable;
     };
-    let Ok((w, h, _)) =
-        bucket_tools::util::image_validate::validate_image_bytes_with(&raw, false)
+    let Ok((w, h, _)) = bucket_tools::util::image_validate::validate_image_bytes_with(&raw, false)
     else {
         return InlineAttachVerdict::Unreadable;
     };

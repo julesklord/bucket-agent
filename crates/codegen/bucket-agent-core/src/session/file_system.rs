@@ -2,9 +2,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use base64::Engine;
+use bucket_workspace::file_system::{self as wfs, FsReadEncoding};
 use chrono::Utc;
 use serde::Serialize;
-use bucket_workspace::file_system::{self as wfs, FsReadEncoding};
 
 #[derive(Clone, Debug)]
 pub struct FsListParams {

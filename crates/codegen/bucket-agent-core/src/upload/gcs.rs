@@ -28,11 +28,11 @@ use crate::auth::AuthManager;
 use crate::auth::credential_provider::{
     ShellAuthCredentialProvider, StorageClientAttributionBridge,
 };
-use std::sync::Arc;
+use bucket_auth::AuthCredentialProvider;
 use bucket_file_utils::gcs::StorageConfig;
 use bucket_file_utils::storage_client::Auth401AttributionCallback;
 use bucket_file_utils::{TraceExportConfig, UploadMethod};
-use bucket_auth::AuthCredentialProvider;
+use std::sync::Arc;
 /// Owned wrapper that pairs a `TraceExportConfig` with an optional live
 /// `AuthManager`. See module docs for why this exists; in short, it's the
 /// shell-side adapter that lets `bucket_file_utils::gcs::*` helpers wire

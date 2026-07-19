@@ -11,8 +11,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use agent_client_protocol::{self as acp, Agent as _};
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use bucket_acp::LineBufferedRead;
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 use crate::env::bucket_binary;
 use crate::mock_server::MockInferenceServer;
@@ -140,7 +140,10 @@ impl LeaderStdioClient {
             // sibling `.lock` (leader.sock -> leader.lock), and the spawned
             // leader subprocess inherits/forwards this env var, so every
             // (re-)elected leader binds the same sandboxed path.
-            .env("BUCKET_LEADER_SOCKET", home.join(".bucket").join("leader.sock"))
+            .env(
+                "BUCKET_LEADER_SOCKET",
+                home.join(".bucket").join("leader.sock"),
+            )
             .env("BUCKET_CLI_CHAT_PROXY_BASE_URL", server.url())
             .env("BUCKET_BUCKET_API_BASE_URL", server.url())
             .env("BUCKET_API_KEY", "test-key-for-ci")

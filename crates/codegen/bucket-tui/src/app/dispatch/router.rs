@@ -89,9 +89,8 @@ use super::settings::setters::{
 use super::settings::ui::{
     dispatch_configure_provider, dispatch_confirm_reset_setting, dispatch_open_command_palette,
     dispatch_open_howto_guides, dispatch_open_reset_confirm, dispatch_open_settings,
- dispatch_toggle_compact_mode,
-    dispatch_toggle_mouse_capture, dispatch_toggle_multiline, dispatch_toggle_timestamps,
-    dispatch_toggle_vim_mode,
+    dispatch_toggle_compact_mode, dispatch_toggle_mouse_capture, dispatch_toggle_multiline,
+    dispatch_toggle_timestamps, dispatch_toggle_vim_mode,
 };
 use super::status::{
     dispatch_copy_session_id, dispatch_open_gboom, dispatch_share_session,
@@ -957,7 +956,9 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
                     .map(std::path::PathBuf::from)
                     .or_else(|_| {
                         #[allow(deprecated)]
-                        std::env::home_dir().map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket")).ok_or(())
+                        std::env::home_dir()
+                            .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
+                            .ok_or(())
                     })
                 {
                     let _ = std::fs::create_dir_all(&home);
@@ -970,14 +971,14 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
                         config_str.push_str(&format!("{} = \"{}\"\n", provider, api_key));
                     }
                     let _ = std::fs::write(&provider_file, config_str);
-                    
+
                     // Touch config.toml to trigger the config watcher (hot reload)
                     let config_file = home.join("config.toml");
                     if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&config_file) {
                         use std::io::Write;
                         let _ = writeln!(f, ""); // append empty line to trigger watcher
                     }
-                    
+
                     app.show_toast("\u{2713} Provider configured. Models reloading...");
                 }
             }

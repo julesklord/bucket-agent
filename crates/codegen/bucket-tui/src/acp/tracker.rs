@@ -20,14 +20,14 @@ use crate::scrollback::entry::{EntryId, ScrollbackEntry};
 use crate::scrollback::state::ScrollbackState;
 use crate::scrollback::state::verb_group::verb_group_kind_changed;
 use agent_client_protocol as acp;
+use bucket_tools::types::output::{BashOutput, ToolOutput};
+use bucket_tools::types::output::{ReadFileOutput, SearchToolOutput, WebFetchOutput};
+use bucket_tools::util::strip_redundant_session_cd;
 use chrono::{DateTime, Local, TimeZone};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tracing::debug;
-use bucket_tools::types::output::{BashOutput, ToolOutput};
-use bucket_tools::types::output::{ReadFileOutput, SearchToolOutput, WebFetchOutput};
-use bucket_tools::util::strip_redundant_session_cd;
 /// Convert a UTC millisecond timestamp to local time.
 fn utc_ms_to_local(ms: i64) -> DateTime<Local> {
     chrono::Utc
@@ -3623,8 +3623,8 @@ mod tests {
     /// 4. Second Completed ToolCallUpdate (from acp_session completion handler)
     #[test]
     fn production_execute_sequence() {
-        use serde_json::json;
         use bucket_tools::types::output::{BashOutput, ToolOutput};
+        use serde_json::json;
         let mut sb = ScrollbackState::new();
         let mut tracker = AcpUpdateTracker::new();
         let tc_id = "call_abc123";

@@ -5,12 +5,12 @@
 use crate::permission::prompter::{PromptOutcome, tool_name_for_access};
 use crate::permission::types::AccessKind;
 use async_trait::async_trait;
-use prometheus::{HistogramVec, IntCounter, register_histogram_vec, register_int_counter};
-use serde_json::Value;
-use std::sync::LazyLock;
 use bucket_hub_sdk::harness::PERMISSION_REQUEST_KIND;
 use bucket_hub_sdk::{ToolServer, WeakToolServer};
 use bucket_tool_protocol::SessionId;
+use prometheus::{HistogramVec, IntCounter, register_histogram_vec, register_int_counter};
+use serde_json::Value;
+use std::sync::LazyLock;
 /// Wall-clock time the workspace awaits chat's decision on a `permission_request`
 /// hook. `outcome` is `ok` (chat replied) or `error` (transport failure /
 /// backstop deadline).

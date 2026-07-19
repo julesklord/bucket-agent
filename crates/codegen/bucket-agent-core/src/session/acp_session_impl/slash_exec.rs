@@ -476,13 +476,10 @@ impl SessionActor {
 
                     if !trust {
                         let install_source =
-                            bucket_agent::plugins::git_install::parse_install_source(
-                                &source, cwd,
-                            );
+                            bucket_agent::plugins::git_install::parse_install_source(&source, cwd);
                         let source_desc = match &install_source {
                             bucket_agent::plugins::git_install::InstallSource::Git {
-                                url,
-                                ..
+                                url, ..
                             } => {
                                 format!("remote git repo: {url}")
                             }

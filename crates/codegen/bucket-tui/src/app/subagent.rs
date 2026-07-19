@@ -127,7 +127,12 @@ pub(crate) fn enrich_from_meta(
     parent_cwd: &std::path::Path,
     parent_session_id: &str,
 ) {
-    enrich_from_meta_with_home(info, &effective_bucket_home(), parent_cwd, parent_session_id);
+    enrich_from_meta_with_home(
+        info,
+        &effective_bucket_home(),
+        parent_cwd,
+        parent_session_id,
+    );
 }
 fn enrich_from_meta_with_home(
     info: &mut SubagentInfo,
@@ -171,19 +176,20 @@ pub(crate) fn replay_inherited_updates(
     child_session_id: &str,
 ) {
     let home = effective_bucket_home();
-    let updates =
-        match bucket_agent_core::session::storage::load_updates_for_replay_at(child_session_id, &home)
-        {
-            Ok(Some(u)) => u,
-            Ok(None) => return,
-            Err(e) => {
-                tracing::debug!(
-                    session_id = % child_session_id, error = % e,
-                    "failed to load updates for replay"
-                );
-                return;
-            }
-        };
+    let updates = match bucket_agent_core::session::storage::load_updates_for_replay_at(
+        child_session_id,
+        &home,
+    ) {
+        Ok(Some(u)) => u,
+        Ok(None) => return,
+        Err(e) => {
+            tracing::debug!(
+                session_id = % child_session_id, error = % e,
+                "failed to load updates for replay"
+            );
+            return;
+        }
+    };
     let replay_meta = crate::acp::meta::NotificationMeta {
         is_replay: true,
         ..Default::default()

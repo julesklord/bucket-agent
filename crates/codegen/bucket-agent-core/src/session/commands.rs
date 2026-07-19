@@ -277,8 +277,9 @@ pub enum SessionCommand {
     /// reports. Refused while a turn is in flight.
     RepairHistory {
         dry_run: bool,
-        respond_to:
-            oneshot::Sender<anyhow::Result<bucket_chat_state::compaction_utils::HistoryRepairReport>>,
+        respond_to: oneshot::Sender<
+            anyhow::Result<bucket_chat_state::compaction_utils::HistoryRepairReport>,
+        >,
     },
     GetRewindPoints {
         respond_to: oneshot::Sender<RewindPointsResponse>,
@@ -475,8 +476,7 @@ pub enum SessionCommand {
     },
     /// This session's plugin registry, as served by `x.ai/plugins/list`.
     PluginsList {
-        respond_to:
-            oneshot::Sender<Option<std::sync::Arc<bucket_agent::plugins::PluginRegistry>>>,
+        respond_to: oneshot::Sender<Option<std::sync::Arc<bucket_agent::plugins::PluginRegistry>>>,
     },
     /// Inject a notification (monitor event or bash task completion) into
     /// the session's notification queue. Notifications are idle-gated and

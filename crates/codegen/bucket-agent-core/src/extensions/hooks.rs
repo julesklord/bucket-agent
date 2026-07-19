@@ -6,10 +6,10 @@
 use std::collections::HashMap;
 
 use agent_client_protocol as acp;
-use serde::Deserialize;
 use bucket_hooks::event::{HookEventEnvelope, HookEventName};
 use bucket_hooks::matcher::HookMatcher;
 use bucket_hooks_plugins_types::{HookEvent, HookHandlerType, HookInfo};
+use serde::Deserialize;
 
 use crate::agent::MvpAgent;
 
@@ -252,10 +252,10 @@ pub async fn handle(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::path::PathBuf;
     use bucket_hooks::config::HookSpec;
     use bucket_hooks::event::HookEventName;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
 
     /// Minimal `HookSpec` for `hook_spec_to_info` tests (`handler_type` is unused;
     /// the DTO derives it from `url`).

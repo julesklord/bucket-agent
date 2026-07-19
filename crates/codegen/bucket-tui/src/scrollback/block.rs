@@ -1463,8 +1463,8 @@ mod searchable_text_tests {
     use crate::scrollback::blocks::SearchLineMatch;
     use crate::scrollback::blocks::tool::memory_search::{MemoryResult, MemorySearchToolCallBlock};
     use crate::scrollback::blocks::tool::{LifecycleEventBlock, WebSearchToolCallBlock};
-    use std::time::Duration;
     use bucket_agent_core::session::ContextInfo;
+    use std::time::Duration;
 
     #[test]
     fn system_indexes_message_text() {
@@ -1578,7 +1578,10 @@ mod searchable_text_tests {
         );
         let text = block.searchable_text().expect("credit limit text");
         assert!(text.contains("credit limit reached"), "got: {text:?}");
-        assert!(text.contains("https://bucket.com?_s=usage"), "got: {text:?}");
+        assert!(
+            text.contains("https://bucket.com?_s=usage"),
+            "got: {text:?}"
+        );
     }
 
     #[test]

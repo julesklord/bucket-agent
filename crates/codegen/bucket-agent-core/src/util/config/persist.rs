@@ -1,9 +1,9 @@
 use super::load::load_config_from_toml;
 use super::mcp::{Config, user_config_path};
 use anyhow::Result;
+use bucket_agent::prompt::skills::SkillsConfig;
 use toml::Value as TomlValue;
 use toml::map::Map as TomlMap;
-use bucket_agent::prompt::skills::SkillsConfig;
 
 /// Process-wide write lock for `~/.bucket/config.toml`.
 ///
@@ -944,7 +944,10 @@ auto_update = true
         };
         merge_section(&mut table, "models", &cfg);
         let m = table.get("models").unwrap().as_table().unwrap();
-        assert_eq!(m.get("default").and_then(|v| v.as_str()), Some("bucket-new"));
+        assert_eq!(
+            m.get("default").and_then(|v| v.as_str()),
+            Some("bucket-new")
+        );
         assert_eq!(
             m.get("web_search").and_then(|v| v.as_str()),
             Some("old-search")

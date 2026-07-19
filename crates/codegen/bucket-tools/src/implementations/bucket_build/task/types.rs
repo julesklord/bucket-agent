@@ -18,9 +18,9 @@
 
 use std::sync::Arc;
 
+use bucket_tool_types::{SubagentCapabilityMode, SubagentIsolationMode, WaitMode};
 use educe::Educe;
 use tokio::sync::{mpsc, oneshot};
-use bucket_tool_types::{SubagentCapabilityMode, SubagentIsolationMode, WaitMode};
 
 use crate::register_resource;
 
@@ -921,7 +921,10 @@ mod tests {
                 tc("BucketBuild:list_dir", ToolKind::List),
                 tc("BucketBuild:grep", ToolKind::Search),
                 tc("BucketBuild:kill_task", ToolKind::KillTaskAction),
-                tc("BucketBuild:get_task_output", ToolKind::BackgroundTaskAction),
+                tc(
+                    "BucketBuild:get_task_output",
+                    ToolKind::BackgroundTaskAction,
+                ),
             ],
             behavior_preset: None,
         };
@@ -948,7 +951,10 @@ mod tests {
                 tc("BucketBuild:list_dir", ToolKind::List),
                 tc("BucketBuild:grep", ToolKind::Search),
                 tc("BucketBuild:kill_task", ToolKind::KillTaskAction),
-                tc("BucketBuild:get_task_output", ToolKind::BackgroundTaskAction),
+                tc(
+                    "BucketBuild:get_task_output",
+                    ToolKind::BackgroundTaskAction,
+                ),
                 tc("BucketBuild:task", ToolKind::Task),
             ],
             behavior_preset: None,

@@ -193,8 +193,8 @@ async fn handle_update(
     source_url_or_path: &str,
     plugin_relative_path: &str,
 ) -> bucket_hooks_plugins_types::ActionOutcome {
-    use bucket_plugin_marketplace::installer;
     use bucket_hooks_plugins_types::{ActionOutcome, OutcomeStatus};
+    use bucket_plugin_marketplace::installer;
 
     let sources = load_filtered_marketplace_sources();
 
@@ -345,8 +345,8 @@ async fn handle_install(
     source_url_or_path: &str,
     plugin_relative_path: &str,
 ) -> bucket_hooks_plugins_types::ActionOutcome {
-    use bucket_plugin_marketplace::installer;
     use bucket_hooks_plugins_types::{ActionOutcome, OutcomeStatus};
+    use bucket_plugin_marketplace::installer;
 
     let sources = load_filtered_marketplace_sources();
 
@@ -477,8 +477,7 @@ async fn handle_install(
         };
 
         let plugin_path =
-            match bucket_plugin_marketplace::MarketplaceRelativePath::parse(plugin_relative_path)
-            {
+            match bucket_plugin_marketplace::MarketplaceRelativePath::parse(plugin_relative_path) {
                 Ok(path) => path,
                 Err(e) => {
                     return ActionOutcome {
@@ -570,8 +569,8 @@ async fn handle_uninstall(
     source_url_or_path: &str,
     plugin_relative_path: &str,
 ) -> bucket_hooks_plugins_types::ActionOutcome {
-    use bucket_plugin_marketplace::installer;
     use bucket_hooks_plugins_types::{ActionOutcome, OutcomeStatus};
+    use bucket_plugin_marketplace::installer;
 
     let mut registry = bucket_agent::plugins::install_registry::InstallRegistry::load();
 
@@ -1096,7 +1095,9 @@ fn add_marketplace_source(
 
 /// Remove a marketplace source from `~/.bucket/config.toml` and uninstall all
 /// plugins that were installed from it.
-async fn handle_remove_source(source_url_or_path: &str) -> bucket_hooks_plugins_types::ActionOutcome {
+async fn handle_remove_source(
+    source_url_or_path: &str,
+) -> bucket_hooks_plugins_types::ActionOutcome {
     let src = source_url_or_path.to_string();
     // Lock + run the blocking FS work off the reactor.
     let _save_guard = crate::util::config::lock_config_writes().await;

@@ -1,8 +1,8 @@
 use crate::models;
-use serde::{Deserialize, Serialize};
 use bucket_sampler::SamplerConfig;
 use bucket_tools::implementations::bucket_build;
 use bucket_tools::registry::types::ToolConfig;
+use serde::{Deserialize, Serialize};
 
 /// Production bucket-build foreground command-timeout ceiling (seconds). The
 /// tool-server binary defaults to a 5-minute foreground ceiling

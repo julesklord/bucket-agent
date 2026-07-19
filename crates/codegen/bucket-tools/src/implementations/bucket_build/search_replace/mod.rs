@@ -868,9 +868,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("test.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 assert_eq!(applied.old_string, "hello");
@@ -888,9 +889,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("new_file.txt", "", "new content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 assert!(applied.tool_output_for_prompt.contains("has been created"));
@@ -955,9 +957,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("test.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read_to_string(tmp.path().join("test.txt")).unwrap();
@@ -977,9 +980,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("nonexistent.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::FileNotFound(msg) => {
                 assert!(msg.contains("does not exist"), "got: {msg}");
@@ -1022,9 +1026,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("subdir", "old", "new");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
                 assert!(msg.contains("directory"));
@@ -1044,9 +1049,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("exception/Foo.java", "", "public class Foo {}");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
                 assert!(msg.contains("already exists as a file"), "got: {msg}");
@@ -1065,9 +1071,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("nonexistent.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::FileNotFound(msg) => {
                 assert!(msg.contains("does not exist"), "got: {msg}");
@@ -1081,9 +1088,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("test.txt", "same", "same");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
                 assert!(msg.contains("same"));
@@ -1108,9 +1116,10 @@ mod tests {
             new_string: "ccc".to_string(),
             replace_all: true,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 let content = std::fs::read_to_string(tmp.path().join("test.txt")).unwrap();
@@ -1136,9 +1145,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("test.txt", "aaa", "ccc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
                 assert!(
@@ -1191,9 +1201,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("test.txt", "xyz", "abc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::NoMatchesFound(ref e) => {
                 let msg = &e.message;
@@ -1247,9 +1258,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("existing.txt", "", "new content");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::FileAlreadyExists(msg) => {
                 assert!(
@@ -1268,9 +1280,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("existing.txt", "", "completely new content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 assert!(applied.tool_output_for_prompt.contains("has been created"));
@@ -1292,9 +1305,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("existing.txt", "", "replacement content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::FileAlreadyExists(msg) => {
                 assert!(
@@ -1319,9 +1333,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("brand_new.txt", "", "fresh content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 assert!(applied.tool_output_for_prompt.contains("has been created"));
@@ -1343,9 +1358,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("empty.txt", "", "new content\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(applied) => {
                 assert!(applied.tool_output_for_prompt.contains("has been created"));
@@ -1372,9 +1388,10 @@ mod tests {
         param_map.insert(ToolKind::Edit, sr_params);
         resources.insert(TemplateRenderer::new(Default::default(), param_map));
         let input = make_input("test.txt", "aaa", "ccc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
                 assert!(
@@ -1414,9 +1431,10 @@ mod tests {
             )]),
         ));
         let input = make_input("test.txt", "aaa", "ccc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
                 assert_eq!(
@@ -1520,9 +1538,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("build/output.js", "var x = 1;", "var x = 2;");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
                 assert!(
@@ -1579,9 +1598,10 @@ mod tests {
         let tool = SearchReplaceTool;
         let resources = test_resources_with_gitignore(tmp.path());
         let input = make_input("dist/bundle.js", "", "console.log('hello');\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::InvalidInput(msg) => {
                 assert!(msg.contains("ignored by .gitignore"));
@@ -1613,9 +1633,10 @@ mod tests {
             "fn main() {}",
             "fn main() { println!(\"hi\"); }",
         );
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read_to_string(src_dir.join("main.rs")).unwrap();
@@ -1638,9 +1659,10 @@ mod tests {
             ..Default::default()
         }));
         let input = make_input("build/output.js", "var x = 1;", "var x = 2;");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {}
             other => {
@@ -1659,9 +1681,10 @@ mod tests {
         let long_name = "a".repeat(256);
         let long_path = format!("dir/{long_name}.txt");
         let input = make_input(&long_path, "", "content");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::FilenameTooLong(msg) => {
                 assert!(
@@ -1690,9 +1713,10 @@ mod tests {
         let resources = test_resources(tmp.path());
         let name_255 = "b".repeat(255);
         let input = make_input(&name_255, "", "content");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         if let SearchReplaceOutput::FilenameTooLong(msg) = &result {
             panic!("255-char filename should be allowed, got: {msg}");
         }
@@ -1785,9 +1809,10 @@ neutTest_set);
         let tool = SearchReplaceTool;
         let resources = test_resources(tmp.path());
         let input = make_input("main.c", "			oCollMode_set,", "replaced");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::NoMatchesFound(e) => {
                 assert!(
@@ -2015,9 +2040,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("doc.md", "\"stream through\"", "replacement");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::NoMatchesFound(e) => {
                 assert!(
@@ -2047,9 +2073,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("test.txt", "xyz", "abc");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::NoMatchesFound(e) => {
                 assert!(
@@ -2076,9 +2103,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("doc.md", "totally_unrelated_string", "replacement");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::NoMatchesFound(e) => {
                 assert!(
@@ -2107,9 +2135,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(
@@ -2135,9 +2164,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "\"hello\"", "\"goodbye\"");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized, "should set unicode_normalized=true");
@@ -2156,9 +2186,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "foo--bar", "foo-bar");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized);
@@ -2177,9 +2208,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "hello world", "hello_world");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized);
@@ -2198,9 +2230,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "wait...", "done");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized);
@@ -2223,9 +2256,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "\"a\"", "\"b\"");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::MultipleMatchesFound(msg) => {
                 assert!(
@@ -2251,9 +2285,10 @@ neutTest_set);
         resources.insert(Params(fallback_params()));
         let mut input = make_input("f.txt", "\"a\"", "\"b\"");
         input.replace_all = true;
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized);
@@ -2277,9 +2312,10 @@ neutTest_set);
             include_user_edit_hint: false,
         }));
         let input = make_input("f.txt", "\"hello\"", "replaced");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         assert!(
             matches!(result, SearchReplaceOutput::NoMatchesFound(_)),
             "fallback disabled should produce NoMatchesFound, got {:?}",
@@ -2299,9 +2335,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "\"hello\"", "\"goodbye\"");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(
@@ -2322,9 +2359,10 @@ neutTest_set);
         let mut resources = test_resources(tmp.path());
         resources.insert(Params(fallback_params()));
         let input = make_input("f.txt", "\"target\"", "\"replaced\"");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(a) => {
                 assert!(a.unicode_normalized);
@@ -2363,9 +2401,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("test.txt", "hello\nworld\n", "goodbye\nearth\n");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read(tmp.path().join("test.txt")).unwrap();
@@ -2387,9 +2426,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("test.txt", "bbb", "BBB");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read(tmp.path().join("test.txt")).unwrap();
@@ -2411,9 +2451,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("test.txt", "hello", "goodbye");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read(tmp.path().join("test.txt")).unwrap();
@@ -2440,9 +2481,10 @@ neutTest_set);
             new_string: "qux".to_string(),
             replace_all: true,
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let content = std::fs::read(tmp.path().join("test.txt")).unwrap();
@@ -2468,9 +2510,10 @@ neutTest_set);
             ..Default::default()
         }));
         let input = make_input("test.txt", "line2\nline3", "REPLACED");
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         match result {
             SearchReplaceOutput::EditsApplied(_) => {
                 let written = std::fs::read(tmp.path().join("test.txt")).unwrap();

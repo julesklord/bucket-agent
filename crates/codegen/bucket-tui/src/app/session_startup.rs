@@ -577,7 +577,9 @@ async fn resolve_existing_session(
             title: None,
         });
     }
-    if let Some(original_cwd) = bucket_agent_core::session::resolve_local_session_any_cwd(session_id) {
+    if let Some(original_cwd) =
+        bucket_agent_core::session::resolve_local_session_any_cwd(session_id)
+    {
         tracing::info!(
             session_id = % session_id, original_cwd = % original_cwd,
             "Session found locally under different CWD"
@@ -639,15 +641,16 @@ async fn resolve_existing_session(
             .with_deployment_key(deployment_key.clone())
             .with_alpha_test_key(agent_config.endpoints.alpha_test_key.clone())
             .with_auth(auth_manager.clone());
-    let storage_client = bucket_agent_core::auth::credential_provider::build_storage_client_for_proxy(
-        &agent_config.endpoints.proxy_url(),
-        deployment_key,
-        agent_config.endpoints.alpha_test_key.clone(),
-        Some(auth_manager),
-        None,
-        None,
-        "bucket-pager",
-    );
+    let storage_client =
+        bucket_agent_core::auth::credential_provider::build_storage_client_for_proxy(
+            &agent_config.endpoints.proxy_url(),
+            deployment_key,
+            agent_config.endpoints.alpha_test_key.clone(),
+            Some(auth_manager),
+            None,
+            None,
+            "bucket-pager",
+        );
     let progress: bucket_agent_core::session::restore::ProgressCallback =
         Box::new(|event| eprintln!("  {}", event.display_line()));
     let result = restore_session_with_storage(

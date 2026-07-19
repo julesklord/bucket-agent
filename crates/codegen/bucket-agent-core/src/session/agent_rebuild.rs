@@ -38,10 +38,6 @@
 //! must reuse the **same** senders so the existing coordinator keeps
 //! receiving requests; we cannot mint a fresh channel without orphaning
 //! the running coordinator.
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::sync::mpsc::UnboundedSender;
 use bucket_agent::config::AgentDefinition;
 use bucket_agent::error::AgentBuildError;
 use bucket_agent::prompt::context::PromptAudience;
@@ -62,6 +58,10 @@ use bucket_tools::notification::ToolNotificationHandle;
 use bucket_tools::types::SharedApiKeyProvider;
 use bucket_tools::types::compat::CompatConfig;
 use bucket_tools::types::memory_backend::MemoryBackend;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::mpsc::UnboundedSender;
 /// Shell-resolved per-tool `ToolConfig.params` JSON maps, bundled into one
 /// named struct so the spawn telescopes carry a single argument instead of
 /// adjacent identically-typed positionals that a caller could transpose.

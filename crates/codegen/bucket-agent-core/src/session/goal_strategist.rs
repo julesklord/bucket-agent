@@ -26,9 +26,9 @@ use crate::session::goal_planner::{
     parse_terminal_response, spawn_with_fail_open_retry,
 };
 use crate::session::goal_role_tools::RoleToolNames;
+use bucket_file_utils::events::EventWriter;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use bucket_file_utils::events::EventWriter;
 
 // Constants
 

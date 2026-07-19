@@ -1612,7 +1612,10 @@ mod tests {
             );
         }
 
-        for path in ["/repo/.bucket/rules/team.md", r"C:\repo\.bucket\rules\team.md"] {
+        for path in [
+            "/repo/.bucket/rules/team.md",
+            r"C:\repo\.bucket\rules\team.md",
+        ] {
             assert_eq!(instruction_file_type(path, false, &[]), "rules");
         }
         for path in [
@@ -1825,7 +1828,11 @@ mod tests {
             ConfigSource::Server { .. }
         ));
 
-        let s = skill_fixture("e", "/home/u/.bucket/bundled/e/SKILL.md", SkillScope::Bundled);
+        let s = skill_fixture(
+            "e",
+            "/home/u/.bucket/bundled/e/SKILL.md",
+            SkillScope::Bundled,
+        );
         assert!(matches!(
             skill_entry_source(&s, home),
             ConfigSource::Bundled { .. }
@@ -1850,7 +1857,11 @@ mod tests {
         ));
 
         // Bundled name in a project dir: stays project.
-        let s = skill_fixture("help", "/repo/.bucket/skills/help/SKILL.md", SkillScope::Repo);
+        let s = skill_fixture(
+            "help",
+            "/repo/.bucket/skills/help/SKILL.md",
+            SkillScope::Repo,
+        );
         assert!(matches!(
             skill_entry_source(&s, home),
             ConfigSource::Project { .. }

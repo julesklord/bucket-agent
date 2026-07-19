@@ -2,14 +2,14 @@
 //!
 //! Individual test modules import via `use super::common::*`.
 
-pub(crate) use serde_json::json;
-pub(crate) use std::path::Path;
-pub(crate) use std::time::{Duration, Instant};
 pub(crate) use bucket_tui_pty_harness::{
     ContentController, MockModel, PtyHarness, ScriptedResponse, SseEvent, keys,
     oauth_env_for_pager, pager_binary, seed_fake_oauth, sse, wait_for_labels_absent,
     wait_for_model_via_new_sessions,
 };
+pub(crate) use serde_json::json;
+pub(crate) use std::path::Path;
+pub(crate) use std::time::{Duration, Instant};
 
 /// Default PTY size used by every e2e test. Large enough to render the
 /// welcome screen without wrapping, small enough to make `screen_contents()`
@@ -1125,8 +1125,8 @@ pub(crate) fn run_wrap(wrap_args: &[&str], extra_env: &[(&str, &str)]) -> (Optio
     let mut env: Vec<(&str, &str)> = vec![("BUCKET_HOME", &home_str), ("NO_COLOR", "1")];
     env.extend_from_slice(extra_env);
 
-    let mut harness =
-        PtyHarness::new(&binary, DEFAULT_ROWS, DEFAULT_COLS, &args, &env).expect("spawn bucket wrap");
+    let mut harness = PtyHarness::new(&binary, DEFAULT_ROWS, DEFAULT_COLS, &args, &env)
+        .expect("spawn bucket wrap");
 
     let code = harness
         .wait_for_exit_and_drain(WRAP_TIMEOUT, WRAP_DRAIN_TIMEOUT)

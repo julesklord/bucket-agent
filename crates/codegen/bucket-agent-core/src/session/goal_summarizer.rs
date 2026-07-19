@@ -18,9 +18,9 @@ use crate::session::goal_planner::{
     spawn_with_fail_open_retry,
 };
 use crate::session::goal_role_tools::RoleToolNames;
+use bucket_file_utils::events::EventWriter;
 use std::path::Path;
 use std::sync::Arc;
-use bucket_file_utils::events::EventWriter;
 
 // Constants
 
@@ -155,10 +155,10 @@ impl ChannelSpawner {
         model: Option<String>,
         harness_agent_type: Option<String>,
     ) -> Result<String, SpawnError> {
+        use bucket_tool_types::SubagentCapabilityMode;
         use bucket_tools::implementations::bucket_build::task::types::{
             SubagentEvent, SubagentRequest, SubagentRuntimeOverrides,
         };
-        use bucket_tool_types::SubagentCapabilityMode;
         let (result_tx, result_rx) = tokio::sync::oneshot::channel();
         let request = SubagentRequest {
             id: id.to_string(),
@@ -630,10 +630,10 @@ mod tests {
 
     #[tokio::test]
     async fn channel_spawner_request_is_harness_internal_and_read_only() {
+        use bucket_tool_types::SubagentCapabilityMode;
         use bucket_tools::implementations::bucket_build::task::types::{
             SubagentEvent, SubagentResult,
         };
-        use bucket_tool_types::SubagentCapabilityMode;
 
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         let spawner = ChannelSpawner {

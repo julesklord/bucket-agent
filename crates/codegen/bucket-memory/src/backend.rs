@@ -524,8 +524,8 @@ mod factory_tests {
     use super::*;
     use crate::index::{MemoryIndex, init_sqlite_vec};
     use crate::storage::MemoryStorage;
-    use tempfile::TempDir;
     use bucket_config_types::{MemoryEmbeddingConfig, MemorySearchConfig};
+    use tempfile::TempDir;
 
     fn make_storage(tmp: &TempDir) -> MemoryStorage {
         let global = tmp.path().join("memory");
@@ -1104,8 +1104,8 @@ mod factory_tests {
     /// never sync. Prevents memory_search 401s on rotated tokens.
     #[tokio::test]
     async fn make_embedding_provider_uses_async_api_key_resolution() {
-        use std::sync::atomic::{AtomicU32, Ordering};
         use bucket_tools::types::ApiKeyProvider;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
         struct AsyncProbe {
             sync_calls: Arc<AtomicU32>,
@@ -1174,8 +1174,8 @@ mod factory_tests {
 mod tests {
     use super::*;
     use crate::index::{MemoryIndex, init_sqlite_vec};
-    use tempfile::TempDir;
     use bucket_config_types::MemoryIndexConfig;
+    use tempfile::TempDir;
 
     fn setup_index(tmp: &TempDir) -> (PathBuf, MemoryStorage) {
         init_sqlite_vec();

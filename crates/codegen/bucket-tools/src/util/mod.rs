@@ -1,10 +1,10 @@
 pub mod base64_images;
 pub mod binary;
+pub mod bucket_home;
 pub mod command_display;
 pub mod env;
 pub mod fs;
 pub mod git_detect;
-pub mod bucket_home;
 pub mod hash;
 pub mod image_compress;
 pub mod image_validate;
@@ -17,13 +17,14 @@ pub mod spawn;
 pub mod truncate;
 pub mod unicode_confusables;
 
+pub use bucket_home::{bucket_application, bucket_home};
+pub use bucket_tty_utils::detach_std_command;
 pub use command_display::strip_redundant_session_cd;
 #[cfg(unix)]
 pub use env::detach_from_tty;
 pub use env::substitute_plugin_tokens;
 pub use env::{BUCKET_AGENT_ENV, BUCKET_AGENT_ENV_VALUE, apply_bucket_agent_marker, pager_env};
 pub use fs::{UnicodePathMatch, canonicalize_with_timeout, try_resolve_unicode_filename};
-pub use bucket_home::{bucket_application, bucket_home};
 pub use path_suggestions::format_not_found_error;
 pub use remap::{remap_json_keys, remap_schema_properties, reverse_map};
 pub use spawn::{
@@ -33,4 +34,3 @@ pub use truncate::{
     DEFAULT_SOFT_WRAP_WIDTH, ceil_char_boundary, estimate_tokens, floor_char_boundary,
     soft_wrap_line, soft_wrap_lines, truncate_line, truncate_str, truncate_str_with_marker,
 };
-pub use bucket_tty_utils::detach_std_command;

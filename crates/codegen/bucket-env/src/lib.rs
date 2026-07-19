@@ -182,14 +182,8 @@ mod tests {
     /// outbound by default). Verify both resolve to empty strings.
     #[test]
     fn relay_and_gateway_urls_are_empty_in_fork() {
-        assert_eq!(
-            BucketBuildEnvironment::Production.relay_ws_url(),
-            "",
-        );
-        assert_eq!(
-            BucketBuildEnvironment::Production.gateway_ws_url(),
-            "",
-        );
+        assert_eq!(BucketBuildEnvironment::Production.relay_ws_url(), "",);
+        assert_eq!(BucketBuildEnvironment::Production.gateway_ws_url(), "",);
     }
     #[test]
     fn test_from_flags() {

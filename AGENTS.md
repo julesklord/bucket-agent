@@ -126,6 +126,18 @@ Usage notes:
 <available_skills>
 
 <skill>
+<name>bash-defensive-patterns</name>
+<description>Master defensive Bash programming techniques for production-grade scripts. Use when writing robust shell scripts, CI/CD pipelines, or system utilities requiring fault tolerance and safety.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>rust-best-practices</name>
+<description>></description>
+<location>project</location>
+</skill>
+
+<skill>
 <name>algorithmic-art</name>
 <description>Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or particle systems. Create original algorithmic art rather than copying existing artists' work to avoid copyright violations.</description>
 <location>global</location>
@@ -218,6 +230,12 @@ Usage notes:
 <skill>
 <name>ui-design-system</name>
 <description>"React UI component systems with TailwindCSS + Radix + shadcn/ui. Stack: TailwindCSS (styling), Radix UI (primitives), shadcn/ui (components), React/Next.js. Capabilities: design system architecture, accessible components, responsive layouts, theming, dark mode, component composition. Actions: review, design, build, improve, refactor UI components. Keywords: TailwindCSS, Radix UI, shadcn/ui, design system, component library, accessibility, ARIA, responsive, dark mode, theming, CSS variables, component architecture, atomic design, design tokens, variant, slot, composition. Use when: building component libraries, implementing shadcn/ui, creating accessible UIs, setting up design systems, adding dark mode/theming, reviewing UI component architecture."</description>
+<location>global</location>
+</skill>
+
+<skill>
+<name>version-release</name>
+<description>"Release management for Rust workspace projects. Handles version bumps, compile verification, changelog generation, git tags, and worktree cleanup. Use this skill whenever the user wants to: release a new version, bump the version number, create a release tag, publish release notes, do a release, ship a new version, cut a release, or mentions semver/version numbers in the context of shipping code. Also use when the user says things like 'release v0.2.5', 'bump to 1.3.0', 'create tag for release', 'prep a release', or 'ship this'."</description>
 <location>global</location>
 </skill>
 

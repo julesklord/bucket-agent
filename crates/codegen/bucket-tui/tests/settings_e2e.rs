@@ -10,6 +10,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent
 use ratatui::layout::Rect;
 use std::sync::Arc;
 
+use bucket_agent_core::agent::config::UiConfig;
 use bucket_tui::app::actions::Action;
 use bucket_tui::settings::{
     EnumChoice, PagerLocalSnapshot, SettingCategory, SettingKind, SettingMeta, SettingOwner,
@@ -19,7 +20,6 @@ use bucket_tui::views::settings_modal::{
     RowEntry, SettingsKeyOutcome, SettingsModalMode, SettingsModalState, handle_settings_key,
     handle_settings_mouse,
 };
-use bucket_agent_core::agent::config::UiConfig;
 
 // ---------------------------------------------------------------------------
 // Compile-time exhaustive matrix
@@ -1453,9 +1453,7 @@ fn render_with_filter_active_and_small_viewport_clamps_scroll() {
         height: 12,
     };
     let mut buf = Buffer::empty(area);
-    bucket_tui::views::settings_modal::render_settings_modal(
-        &mut buf, area, &mut s, false, None,
-    );
+    bucket_tui::views::settings_modal::render_settings_modal(&mut buf, area, &mut s, false, None);
     let visible = s.filtered_indices().len();
     assert!(
         s.scroll_offset <= visible.saturating_sub(1).max(0),
@@ -1485,9 +1483,7 @@ fn render_no_matches_placeholder_includes_query() {
         height: 30,
     };
     let mut buf = Buffer::empty(area);
-    bucket_tui::views::settings_modal::render_settings_modal(
-        &mut buf, area, &mut s, false, None,
-    );
+    bucket_tui::views::settings_modal::render_settings_modal(&mut buf, area, &mut s, false, None);
     // Scan all cells for the substring "No matches" and "xyzzy".
     let mut all_text = String::new();
     for y in 0..area.height {
@@ -1718,9 +1714,7 @@ fn defaults_round_trip_through_registry() {
     bucket_tui::appearance::cache::set_show_thinking_blocks(true);
     bucket_tui::appearance::cache::set_prompt_suggestions(true);
     bucket_tui::appearance::cache::set_group_tool_verbs(true);
-    bucket_tui::appearance::cache::set_scroll_mode(
-        bucket_tui::appearance::ScrollMode::Auto,
-    );
+    bucket_tui::appearance::cache::set_scroll_mode(bucket_tui::appearance::ScrollMode::Auto);
     bucket_tui::appearance::cache::set_invert_scroll(false);
     // 3 = the registry default shown while the profile is in charge.
     bucket_tui::appearance::cache::set_scroll_lines(3);
@@ -3417,9 +3411,9 @@ fn pr11_permission_mode_kind_is_always_approve_projection() {
 /// dimmest fg before the overlay's blend was applied).
 #[test]
 fn reset_overlay_dims_all_rows_except_target() {
+    use bucket_tui::views::settings_modal::ResetConfirmOverlay;
     use ratatui::buffer::Buffer;
     use ratatui::style::Modifier;
-    use bucket_tui::views::settings_modal::ResetConfirmOverlay;
     // Set up a state with at least 3 rows visible AND navigate to a
     // specific target (NOT the initially-selected row) so we can
     // assert dim-vs-full-intensity for both target and non-target
@@ -3761,8 +3755,8 @@ fn restart_pill_visible_when_expanded() {
 /// previously-set Off value in a fresh session.
 #[test]
 fn restart_pill_hidden_when_edited_but_collapsed() {
-    use bucket_tui::settings::{PagerLocalSnapshot, SettingsRegistry};
     use bucket_agent_core::agent::config::UiConfig;
+    use bucket_tui::settings::{PagerLocalSnapshot, SettingsRegistry};
 
     // Construct a state where `show_tips` is NOT at its registered
     // default of `true`.
@@ -3884,8 +3878,8 @@ fn vim_l_h_keys_toggle_expansion() {
 /// where the dialog was invisible.
 #[test]
 fn reset_confirm_overlay_renders_prompt_with_setting_label_and_default() {
-    use ratatui::buffer::Buffer;
     use bucket_tui::views::settings_modal::ResetConfirmOverlay;
+    use ratatui::buffer::Buffer;
     let mut s = make_state();
     let area = Rect {
         x: 0,
@@ -3941,9 +3935,9 @@ fn reset_confirm_overlay_renders_prompt_with_setting_label_and_default() {
 /// missing display string would render an empty or garbled prompt.
 #[test]
 fn reset_confirm_prompt_helper_builds_well_formed_string_for_every_setting() {
+    use bucket_agent_core::agent::config::UiConfig;
     use bucket_tui::settings::{PagerLocalSnapshot, SettingsRegistry};
     use bucket_tui::views::modal::{ActiveModal, ModalConfirmation, reset_confirm_prompt};
-    use bucket_agent_core::agent::config::UiConfig;
     let reg = SettingsRegistry::defaults();
     for meta in reg.all() {
         let state = Box::new(SettingsModalState::new(

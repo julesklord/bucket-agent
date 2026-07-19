@@ -17,8 +17,7 @@ fn head_text(conv: &[ConversationItem]) -> Option<String> {
 }
 
 async fn actor_with_history(history: Vec<ConversationItem>) -> SessionActor {
-    let (gateway_tx, _grx) =
-        tokio::sync::mpsc::unbounded_channel::<bucket_acp::AcpClientMessage>();
+    let (gateway_tx, _grx) = tokio::sync::mpsc::unbounded_channel::<bucket_acp::AcpClientMessage>();
     let (persistence_tx, _prx) = tokio::sync::mpsc::unbounded_channel::<PersistenceMsg>();
     let actor = create_test_actor(0, 256_000, 85, gateway_tx, persistence_tx).await;
     actor.chat_state_handle.replace_conversation(history);

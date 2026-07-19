@@ -26,8 +26,8 @@ use tokio::time::Instant;
 use super::search_fts::{SessionDoc, SessionSearchIndex, SessionSearchRow};
 use super::search_remote_sync;
 use super::{
-    ContentPeek, PromptExtractEvent, RawLinePeek, RawParamsPeek, StorageAdapter,
-    BUCKET_SESSION_UPDATE_METHOD, collect_prompts_from_events,
+    BUCKET_SESSION_UPDATE_METHOD, ContentPeek, PromptExtractEvent, RawLinePeek, RawParamsPeek,
+    StorageAdapter, collect_prompts_from_events,
 };
 use crate::session::info::Info;
 use crate::session::persistence::Summary;

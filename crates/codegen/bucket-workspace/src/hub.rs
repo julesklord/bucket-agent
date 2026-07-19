@@ -35,20 +35,20 @@ use crate::diag_server::DiagHandle;
 use crate::error::{WorkspaceError, WorkspaceResult};
 use crate::handle::WorkspaceHandle;
 use async_trait::async_trait;
-use serde_json::Value;
-use std::sync::Arc;
-use tokio::task::JoinHandle;
-use url::Url;
 use bucket_hub_sdk::{
     AuthProvider, ClientError, HubConnectionPool, ToolServer, ToolServerBuilder, ToolServerHandler,
 };
-use bucket_tools::registry::types::ToolConfig;
 use bucket_tool_protocol::ToolId;
 use bucket_tool_runtime::{
     ToolCallContext, ToolError, ToolErrorKind, ToolStream, ToolStreamItem, TypedToolOutput,
     terminal_only,
 };
 use bucket_tool_types::ToolDescription;
+use bucket_tools::registry::types::ToolConfig;
+use serde_json::Value;
+use std::sync::Arc;
+use tokio::task::JoinHandle;
+use url::Url;
 /// Configuration for connecting to a server instance.
 ///
 /// Passed via [`WorkspaceConfig::hub_config`](crate::config::WorkspaceConfig::hub_config).
@@ -669,8 +669,8 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].id, "hub:tool_a");
     }
-    use futures::StreamExt;
     use bucket_tool_runtime::{SessionContext, ToolCallId};
+    use futures::StreamExt;
     fn make_handler(workspace: &WorkspaceHandle, tool_name: &str) -> SessionRoutedToolHandler {
         SessionRoutedToolHandler::new(
             tool_name.to_owned(),
@@ -893,7 +893,9 @@ mod tests {
             )
             .expect("register_tool must succeed");
     }
-    async fn drain_counts<T>(mut stream: bucket_tool_runtime::ToolStream<T>) -> (usize, usize, bool) {
+    async fn drain_counts<T>(
+        mut stream: bucket_tool_runtime::ToolStream<T>,
+    ) -> (usize, usize, bool) {
         let mut progress = 0;
         let mut terminal = 0;
         let mut last_is_terminal = false;
@@ -938,9 +940,9 @@ mod tests {
     }
     use crate::capability::CapabilityMode;
     use crate::session::tool_config::test_support::tc;
-    use std::time::Duration;
     use bucket_tools::notification::types::{ToolNotification, ToolNotificationHandle};
     use bucket_tools::registry::types::ToolServerConfig;
+    use std::time::Duration;
     fn bg_config() -> ToolServerConfig {
         ToolServerConfig {
             tools: vec![
@@ -1002,9 +1004,7 @@ mod tests {
         }
     }
     fn bg_started_notif(task_id: &str) -> ToolNotification {
-        use bucket_tools::notification::types::{
-            BashExecutionBackgrounded, BashNotificationBase,
-        };
+        use bucket_tools::notification::types::{BashExecutionBackgrounded, BashNotificationBase};
         ToolNotification::BashExecutionBackgrounded(BashExecutionBackgrounded {
             base: BashNotificationBase {
                 tool_call_id: task_id.to_owned(),

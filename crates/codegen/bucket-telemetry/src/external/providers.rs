@@ -545,7 +545,12 @@ mod tests {
         let expected: HashMap<String, String> =
             [("x-collector-token".to_string(), "abc".to_string())].into();
         assert_eq!(headers, expected);
-        for forbidden in ["Authorization", "X-BUCKET-Token-Auth", "x-userid", "x-teamid"] {
+        for forbidden in [
+            "Authorization",
+            "X-BUCKET-Token-Auth",
+            "x-userid",
+            "x-teamid",
+        ] {
             assert!(
                 !headers.contains_key(forbidden),
                 "{forbidden} must never be auto-attached to external exports"

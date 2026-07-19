@@ -806,13 +806,15 @@ impl SessionActor {
         let turn_tool_count = self.events.tool_count_this_turn();
         let bridge_outcome = turn_result_to_hook_outcome(&result);
         self.observability_bridge
-            .emit(bucket_tool_protocol::session_event::SessionEvent::TurnEnded {
-                turn_number: current_prompt_index as u64,
-                outcome: bridge_outcome,
-                duration_ms: turn_duration_ms,
-                tool_call_count: turn_tool_count,
-                model_id: turn_model_id.clone(),
-            })
+            .emit(
+                bucket_tool_protocol::session_event::SessionEvent::TurnEnded {
+                    turn_number: current_prompt_index as u64,
+                    outcome: bridge_outcome,
+                    duration_ms: turn_duration_ms,
+                    tool_call_count: turn_tool_count,
+                    model_id: turn_model_id.clone(),
+                },
+            )
             .await;
         match &result {
             Ok(TurnOutcome::Completed { .. }) => {
@@ -832,16 +834,14 @@ impl SessionActor {
                     cancellation_context: None,
                 })
                 .await;
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::TurnCompleted {
-                        outcome: bucket_telemetry::events::Outcome::Completed,
-                        duration_ms: turn_duration_ms,
-                        tool_call_count: turn_tool_count,
-                        model_id: turn_model_id,
-                        cancellation_category: None,
-                        error_category: None,
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::TurnCompleted {
+                    outcome: bucket_telemetry::events::Outcome::Completed,
+                    duration_ms: turn_duration_ms,
+                    tool_call_count: turn_tool_count,
+                    model_id: turn_model_id,
+                    cancellation_category: None,
+                    error_category: None,
+                });
             }
             Ok(TurnOutcome::Cancelled { category, context }) => {
                 self.emit_turn_ended(
@@ -863,16 +863,14 @@ impl SessionActor {
                     cancellation_context: context.clone(),
                 })
                 .await;
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::TurnCompleted {
-                        outcome: bucket_telemetry::events::Outcome::Cancelled,
-                        duration_ms: turn_duration_ms,
-                        tool_call_count: turn_tool_count,
-                        model_id: turn_model_id,
-                        cancellation_category: category.map(|c| format!("{c:?}")),
-                        error_category: None,
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::TurnCompleted {
+                    outcome: bucket_telemetry::events::Outcome::Cancelled,
+                    duration_ms: turn_duration_ms,
+                    tool_call_count: turn_tool_count,
+                    model_id: turn_model_id,
+                    cancellation_category: category.map(|c| format!("{c:?}")),
+                    error_category: None,
+                });
             }
             Ok(TurnOutcome::MaxTurnsReached { limit }) => {
                 tracing::info!(limit, "turn ended: max_turns reached");
@@ -896,16 +894,14 @@ impl SessionActor {
                     )),
                 })
                 .await;
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::TurnCompleted {
-                        outcome: bucket_telemetry::events::Outcome::Cancelled,
-                        duration_ms: turn_duration_ms,
-                        tool_call_count: turn_tool_count,
-                        model_id: turn_model_id,
-                        cancellation_category: Some("max_turns_reached".to_string()),
-                        error_category: None,
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::TurnCompleted {
+                    outcome: bucket_telemetry::events::Outcome::Cancelled,
+                    duration_ms: turn_duration_ms,
+                    tool_call_count: turn_tool_count,
+                    model_id: turn_model_id,
+                    cancellation_category: Some("max_turns_reached".to_string()),
+                    error_category: None,
+                });
             }
             Err(err) => {
                 self.emit_turn_ended(crate::session::events::TurnOutcomeLabel::Error, None, None);
@@ -929,16 +925,14 @@ impl SessionActor {
                         duration_ms: Some(turn_duration_ms),
                     },
                 );
-                bucket_telemetry::session_ctx::log_event(
-                    bucket_telemetry::events::TurnCompleted {
-                        outcome: bucket_telemetry::events::Outcome::Error,
-                        duration_ms: turn_duration_ms,
-                        tool_call_count: turn_tool_count,
-                        model_id: turn_model_id,
-                        cancellation_category: None,
-                        error_category: Some(error_category),
-                    },
-                );
+                bucket_telemetry::session_ctx::log_event(bucket_telemetry::events::TurnCompleted {
+                    outcome: bucket_telemetry::events::Outcome::Error,
+                    duration_ms: turn_duration_ms,
+                    tool_call_count: turn_tool_count,
+                    model_id: turn_model_id,
+                    cancellation_category: None,
+                    error_category: Some(error_category),
+                });
                 self.dispatch_hook(
                     bucket_hooks::event::HookEventName::StopFailure,
                     bucket_hooks::event::HookPayload::StopFailure {

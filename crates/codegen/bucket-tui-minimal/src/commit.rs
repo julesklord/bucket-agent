@@ -578,10 +578,10 @@ pub fn sync_pending_marks(app: &mut AppView) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui::style::Color;
     use bucket_tui::scrollback::block::RenderBlock;
     use bucket_tui::scrollback::entry::ScrollbackEntry;
     use bucket_tui::scrollback::state::ScrollbackState;
+    use ratatui::style::Color;
 
     fn test_cwd() -> &'static std::path::Path {
         std::path::Path::new("/test/session")
@@ -1071,8 +1071,8 @@ mod tests {
     /// syntect RGB.
     #[test]
     fn terminal_native_lock_paints_only_native_colors() {
-        use ratatui::buffer::Buffer;
         use bucket_tui::theme::cache as theme_cache;
+        use ratatui::buffer::Buffer;
 
         let _guard = theme_cache::test_lock()
             .lock()
@@ -1235,10 +1235,10 @@ mod tests {
 
     #[test]
     fn committed_edit_keeps_diff_line_backgrounds() {
+        use bucket_tui::diff::DiffLine;
         use ratatui::buffer::Buffer;
         use ratatui::layout::Rect;
         use similar::ChangeTag;
-        use bucket_tui::diff::DiffLine;
 
         let hunk = vec![
             DiffLine {

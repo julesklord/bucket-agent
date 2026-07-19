@@ -11,9 +11,9 @@ use std::net::TcpListener;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use serial_test::serial;
 use bucket_agent_core::config::ServingIdentity;
 use bucket_test_support::spawn_counting_server;
+use serial_test::serial;
 
 /// The serving identity for a team id (the staleness checks key on this).
 fn team_identity(id: &str) -> ServingIdentity {
@@ -1217,9 +1217,7 @@ async fn gate_purge_retries_past_a_transient_lock_holder() {
         "one gate call must absorb the transient holder via the retry and purge team A"
     );
     assert!(
-        !home
-            .join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-            .exists(),
+        !home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
         "team A's marker goes with the retried purge"
     );
 }
@@ -2059,8 +2057,7 @@ async fn purge_crash_prefixes_stay_armed_and_converge() {
             let _ = std::fs::remove_file(home.join(name));
         }
         assert!(
-            home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-                .exists(),
+            home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
             "marker must outlive every artifact prefix (prefix_len={prefix_len})"
         );
 
@@ -2082,9 +2079,7 @@ async fn purge_crash_prefixes_stay_armed_and_converge() {
             );
         }
         assert!(
-            !home
-                .join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-                .exists(),
+            !home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
             "the converged purge drops the marker last (prefix_len={prefix_len})"
         );
     }
@@ -2130,9 +2125,7 @@ async fn contended_sync_writes_no_marker() {
         "the fetch must have reached the server"
     );
     assert!(
-        !home
-            .join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-            .exists(),
+        !home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
         "a contended sync must not write a marker for files it never persisted"
     );
     assert!(!home.join("requirements.toml").exists());
@@ -2189,9 +2182,7 @@ async fn credential_gone_mid_fetch_writes_no_marker() {
         "the fetch must have reached the server"
     );
     assert!(
-        !home
-            .join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-            .exists(),
+        !home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
         "credential-gone must not write a marker for an unapplied body"
     );
     assert!(!home.join("requirements.toml").exists());
@@ -2243,8 +2234,7 @@ async fn dk_synced_marker_survives_config_blip_with_team_signed_in() {
         "the machine's enforced policy must survive the blip"
     );
     assert!(
-        home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE)
-            .exists(),
+        home.join(bucket_config::MANAGED_CONFIG_CACHE_FILE).exists(),
         "the dk marker must survive the blip"
     );
 }

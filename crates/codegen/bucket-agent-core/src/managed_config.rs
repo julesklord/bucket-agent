@@ -33,10 +33,7 @@ fn remove_managed_config_files(home: &std::path::Path) {
     // its rename fails and self-heals).
     let atomic_write_tmp_prefixes = [
         format!("{}.", bucket_config::MANAGED_CONFIG_CACHE_FILE),
-        format!(
-            "{}.",
-            bucket_config::signed_policy::SIGNATURE_SIDECAR_FILE
-        ),
+        format!("{}.", bucket_config::signed_policy::SIGNATURE_SIDECAR_FILE),
     ];
     if let Ok(entries) = std::fs::read_dir(home) {
         for entry in entries.flatten() {

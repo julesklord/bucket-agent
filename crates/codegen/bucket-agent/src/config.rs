@@ -2,19 +2,19 @@
 use crate::error::AgentBuildError;
 use crate::prompt::context::TemplateOverride;
 use crate::prompt::user_message::UserMessageTemplate;
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
-use strum::{AsRefStr, Display, EnumIter, EnumString, IntoStaticStr};
-use bucket_tools::implementations::codex;
 use bucket_tools::implementations::bucket_build;
 use bucket_tools::implementations::bucket_build_concise;
+use bucket_tools::implementations::codex;
 use bucket_tools::implementations::memory;
 use bucket_tools::implementations::opencode;
 use bucket_tools::implementations::search_tool;
 use bucket_tools::implementations::use_tool;
 use bucket_tools::registry::types::{ToolConfig, ToolServerConfig};
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
+use strum::{AsRefStr, Display, EnumIter, EnumString, IntoStaticStr};
 /// Process-global registry of externally-provided toolset presets.
 ///
 /// # Visibility
@@ -2418,7 +2418,10 @@ description: Test default tool config
         for (s, expected) in [
             ("bucket-build", BuiltinAgentName::BucketBuild),
             ("bucket-build-concise", BuiltinAgentName::BucketBuildConcise),
-            ("bucket-build-ask-user", BuiltinAgentName::BucketBuildAskUser),
+            (
+                "bucket-build-ask-user",
+                BuiltinAgentName::BucketBuildAskUser,
+            ),
             ("codex", BuiltinAgentName::Codex),
             ("opencode", BuiltinAgentName::Opencode),
             ("general-purpose", BuiltinAgentName::GeneralPurpose),

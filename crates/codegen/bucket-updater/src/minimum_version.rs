@@ -11,8 +11,8 @@ use crate::auto_update::{get_installer, run_install_script};
 use crate::version::{
     UpdateConfig, fetch_latest_version, get_installed_bucket_version, write_version_cache,
 };
-use tracing::{info, warn};
 use bucket_agent_core::util::config;
+use tracing::{info, warn};
 
 /// Result of comparing the running binary against a configured floor.
 #[derive(Debug, Clone, PartialEq, Eq)]

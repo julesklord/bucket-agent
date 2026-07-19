@@ -32,9 +32,9 @@ mod common;
 
 use serial_test::serial;
 
-use common::{FakeBinGuard, reset_home, set_test_version, test_home};
 use bucket_updater::UpdateConfig;
 use bucket_updater::auto_update::check_update_status;
+use common::{FakeBinGuard, reset_home, set_test_version, test_home};
 
 /// Set up a fake `npm` on PATH, set `BUCKET_INSTALLER=npm` so the auto-update
 /// code dispatches to npm without consulting config, and pin the installed

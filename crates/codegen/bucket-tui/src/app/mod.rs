@@ -45,6 +45,7 @@ pub mod subscription;
 mod turn_completion;
 mod xt_filter;
 pub(crate) use crate::terminal::kitty_flags_pushed;
+use bucket_agent_core::util::config;
 pub use cli::{
     AgentArgs, AgentCmd, Command, HeadlessArgs, LeaderArgs, LeaderMgmtArgs, LeaderMgmtCommand,
     LeaderTargetArgs, OutputFormat, PagerArgs, ServeArgs, WrapArgs,
@@ -66,7 +67,6 @@ use std::io::{self, Write};
 use std::panic;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio_util::sync::CancellationToken;
-use bucket_agent_core::util::config;
 /// Tracks the extra Kitty keyboard layer pushed while the `/gboom` game is
 /// open (see [`push_gboom_keyboard_flags`]). Kept separate from
 /// `KITTY_FLAGS_PUSHED` so teardown pops both, in LIFO order.
@@ -489,7 +489,9 @@ pub async fn run(
         }
     }
     if let Some(reason) = policy_disable_reason {
-        tokio::spawn(bucket_agent_core::leader::kill_stale_reachable_leaders(reason));
+        tokio::spawn(bucket_agent_core::leader::kill_stale_reachable_leaders(
+            reason,
+        ));
     }
     if let Some(err) =
         session_startup::chat_mode_flag_conflict(args.chat(), args.fork_session, args.restore_code)
@@ -1702,8 +1704,8 @@ mod tests {
     }
     #[test]
     fn cli_session_id_with_resume_and_fork_ok() {
-        let args =
-            try_parse_pager(&["bucket-pager", "-s", "a", "--resume", "b", "--fork-session"]).unwrap();
+        let args = try_parse_pager(&["bucket-pager", "-s", "a", "--resume", "b", "--fork-session"])
+            .unwrap();
         assert!(args.session_startup_intent().is_ok());
     }
     #[test]

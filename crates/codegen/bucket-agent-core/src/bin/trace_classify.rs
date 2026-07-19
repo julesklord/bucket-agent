@@ -24,8 +24,8 @@
 
 use std::path::PathBuf;
 
-use clap::Parser;
 use bucket_agent_core::trace_classifier::{RunArgs, run, validate_min_confidence};
+use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(

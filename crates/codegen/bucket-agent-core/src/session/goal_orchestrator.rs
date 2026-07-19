@@ -452,7 +452,10 @@ mod tests {
                 ..
             } => assert_eq!(
                 live_tokens_by_model,
-                vec![("bucket-4".to_owned(), 5_000), ("bucket-3".to_owned(), 3_000)]
+                vec![
+                    ("bucket-4".to_owned(), 5_000),
+                    ("bucket-3".to_owned(), 3_000)
+                ]
             ),
             _ => panic!("expected GoalUpdated"),
         }

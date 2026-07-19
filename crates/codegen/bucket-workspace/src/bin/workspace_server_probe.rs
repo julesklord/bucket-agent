@@ -17,14 +17,14 @@
 //! access token from `~/.bucket/auth.json` does (same identity).
 
 use base64::Engine;
-use clap::Parser;
-use serde_json::{Value, json};
-use url::Url;
-use uuid::Uuid;
 use bucket_hub_sdk::pool::HubConnectionPool;
 use bucket_hub_sdk::{AuthCredential, ToolHarnessBuilder};
 use bucket_tool_protocol::{SessionId, ToolId};
 use bucket_tool_runtime::{ToolCallContext, ToolStreamItem, TypedToolOutput};
+use clap::Parser;
+use serde_json::{Value, json};
+use url::Url;
+use uuid::Uuid;
 
 #[derive(Parser)]
 #[command(name = "workspace-server-probe")]
@@ -180,10 +180,7 @@ async fn connect_and_bind(
 }
 
 /// Invoke real tools on the bound workspace-server and assert results.
-async fn run_checks(
-    harness: &bucket_hub_sdk::ToolHarness,
-    _args: &Args,
-) -> anyhow::Result<()> {
+async fn run_checks(harness: &bucket_hub_sdk::ToolHarness, _args: &Args) -> anyhow::Result<()> {
     // 1) run_terminal_command must echo our nonce back.
     let nonce = format!("probe-nonce-{}", Uuid::new_v4());
     let marker = format!("/tmp/{nonce}.txt");

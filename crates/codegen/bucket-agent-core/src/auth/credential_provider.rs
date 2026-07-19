@@ -1,10 +1,10 @@
 use crate::auth::AuthManager;
 use crate::util::bucket_auth_credentials::BucketAuthCredentials;
-use reqwest::RequestBuilder;
-use std::sync::Arc;
 use bucket_auth::{
     AuthCredentialProvider, CredentialSnapshot, HttpAuth, StaticAuthCredentialProvider,
 };
+use reqwest::RequestBuilder;
+use std::sync::Arc;
 /// `api_key.id` for the active credential: hash the stable API key, never the
 /// OIDC bearer (which rotates). `None` for non-API-key auth.
 fn api_key_id_for(auth: Option<&crate::auth::BucketAuth>) -> Option<String> {
@@ -186,7 +186,9 @@ impl StorageClientAttributionBridge {
         }
     }
 }
-impl bucket_file_utils::storage_client::Auth401AttributionCallback for StorageClientAttributionBridge {
+impl bucket_file_utils::storage_client::Auth401AttributionCallback
+    for StorageClientAttributionBridge
+{
     fn record_401(&self, operation: &str, sent_bearer_prefix: Option<&str>) {
         crate::auth::attribution::record_consumer_401(
             self.auth_manager.as_ref(),
@@ -403,9 +405,9 @@ mod tests {
     use crate::auth::BucketAuth;
     use crate::auth::BucketComConfig;
     use crate::auth::manager::AuthManager;
+    use bucket_auth::AuthCredentialProvider;
     use chrono::{Duration as ChronoDuration, Utc};
     use std::sync::Mutex;
-    use bucket_auth::AuthCredentialProvider;
     /// Serializes tests that pin `BUCKET_AUTH_EARLY_INVALIDATION_SECS`, since
     /// env vars are process-global and parallel tests would race.
     static EARLY_INVALIDATION_LOCK: Mutex<()> = Mutex::new(());

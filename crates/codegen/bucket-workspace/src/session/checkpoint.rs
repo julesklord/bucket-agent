@@ -10,10 +10,10 @@ use crate::handle::WorkspaceHandle;
 use crate::session::WorkspaceSession;
 use crate::session::file_state::{FileRewindResponse, RewindPoint, rewind_files};
 use crate::session::git;
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use bucket_hunk_tracker::{HunkId, HunkTrackerSnapshot, HunkTurnDelta};
 use bucket_tool_protocol::turn_hook::TurnHookOutcome;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 /// A turn/prompt boundary routed through [`WorkspaceHandle::on_turn_boundary`].
 ///
 /// `prompt_index` selects the origin and keeps the two effect sets disjoint:
@@ -163,8 +163,10 @@ impl WorkspaceSession {
             return;
         }
         prompts.sort_unstable();
-        let mut file_states: HashMap<std::path::PathBuf, bucket_hunk_tracker::FileHunkStateSnapshot> =
-            HashMap::new();
+        let mut file_states: HashMap<
+            std::path::PathBuf,
+            bucket_hunk_tracker::FileHunkStateSnapshot,
+        > = HashMap::new();
         let mut turn_index: HashMap<usize, HashSet<HunkId>> = HashMap::new();
         for idx in prompts {
             let delta = &store[&idx];

@@ -5,10 +5,10 @@ use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
-use dashmap::DashMap;
 use bucket_file_utils::events::{Event, EventWriter, ToolOutcome};
 use bucket_file_utils::queue::UploadQueueStats;
 use bucket_tool_protocol::{ToolServerLifecycleStatus, ToolServerStatusPayload};
+use dashmap::DashMap;
 
 const LIFECYCLE_NONE: u8 = 0;
 const LIFECYCLE_DRAINING: u8 = 1;
@@ -799,7 +799,9 @@ struct DurabilityPayloadFields {
 
 /// The durability idle-hold cap from `BUCKET_WORKSPACE_DURABILITY_IDLE_HOLD_MAX_MS`.
 fn durability_idle_hold_max_from_env() -> u64 {
-    durability_idle_hold_from_raw(std::env::var("BUCKET_WORKSPACE_DURABILITY_IDLE_HOLD_MAX_MS").ok())
+    durability_idle_hold_from_raw(
+        std::env::var("BUCKET_WORKSPACE_DURABILITY_IDLE_HOLD_MAX_MS").ok(),
+    )
 }
 
 /// Pure parse of the idle-hold env value: a non-negative integer ms wins (0

@@ -1579,10 +1579,9 @@ impl McpErasedTool {
         is_timeout: &mut bool,
         ew: &bucket_file_utils::events::EventWriter,
     ) -> Result<rmcp::model::CallToolResult, bucket_tool_runtime::ToolError> {
-        let mcp_service = client
-            .ensure_initialized()
-            .await
-            .map_err(|e| bucket_tool_runtime::ToolError::custom("process_manager", e.to_string()))?;
+        let mcp_service = client.ensure_initialized().await.map_err(|e| {
+            bucket_tool_runtime::ToolError::custom("process_manager", e.to_string())
+        })?;
         let tool_timeout = client.tool_timeout_for(&self.tool.name);
         let timeout_duration = std::time::Duration::from_secs(tool_timeout);
         let mut params = CallToolRequestParams::new(self.tool.name.clone());
@@ -3785,8 +3784,7 @@ impl McpClient {
         &self,
         mcp_state: Arc<Mutex<McpState>>,
     ) -> Result<Vec<McpToolRegistration>, McpError> {
-        let _ensure_init_timer =
-            bucket_telemetry::instrumentation::timer("mcp_ensure_initialized");
+        let _ensure_init_timer = bucket_telemetry::instrumentation::timer("mcp_ensure_initialized");
         let mcp_service = self.ensure_initialized().await?;
 
         let mut all_tools = Vec::new();
@@ -4519,7 +4517,10 @@ mod tests {
         assert!(is_figma_mcp("other", "https://figma.com/mcp"));
         assert!(!is_figma_mcp("linear", "https://mcp.linear.app/mcp"));
         assert!(!is_figma_mcp("figma_extra", "https://example.com/mcp"));
-        assert!(!is_figma_mcp("bucket_com_linear", "https://example.com/mcp"));
+        assert!(!is_figma_mcp(
+            "bucket_com_linear",
+            "https://example.com/mcp"
+        ));
         assert!(!is_figma_mcp("linear", "not-a-url"));
         assert!(!is_figma_mcp("linear", "https://notfigma.com/mcp"));
         assert!(!is_figma_mcp("linear", "https://figma.com.evil/mcp"));

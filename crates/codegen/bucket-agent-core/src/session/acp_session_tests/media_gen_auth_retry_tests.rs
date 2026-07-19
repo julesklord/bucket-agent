@@ -1,7 +1,7 @@
 use super::*;
 use crate::auth::{AuthManager, AuthMode, BucketAuth, BucketComConfig};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use bucket_tools::types::output::{ToolOutput, ToolRunResult};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn succeeding_am() -> Arc<AuthManager> {
     let dir = tempfile::tempdir().unwrap();
@@ -81,12 +81,11 @@ fn err(msg: &str) -> Result<ToolRunResult, bucket_tool_runtime::ToolError> {
 /// any non-success status). Use for retry tests that should exercise
 /// the structured status-code path rather than the string fallback.
 fn http_err(status: u16, msg: &str) -> Result<ToolRunResult, bucket_tool_runtime::ToolError> {
-    Err(
-        bucket_tool_runtime::ToolError::new(bucket_tool_runtime::ToolErrorKind::Custom, msg.to_owned())
-            .with_details(
-                serde_json::json!({"code": "http_failure", HTTP_STATUS_DETAILS_KEY: status}),
-            ),
+    Err(bucket_tool_runtime::ToolError::new(
+        bucket_tool_runtime::ToolErrorKind::Custom,
+        msg.to_owned(),
     )
+    .with_details(serde_json::json!({"code": "http_failure", HTTP_STATUS_DETAILS_KEY: status})))
 }
 
 // ── is_auth_tool_error ────────────────────────────────────────
@@ -156,7 +155,9 @@ fn is_auth_tool_error_classification() {
         // catches it via the message-string fallback.
         (
             true,
-            bucket_tool_runtime::ToolError::invalid_arguments("response: invalid api key for project"),
+            bucket_tool_runtime::ToolError::invalid_arguments(
+                "response: invalid api key for project",
+            ),
         ),
         // Fallback path: OAuth 2.0 `invalid_token` payload (RFC 6749)
         // surfaced as raw JSON without a structured status code.
@@ -173,7 +174,9 @@ fn is_auth_tool_error_classification() {
         // Negative: transport failure must not trigger a token refresh.
         (
             false,
-            bucket_tool_runtime::ToolError::invalid_arguments("Image generation timed out after 60s"),
+            bucket_tool_runtime::ToolError::invalid_arguments(
+                "Image generation timed out after 60s",
+            ),
         ),
         // Negative: structural not-found error; not a network response.
         (

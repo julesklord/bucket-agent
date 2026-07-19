@@ -1255,7 +1255,8 @@ mod tests {
     fn scan_detects_bucket_session_media_path() {
         // Dot-directory (`.bucket`), percent-encoded session segment, and a
         // trailing sentence period — the shape of `image_gen` output prose.
-        let line = make_line("Saved to /Users/alice/.bucket/sessions/%2Fabc/00000000/images/1.jpg.");
+        let line =
+            make_line("Saved to /Users/alice/.bucket/sessions/%2Fabc/00000000/images/1.jpg.");
         let mut overlay = LinkOverlay::new();
         scan_unjoined(std::iter::once((0, &line)), 0, &[], &mut overlay);
 

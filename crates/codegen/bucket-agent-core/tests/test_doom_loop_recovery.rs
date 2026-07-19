@@ -11,19 +11,19 @@
 
 mod common;
 
-use common::{create_test_client, test_sampler_config};
-use bucket_sampler::RetryPolicy;
-use bucket_sampling_types::doom_loop::{DoomLoopSignalKind, SAMPLE_CHECK_EVENT_DATA_CUMULATIVE};
 use bucket_agent_core::sampling::{
     ApiBackend, Client, ConversationItem, ConversationRequest, RequestId, SamplerActor,
     SamplerHandle,
 };
+use bucket_sampler::RetryPolicy;
+use bucket_sampling_types::doom_loop::{DoomLoopSignalKind, SAMPLE_CHECK_EVENT_DATA_CUMULATIVE};
 use bucket_test_support::sse::{
     responses_api_doom_loop_check_events, responses_api_doom_loop_terminal_only_events,
     responses_api_reasoning_and_text_events, responses_api_reasoning_only_events,
     responses_api_with_doom_loop_frame,
 };
 use bucket_test_support::{MockInferenceServer, MockModelEntry, ScriptedResponse};
+use common::{create_test_client, test_sampler_config};
 
 const MODEL: &str = "test-model";
 

@@ -20,11 +20,11 @@ use crate::session::goal_planner::{
 };
 use crate::session::goal_role_tools::RoleToolNames;
 use crate::session::goal_tracker::GoalClassifierVerdict;
+use bucket_file_utils::events::EventWriter;
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use bucket_file_utils::events::EventWriter;
 
 // Constants
 
@@ -5821,10 +5821,10 @@ mod tests {
     /// `runtime_overrides.model`.
     #[tokio::test]
     async fn cold_fallback_after_resume_failure_carries_pool0_model_on_request() {
-        use std::sync::Mutex as StdMutex;
         use bucket_tools::implementations::bucket_build::task::types::{
             SubagentEvent, SubagentResult,
         };
+        use std::sync::Mutex as StdMutex;
 
         // (model, resume_from) per spawn, in spawn order.
         type SpawnCapture = Arc<StdMutex<Vec<(Option<String>, Option<String>)>>>;

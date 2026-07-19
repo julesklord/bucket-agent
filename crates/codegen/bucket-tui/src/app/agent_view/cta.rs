@@ -606,8 +606,7 @@ impl AgentView {
             .push(super::actions::Effect::InstallPluginFromCta {
                 agent_id: self.session.id,
                 session_id,
-                source_url_or_path: bucket_plugin_marketplace::OFFICIAL_SOURCE_GIT_URL
-                    .to_string(),
+                source_url_or_path: bucket_plugin_marketplace::OFFICIAL_SOURCE_GIT_URL.to_string(),
                 plugin_relative_path,
             });
     }

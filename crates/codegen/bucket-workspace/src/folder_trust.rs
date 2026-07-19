@@ -27,8 +27,8 @@
 use std::io::IsTerminal;
 use std::path::Path;
 
-use toml::Value as TomlValue;
 use bucket_config_types::{BoolFlag, RemoteSettings};
+use toml::Value as TomlValue;
 
 use crate::trust::{TrustStore, workspace_key};
 
@@ -526,7 +526,11 @@ mod tests {
         let tmp = repo_tmp();
         let bucket = tmp.path().join(".bucket");
         std::fs::create_dir_all(&bucket).unwrap();
-        std::fs::write(bucket.join("config.toml"), "[mcp_servers.x]\ncommand=\"y\"\n").unwrap();
+        std::fs::write(
+            bucket.join("config.toml"),
+            "[mcp_servers.x]\ncommand=\"y\"\n",
+        )
+        .unwrap();
         assert!(repo_configs_present(tmp.path()));
     }
 

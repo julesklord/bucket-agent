@@ -423,10 +423,7 @@ pub async fn handle(
         }
         "x.ai/git/worktree/db/path" => {
             let result = ops
-                .dispatch(
-                    &bucket_workspace::workspace_ops::WorktreeDbPathReq {},
-                    None,
-                )
+                .dispatch(&bucket_workspace::workspace_ops::WorktreeDbPathReq {}, None)
                 .await
                 .map_err(|e| acp::Error::internal_error().data(e.to_string()))?;
             to_response(Ok(result))

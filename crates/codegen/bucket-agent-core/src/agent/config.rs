@@ -3,11 +3,6 @@ use crate::auth::{AuthManager, BucketComConfig, OidcAuthConfig};
 use crate::remote::DEFAULT_CONTEXT_WINDOW;
 use crate::{config::StorageMode, sampling::ApiBackend, tools::config::ShellToolsetConfig};
 use agent_client_protocol as acp;
-use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
-use std::num::NonZeroU64;
-use std::path::PathBuf;
-use std::sync::Arc;
 use bucket_agent::prompt::skills::SkillsConfig;
 use bucket_sampler::{AuthScheme, SamplerConfig};
 use bucket_sampling_types::{
@@ -18,6 +13,11 @@ use bucket_sampling_types::{
 use bucket_tools::types::compat::{
     COMPAT_CELLS, CompatConfig, CompatConfigToml, CompatRemoteKey, CompatSurface, CompatVendor,
 };
+use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
+use std::num::NonZeroU64;
+use std::path::PathBuf;
+use std::sync::Arc;
 /// The mode in which the agent is running.
 /// Determines behavior like relay sync enablement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -400,7 +400,8 @@ impl EndpointsConfig {
         if self.external_otel_master_switch {
             return false;
         }
-        let endpoint_consumed = blank_as_unset(&self.bucket_internal_otlp_traces_endpoint).is_none()
+        let endpoint_consumed = blank_as_unset(&self.bucket_internal_otlp_traces_endpoint)
+            .is_none()
             && self.legacy_internal_otlp_traces_endpoint().is_some();
         let headers_consumed = blank_as_unset(&self.bucket_internal_otlp_headers).is_none()
             && blank_as_unset(&self.otel_exporter_otlp_headers).is_some();
@@ -559,7 +560,9 @@ impl Default for EndpointsConfig {
             otel_exporter_otlp_endpoint: env_string("OTEL_EXPORTER_OTLP_ENDPOINT"),
             otel_exporter_otlp_traces_endpoint: env_string("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"),
             otel_exporter_otlp_headers: env_string("OTEL_EXPORTER_OTLP_HEADERS"),
-            bucket_internal_otlp_traces_endpoint: env_string("BUCKET_INTERNAL_OTLP_TRACES_ENDPOINT"),
+            bucket_internal_otlp_traces_endpoint: env_string(
+                "BUCKET_INTERNAL_OTLP_TRACES_ENDPOINT",
+            ),
             bucket_internal_otlp_headers: env_string("BUCKET_INTERNAL_OTLP_HEADERS"),
             external_otel_master_switch: external_otel_master_switch_resolved(),
             otel_traces_exporter: env_string("OTEL_TRACES_EXPORTER"),
@@ -4950,8 +4953,8 @@ impl ModelSwitchIncompatibleAgentError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
     use bucket_test_support::EnvGuard;
+    use serial_test::serial;
     #[test]
     fn main_cli_tools_override_preserves_profile_injection_policy() {
         let overrides = CliAgentOverrides {
@@ -5564,7 +5567,10 @@ reasoning_effort = "low"
     }
     #[test]
     fn env_keys_resolve_first_set_wins() {
-        let keys = EnvKeys::new(["BUCKET_TEST_ENV_KEY_PRIMARY", "BUCKET_TEST_ENV_KEY_FALLBACK"]);
+        let keys = EnvKeys::new([
+            "BUCKET_TEST_ENV_KEY_PRIMARY",
+            "BUCKET_TEST_ENV_KEY_FALLBACK",
+        ]);
         assert_eq!(keys.resolve_value_with(|_| None), None, "none set");
         assert_eq!(
             keys.resolve_value_with(
@@ -5687,7 +5693,7 @@ reasoning_effort = "low"
     #[test]
     #[serial]
     fn resolve_credentials_empty_env_key_falls_through_to_global_key() {
-        use crate::agent::auth_method::{LEGACY_BUCKET_API_KEY_ENV_VAR, BUCKET_API_KEY_ENV_VAR};
+        use crate::agent::auth_method::{BUCKET_API_KEY_ENV_VAR, LEGACY_BUCKET_API_KEY_ENV_VAR};
         use bucket_chat_state::AuthType;
         use bucket_test_support::EnvGuard;
         let sentinel = "bucket-global-sentinel-key";
@@ -7236,7 +7242,7 @@ reasoning_effort = "low"
     /// membership can't be verified from a bare API key, so it needs IdP login).
     #[test]
     fn force_login_team_uuid_implies_api_key_auth_disabled() {
-        use crate::auth::{ForceLoginTeam, BucketComConfig};
+        use crate::auth::{BucketComConfig, ForceLoginTeam};
         let base = BucketComConfig {
             disable_api_key_auth: None,
             force_login_team_uuid: None,
@@ -8369,8 +8375,11 @@ reasoning_effort = "low"
             Some("bucket-imagine-image".to_owned())
         );
         assert_eq!(
-            with(Some("bucket-imagine-image-pro"), Some("bucket-imagine-image"))
-                .resolve_image_gen_model_override(),
+            with(
+                Some("bucket-imagine-image-pro"),
+                Some("bucket-imagine-image")
+            )
+            .resolve_image_gen_model_override(),
             Some("bucket-imagine-image-pro".to_owned())
         );
     }
@@ -9015,7 +9024,10 @@ agent_type = "cursor"
 "#;
         let raw: toml::Value = toml::from_str(toml_str).unwrap();
         let cfg = Config::new_from_toml_cfg(&raw).unwrap();
-        assert_eq!(cfg.goal.planner_model.as_ref().unwrap().model, "bucket-build");
+        assert_eq!(
+            cfg.goal.planner_model.as_ref().unwrap().model,
+            "bucket-build"
+        );
         assert_eq!(
             cfg.goal.strategist_model.as_ref().unwrap().agent_type,
             "cursor"
@@ -9757,7 +9769,10 @@ agent_type = "cursor"
             resolve_external_otel_config_with(
                 None,
                 Some(&req),
-                ext_env(&[("BUCKET_EXTERNAL_OTEL", "1"), ("OTEL_LOGS_EXPORTER", "otlp"),]),
+                ext_env(&[
+                    ("BUCKET_EXTERNAL_OTEL", "1"),
+                    ("OTEL_LOGS_EXPORTER", "otlp"),
+                ]),
                 ext_client(),
                 false,
             )
@@ -9844,7 +9859,10 @@ agent_type = "cursor"
         let cfg = resolve_external_otel_config_with(
             None,
             None,
-            ext_env(&[("BUCKET_EXTERNAL_OTEL", "1"), ("OTEL_LOGS_EXPORTER", "otlp")]),
+            ext_env(&[
+                ("BUCKET_EXTERNAL_OTEL", "1"),
+                ("OTEL_LOGS_EXPORTER", "otlp"),
+            ]),
             ext_client(),
             true,
         )
@@ -10507,7 +10525,9 @@ default = "bucket-4.5"
             .expect("bucket-build key must exist");
         assert_eq!(by_key.info.context_window.get(), 500_000);
         assert_eq!(by_key.info.model, "bucket-4.5");
-        let by_latest = resolved.get("bucket-4.5").expect("bucket-4.5 key must exist");
+        let by_latest = resolved
+            .get("bucket-4.5")
+            .expect("bucket-4.5 key must exist");
         assert_eq!(
             by_latest.info.context_window.get(),
             500_000,
@@ -10532,8 +10552,13 @@ default = "bucket-4.5"
         .unwrap();
         let cfg = Config::new_from_toml_cfg(&raw).expect("config should parse");
         let mut prefetched = IndexMap::new();
-        let mut entry =
-            test_model_entry("bucket-4.5", "https://test.example.com/v1", None, None, None);
+        let mut entry = test_model_entry(
+            "bucket-4.5",
+            "https://test.example.com/v1",
+            None,
+            None,
+            None,
+        );
         entry.info.context_window = NonZeroU64::new(default_cw).unwrap();
         entry.info.agent_type = default_agent_type();
         entry.info.api_backend = ApiBackend::default();
@@ -10566,8 +10591,13 @@ default = "bucket-4.5"
         .unwrap();
         let cfg = Config::new_from_toml_cfg(&raw).expect("config should parse");
         let mut prefetched = IndexMap::new();
-        let mut entry =
-            test_model_entry("bucket-4.5", "https://test.example.com/v1", None, None, None);
+        let mut entry = test_model_entry(
+            "bucket-4.5",
+            "https://test.example.com/v1",
+            None,
+            None,
+            None,
+        );
         entry.info.context_window = NonZeroU64::new(65_536).unwrap();
         prefetched.insert("bucket-4.5".to_owned(), entry);
         let resolved = resolve_model_list(&cfg, Some(prefetched));
@@ -11052,7 +11082,9 @@ default = "bucket-4.5"
         .unwrap();
         let cfg = Config::new_from_toml_cfg(&raw).expect("config should parse");
         let resolved = resolve_model_list(&cfg, None);
-        let entry = resolved.get("bucket-build").expect("bucket-build must exist");
+        let entry = resolved
+            .get("bucket-build")
+            .expect("bucket-build must exist");
         assert!(
             entry.visible_for_auth(false),
             "BYOK config entry must be visible to API-key users — \
@@ -11072,7 +11104,9 @@ default = "bucket-4.5"
         .unwrap();
         let cfg = Config::new_from_toml_cfg(&raw).expect("config should parse");
         let resolved = resolve_model_list(&cfg, None);
-        let entry = resolved.get("bucket-build").expect("bucket-build must exist");
+        let entry = resolved
+            .get("bucket-build")
+            .expect("bucket-build must exist");
         assert!(
             !entry.visible_for_auth(false),
             "non-BYOK config overlay must preserve bundled supported_in_api=false"

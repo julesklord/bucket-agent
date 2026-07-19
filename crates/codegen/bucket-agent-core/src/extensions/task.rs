@@ -1,6 +1,6 @@
 use agent_client_protocol as acp;
-use serde::{Deserialize, Serialize};
 use bucket_tools::types::{KillOutcome, TaskSnapshot};
+use serde::{Deserialize, Serialize};
 
 use bucket_tools::implementations::bucket_build::task::types::{
     SubagentCancelOutcome, SubagentSnapshot, SubagentSnapshotStatus,

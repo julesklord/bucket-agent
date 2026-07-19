@@ -64,7 +64,10 @@ impl SandboxClient {
             .context("failed to resolve sandbox auth")?;
         let mut builder = builder
             .header("Authorization", format!("Bearer {}", &auth.key))
-            .header("X-BUCKET-Token-Auth", BucketComConfig::default().token_header)
+            .header(
+                "X-BUCKET-Token-Auth",
+                BucketComConfig::default().token_header,
+            )
             .header("x-userid", &auth.user_id)
             .header("x-bucket-client-version", bucket_version::VERSION);
 

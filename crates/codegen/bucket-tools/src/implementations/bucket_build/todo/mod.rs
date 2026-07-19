@@ -538,9 +538,10 @@ mod tests {
                 make_update("dup", Some("B"), Some(TodoStatus::Pending)),
             ],
         };
-        let result = bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
-            .await
-            .unwrap();
+        let result =
+            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), input)
+                .await
+                .unwrap();
         assert!(
             matches!(result, TodoWriteOutput::DuplicateId(ref msg) if msg.contains("dup")),
             "expected DuplicateId variant, got {result:?}"

@@ -9,7 +9,6 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use dashmap::DashMap;
 
-use serde::{Deserialize, Serialize};
 use bucket_hub_core::{
     ConnectionCleanupReport, ErasedTool, ResolvedTool, SessionCleanupReport, ToolHandle,
     ToolRegistry, ToolSessionBindOutcome, ToolSessionUnbindOutcome, resolver::CompoundResolver,
@@ -20,6 +19,7 @@ use bucket_tool_protocol::{
 };
 use bucket_tool_runtime::{SearchSnapshot, ServerSummary, Tool, ToolCallContext, ToolError};
 use bucket_tool_types::ToolDescription;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 struct EmptyArgs {}

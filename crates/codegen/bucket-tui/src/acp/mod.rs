@@ -158,21 +158,23 @@ pub async fn connect(cancel: &CancellationToken, flags: ConnectFlags) -> Result<
     let mut agent_config = AgentConfig::new_from_toml_cfg(&raw_config)
         .map_err(|e| anyhow::anyhow!("Failed to create agent config: {}", e))?;
 
-    agent_config.resolve_runtime_fields(&bucket_agent_core::agent::config::RuntimeResolutionContext {
-        raw_config: &raw_config,
-        remote_settings: flags.remote_settings.as_ref(),
-        cwd: None,
-        is_headless: false,
-        cli_subagents: Some(flags.subagents),
-        cli_web_search_model: None,
-        cli_session_summary_model: None,
-        cli_experimental_memory: flags.experimental_memory,
-        cli_no_memory: flags.no_memory,
-        disable_web_search: flags.disable_web_search,
-        todo_gate: flags.todo_gate,
-        laziness_debug_log: flags.laziness_debug_log.as_deref(),
-        storage_mode: flags.storage_mode.as_deref(),
-    });
+    agent_config.resolve_runtime_fields(
+        &bucket_agent_core::agent::config::RuntimeResolutionContext {
+            raw_config: &raw_config,
+            remote_settings: flags.remote_settings.as_ref(),
+            cwd: None,
+            is_headless: false,
+            cli_subagents: Some(flags.subagents),
+            cli_web_search_model: None,
+            cli_session_summary_model: None,
+            cli_experimental_memory: flags.experimental_memory,
+            cli_no_memory: flags.no_memory,
+            disable_web_search: flags.disable_web_search,
+            todo_gate: flags.todo_gate,
+            laziness_debug_log: flags.laziness_debug_log.as_deref(),
+            storage_mode: flags.storage_mode.as_deref(),
+        },
+    );
 
     // Permission mode seeds for every session this agent creates (CLI / config).
     agent_config.default_yolo_mode = flags.default_yolo_mode;
@@ -545,7 +547,10 @@ async fn initialize(
         .meta
         .as_ref()
         .and_then(|m| m.get("providerCapabilities"))
-        .and_then(|v| serde_json::from_value::<bucket_agent_core::provider::ProviderCapabilities>(v.clone()).ok())
+        .and_then(|v| {
+            serde_json::from_value::<bucket_agent_core::provider::ProviderCapabilities>(v.clone())
+                .ok()
+        })
         .unwrap_or_default();
 
     Ok((
@@ -962,7 +967,9 @@ mod tests {
     /// either passes or fails on a meaningful new code path.
     #[test]
     fn startup_auth_xai_api_key_not_first_still_requires_login() {
-        use bucket_agent_core::agent::auth_method::{BUCKET_COM_METHOD_ID, BUCKET_API_KEY_METHOD_ID};
+        use bucket_agent_core::agent::auth_method::{
+            BUCKET_API_KEY_METHOD_ID, BUCKET_COM_METHOD_ID,
+        };
 
         let methods = vec![
             make_auth_method(BUCKET_COM_METHOD_ID, "Bucket", None),

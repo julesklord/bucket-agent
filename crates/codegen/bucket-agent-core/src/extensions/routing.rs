@@ -1,6 +1,6 @@
 use agent_client_protocol as acp;
-use serde::{Deserialize, Serialize};
 use bucket_acp::AcpAgentGatewaySender as GatewaySender;
+use serde::{Deserialize, Serialize};
 
 // Re-export from workspace crate (canonical home for fuzzy search).
 pub use bucket_workspace::file_system::{ClientId, TargetClientId};

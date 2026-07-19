@@ -9,10 +9,12 @@ use crate::hub_ids::WORKSPACE_RPC_TOOL_ID;
 use crate::rpc_envelope::{RpcEnvelope, envelope_err};
 use crate::workspace_ops::WorkspaceOp;
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
-use prometheus::{HistogramVec, IntCounterVec, register_histogram_vec, register_int_counter_vec};
-use serde_json::Value;
 use bucket_hub_sdk::ToolServerHandler;
+use bucket_tool_protocol::{HookEvent, HookFrame, SessionId, ToolId, ToolServerEvictParams};
+use bucket_tool_runtime::{
+    ToolCallContext, ToolError, ToolErrorKind, ToolStream, TypedToolOutput, terminal_only,
+};
+use bucket_tool_types::ToolDescription;
 use bucket_tools::computer::types::TaskKind;
 use bucket_tools::implementations::bucket_build::scheduler::interval::interval_to_human;
 use bucket_tools::implementations::bucket_build::scheduler::types::{
@@ -23,11 +25,9 @@ use bucket_tools::types::resources::Terminal;
 use bucket_workspace_types::rpc::workspace::{
     BackgroundTaskSnapshotWire, ScheduledTaskSnapshotWire, TasksSnapshotResponse,
 };
-use bucket_tool_protocol::{HookEvent, HookFrame, SessionId, ToolId, ToolServerEvictParams};
-use bucket_tool_runtime::{
-    ToolCallContext, ToolError, ToolErrorKind, ToolStream, TypedToolOutput, terminal_only,
-};
-use bucket_tool_types::ToolDescription;
+use chrono::{DateTime, Utc};
+use prometheus::{HistogramVec, IntCounterVec, register_histogram_vec, register_int_counter_vec};
+use serde_json::Value;
 /// Deprecation monitor for the self-attested `caller_session_id` param:
 /// `kind="param_mismatch"` — the param disagreed with the server-bound envelope
 /// session (envelope trusted); `kind="envelope_absent"` — no envelope
@@ -1125,8 +1125,8 @@ mod tests {
     use super::*;
     use crate::capability::CapabilityMode;
     use crate::handle::tests::{background_capable_cfg, make_handle, start_background_sleep};
-    use bucket_tools::implementations::bucket_build::scheduler::types::ScheduledTask;
     use bucket_tool_protocol::turn_hook;
+    use bucket_tools::implementations::bucket_build::scheduler::types::ScheduledTask;
     /// Helper: consume the first item from a ToolStream.
     async fn next_item(
         stream: &mut ToolStream<TypedToolOutput>,

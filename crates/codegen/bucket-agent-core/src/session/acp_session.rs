@@ -54,16 +54,6 @@ use crate::terminal::{DEFAULT_TIMEOUT, TerminalRunRequest};
 use crate::tools::ToolContext;
 use agent_client_protocol as acp;
 use agent_client_protocol::ContentBlock;
-use parking_lot::Mutex;
-use serde_json::json;
-use std::collections::{HashMap, VecDeque};
-use std::path::Path;
-use std::sync::Arc;
-#[cfg(test)]
-use std::sync::OnceLock;
-use tokio::sync::{Mutex as TokioMutex, mpsc, oneshot};
-use tokio::time::{Duration, sleep};
-use tokio_retry::strategy::ExponentialBackoff;
 use bucket_acp::AcpAgentGatewaySender as GatewaySender;
 use bucket_agent::AgentDefinition;
 use bucket_agent::prompt::agents_md::LEGACY_AGENTS_MD_REMINDER_PREFIX;
@@ -83,6 +73,16 @@ use bucket_workspace::permission::{
     AccessKind, ClientType, Decision, PermissionEvent, PermissionHandle,
 };
 use bucket_workspace::session::file_state::{FileStateHandle, FileStateTracker};
+use parking_lot::Mutex;
+use serde_json::json;
+use std::collections::{HashMap, VecDeque};
+use std::path::Path;
+use std::sync::Arc;
+#[cfg(test)]
+use std::sync::OnceLock;
+use tokio::sync::{Mutex as TokioMutex, mpsc, oneshot};
+use tokio::time::{Duration, sleep};
+use tokio_retry::strategy::ExponentialBackoff;
 const SESSION_LOG: &str = "xai_session";
 #[path = "compaction.rs"]
 mod compaction;
@@ -380,7 +380,9 @@ impl bucket_tools::types::resources::ManagedGatewayToolCaller for ShellManagedGa
             .await
             .ok()
             .or_else(|| self.auth_manager.current_or_expired().map(|a| a.key))
-            .ok_or_else(|| bucket_tool_runtime::ToolError::unauthorized("no auth token available"))?;
+            .ok_or_else(|| {
+                bucket_tool_runtime::ToolError::unauthorized("no auth token available")
+            })?;
         let response = crate::session::managed_mcp::call_gateway_tool(
             &self.proxy_base_url,
             &auth_key,
@@ -409,8 +411,9 @@ fn managed_gateway_error_to_tool_error(
             } else if status == reqwest::StatusCode::FORBIDDEN {
                 bucket_tool_runtime::ToolError::permission_denied(detail)
             } else {
-                let tool_id = bucket_tool_protocol::ToolId::new(caller)
-                    .unwrap_or_else(|_| bucket_tool_protocol::ToolId::new("use_tool").expect("valid"));
+                let tool_id = bucket_tool_protocol::ToolId::new(caller).unwrap_or_else(|_| {
+                    bucket_tool_protocol::ToolId::new("use_tool").expect("valid")
+                });
                 bucket_tool_runtime::ToolError::execution(tool_id, detail)
             };
             match err.details.as_mut() {
@@ -461,7 +464,10 @@ mod managed_gateway_error_tests {
     #[test]
     fn forbidden_status_maps_to_permission_denied_and_carries_status() {
         let err = managed_gateway_error_to_tool_error(status_error(403, "denied"), "use_tool");
-        assert_eq!(err.kind, bucket_tool_runtime::ToolErrorKind::PermissionDenied);
+        assert_eq!(
+            err.kind,
+            bucket_tool_runtime::ToolErrorKind::PermissionDenied
+        );
         let details = err.details.as_ref().unwrap();
         assert_eq!(
             details.get(HTTP_STATUS_DETAILS_KEY),
@@ -1135,7 +1141,10 @@ impl SessionActor {
     }
     /// Send an after-turn hook via the local workspace channel.
     /// Fire-and-forget — failures are logged but do not interrupt the turn.
-    async fn send_after_turn_event(&self, payload: bucket_tool_protocol::turn_hook::AfterTurnPayload) {
+    async fn send_after_turn_event(
+        &self,
+        payload: bucket_tool_protocol::turn_hook::AfterTurnPayload,
+    ) {
         self.workspace_ops
             .on_after_turn(&self.session_id_string(), &payload)
             .await;
@@ -1625,10 +1634,10 @@ mod tool_meta_stamp_tests {
     use super::replay_buffer_send_update_tests::make_replay_send_update_fixture;
     use super::support::test_agent_with_tools;
     use super::*;
-    use tokio::sync::mpsc;
     use bucket_tools::registry::types::ToolConfig;
     use bucket_tools::tool_taxonomy::TOOL_META_KEY;
     use bucket_workspace::permission::PermissionCommand;
+    use tokio::sync::mpsc;
     fn read_file_call() -> crate::sampling::types::ToolCallResponse {
         crate::sampling::types::ToolCallResponse {
             id: "call-stamp-1".to_string(),

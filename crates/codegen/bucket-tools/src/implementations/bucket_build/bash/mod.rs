@@ -21,8 +21,8 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use regex::Regex;
 use bucket_config::shell::AmpersandSemantics;
+use regex::Regex;
 
 use crate::DEFAULT_TOOL_OUTPUT_CHARS;
 use crate::computer::types::{ComputerError, TerminalRunRequest};
@@ -3245,9 +3245,12 @@ mod tests {
         // No Terminal inserted
         let tool = BashTool;
 
-        let result =
-            bucket_tool_runtime::Tool::run(&tool, test_ctx(resources.into_shared()), make_input("ls"))
-                .await;
+        let result = bucket_tool_runtime::Tool::run(
+            &tool,
+            test_ctx(resources.into_shared()),
+            make_input("ls"),
+        )
+        .await;
         assert!(result.is_err());
         assert!(
             result
@@ -4531,8 +4534,9 @@ mod tests {
         fn legacy_rt_ctx(
             resources: crate::types::resources::SharedResources,
         ) -> bucket_tool_runtime::ToolCallContext {
-            let mut ctx =
-                bucket_tool_runtime::ToolCallContext::new(bucket_tool_protocol::ToolCallId::new_v7());
+            let mut ctx = bucket_tool_runtime::ToolCallContext::new(
+                bucket_tool_protocol::ToolCallId::new_v7(),
+            );
             ctx.extensions.insert(resources);
             ctx.extensions.insert(bucket_tool_runtime::BehaviorVersion(
                 "legacy-0.4.10".to_string(),

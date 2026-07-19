@@ -820,6 +820,19 @@ pub fn default_actions(mouse_reporting_toggle_enabled: bool) -> Vec<ActionDef> {
             requires_confirmation: false,
             long_help: None,
         },
+        ActionDef {
+            id: ActionId::ConfigureProvider,
+            label: "providers",
+            description: "Configure providers",
+            default_key: key!('P', CONTROL | SHIFT),
+            alt_keys: vec![],
+            category: Category::Settings,
+            context: When::Always,
+            hint_priority: None,
+            hint_key_display: None,
+            requires_confirmation: false,
+            long_help: Some("Configure BYOK providers and models"),
+        },
     ];
 
     // Toggle terminal mouse reporting (mouse capture). Opt-in via

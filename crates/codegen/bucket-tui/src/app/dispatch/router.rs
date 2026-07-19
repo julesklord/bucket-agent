@@ -87,8 +87,9 @@ use super::settings::setters::{
     set_timestamps, set_vim_mode, set_voice_capture_mode, set_voice_stt_language,
 };
 use super::settings::ui::{
-    dispatch_confirm_reset_setting, dispatch_open_command_palette, dispatch_open_howto_guides,
-    dispatch_open_reset_confirm, dispatch_open_settings, dispatch_toggle_compact_mode,
+    dispatch_configure_provider, dispatch_confirm_reset_setting, dispatch_open_command_palette,
+    dispatch_open_howto_guides, dispatch_open_reset_confirm, dispatch_open_settings,
+ dispatch_toggle_compact_mode,
     dispatch_toggle_mouse_capture, dispatch_toggle_multiline, dispatch_toggle_timestamps,
     dispatch_toggle_vim_mode,
 };
@@ -947,6 +948,45 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
         Action::PreviewAutoDarkTheme(v) => preview_auto_dark_theme(app, v),
         Action::PreviewAutoLightTheme(v) => preview_auto_light_theme(app, v),
         Action::OpenSettings => dispatch_open_settings(app),
+        Action::ConfigureProvider => dispatch_configure_provider(app),
+        Action::ProviderConfigConfirm => {
+            if let Some(modal) = app.provider_config_modal.take() {
+                // Determine home dir directly if bucket_config::paths is not available,
+                // or just use bucket_config::paths::bucket_home()
+                if let Ok(home) = std::env::var("BUCKET_HOME")
+                    .map(std::path::PathBuf::from)
+                    .or_else(|_| {
+                        #[allow(deprecated)]
+                        std::env::home_dir().map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket")).ok_or(())
+                    })
+                {
+                    let _ = std::fs::create_dir_all(&home);
+                    let provider_file = home.join("providers.toml");
+                    let mut config_str = String::new();
+                    config_str.push_str("[providers]\n");
+                    let provider = modal.provider_input.trim();
+                    let api_key = modal.api_key_input.trim();
+                    if !provider.is_empty() && !api_key.is_empty() {
+                        config_str.push_str(&format!("{} = \"{}\"\n", provider, api_key));
+                    }
+                    let _ = std::fs::write(&provider_file, config_str);
+                    
+                    // Touch config.toml to trigger the config watcher (hot reload)
+                    let config_file = home.join("config.toml");
+                    if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&config_file) {
+                        use std::io::Write;
+                        let _ = writeln!(f, ""); // append empty line to trigger watcher
+                    }
+                    
+                    app.show_toast("\u{2713} Provider configured. Models reloading...");
+                }
+            }
+            vec![]
+        }
+        Action::ProviderConfigCancel => {
+            app.provider_config_modal = None;
+            vec![]
+        }
         Action::OpenCommandPalette => dispatch_open_command_palette(app),
         Action::OpenHowtoGuides => dispatch_open_howto_guides(app),
         Action::OpenResetConfirm { key } => dispatch_open_reset_confirm(app, key),

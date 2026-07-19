@@ -1037,6 +1037,8 @@ pub struct AppView {
     pub has_claude_import: bool,
     /// When set, the welcome screen renders an interactive import modal instead of normal content.
     pub import_claude_modal: Option<crate::views::import_claude_modal::ImportClaudeModalState>,
+    /// BYOK Provider config modal
+    pub provider_config_modal: Option<crate::views::provider_config_modal::ProviderConfigModalState>,
     /// Doc viewer overlay for the welcome screen (release notes via Ctrl+L).
     pub welcome_doc_viewer: Option<crate::views::modal::ActiveModal>,
     /// Whether the pager uses fullscreen (alt-screen) or inline mode.
@@ -1323,6 +1325,7 @@ impl AppView {
             relaunch: None,
             has_claude_import: false,
             import_claude_modal: None,
+            provider_config_modal: None,
             welcome_doc_viewer: None,
             screen_mode: ScreenMode::Inline,
             show_resolved_model: true,
@@ -2110,6 +2113,25 @@ impl AppView {
             );
             if is_mouse_action {}
         }
+        if let Some(modal) = self.provider_config_modal.as_mut() {
+            use crate::views::provider_config_modal::ProviderConfigModalOutcome;
+            let outcome_to_input = |o: ProviderConfigModalOutcome| match o {
+                ProviderConfigModalOutcome::Confirmed => {
+                    InputOutcome::Action(Action::ProviderConfigConfirm)
+                }
+                ProviderConfigModalOutcome::Cancelled => InputOutcome::Action(Action::ProviderConfigCancel),
+                ProviderConfigModalOutcome::Changed => InputOutcome::Changed,
+                ProviderConfigModalOutcome::Unchanged => InputOutcome::Unchanged,
+            };
+            if let Event::Key(key) = ev {
+                if key.kind == KeyEventKind::Release {
+                    return InputOutcome::Unchanged;
+                }
+                return outcome_to_input(modal.handle_key(key));
+            }
+            return InputOutcome::Unchanged;
+        }
+
         let zdr_blocked = self.is_zdr_blocked();
         let has_access = self.has_access();
         let welcome_pinned_upgrade_cta = crate::views::announcements::promo_cta(
@@ -3502,10 +3524,11 @@ fn dispatch_menu_action(
     let base = if has_claude_import { 1 } else { 0 };
     let worktree_idx = base;
     let resume_idx = base + 1;
+    let config_provider_idx = base + 2;
     let (changelog_idx, quit_idx) = if show_changelog_action {
-        (Some(base + 2), base + 3)
+        (Some(base + 3), base + 4)
     } else {
-        (None, base + 2)
+        (None, base + 3)
     };
     if has_claude_import && index == 0 {
         return InputOutcome::Action(Action::ImportClaudeSettings);
@@ -3515,6 +3538,9 @@ fn dispatch_menu_action(
     }
     if index == resume_idx {
         return InputOutcome::Action(Action::FetchSessionList);
+    }
+    if index == config_provider_idx {
+        return InputOutcome::Action(Action::ConfigureProvider);
     }
     if Some(index) == changelog_idx {
         if let Some(md) = changelog_md {
@@ -3933,8 +3959,13 @@ impl AppView {
                                 &theme,
                                 compact,
                             );
-                        }
-                        if let Some(dialog) = self.new_worktree_dialog.as_ref() {
+                        } else if let Some(modal) = self.provider_config_modal.as_ref() {
+                            crate::views::provider_config_modal::render_provider_config_modal(
+                                view_area,
+                                f.buffer_mut(),
+                                modal,
+                            );
+                        } else if let Some(dialog) = self.new_worktree_dialog.as_ref() {
                             crate::views::new_worktree_dialog::render_new_worktree_dialog(
                                 view_area,
                                 f.buffer_mut(),
@@ -4126,6 +4157,18 @@ impl AppView {
                                     modal,
                                     &theme,
                                     compact,
+                                );
+                            } else if let Some(modal) = self.provider_config_modal.as_ref() {
+                                crate::views::provider_config_modal::render_provider_config_modal(
+                                    view_area,
+                                    f.buffer_mut(),
+                                    modal,
+                                );
+                            } else if let Some(state) = self.new_worktree_dialog.as_ref() {
+                                crate::views::new_worktree_dialog::render_new_worktree_dialog(
+                                    view_area,
+                                    f.buffer_mut(),
+                                    state,
                                 );
                             }
                             if let Some(fps) = &fps_overlay {
@@ -4371,6 +4414,7 @@ impl AppView {
             self.active_view, ActiveView::Agent(id) if self.agents.get(& id)
             .is_some_and(| a | a.extensions_modal.is_some() || a.active_modal.is_some())
         ) || self.import_claude_modal.is_some()
+            || self.provider_config_modal.is_some()
             || self.new_worktree_dialog.is_some()
             || self.welcome_doc_viewer.is_some()
             || matches!(
@@ -5205,6 +5249,7 @@ pub(crate) mod tests {
             relaunch: None,
             has_claude_import: false,
             import_claude_modal: None,
+            provider_config_modal: None,
             welcome_doc_viewer: None,
             screen_mode: ScreenMode::Inline,
             pending_effects: Vec::new(),

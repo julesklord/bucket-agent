@@ -1728,6 +1728,7 @@ fn render_welcome_done(
         }
         items.push((key_w, "New worktree"));
         items.push((key_s, "Resume session"));
+        items.push(("", "Configure Provider"));
         // "Changelog" above Quit; no shortcut — opened by click (row or block).
         if show_changelog_action {
             items.push(("", "Changelog"));

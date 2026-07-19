@@ -56,7 +56,71 @@ pub async fn load_config() -> Config {
         Ok(v) => v,
         Err(_) => return Config::default(),
     };
-    load_config_from_toml(&root)
+    let mut config = load_config_from_toml(&root);
+
+    // Apply providers.toml
+    if let Ok(home) = std::env::var("BUCKET_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|_| {
+            #[allow(deprecated)]
+            std::env::home_dir().map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket")).ok_or(())
+        })
+    {
+        let provider_file = home.join("providers.toml");
+        if let Ok(content) = std::fs::read_to_string(&provider_file) {
+            if let Ok(toml_val) = content.parse::<TomlValue>() {
+                if let Some(providers) = toml_val.get("providers").and_then(|v| v.as_table()) {
+                    // In a real app we'd map "OpenAI" -> "https://api.openai.com/v1" etc.
+                    // For now, if the user configures BYOK, we set it up.
+                    // This is a minimal hook to override if there is no env override.
+                    let custom_provider_env = std::env::var("BUCKET_PROVIDER").ok();
+                    let custom_model_env = std::env::var("BUCKET_MODEL").ok();
+                    
+                    // We only apply this if there isn't a custom env var overriding it,
+                    // as requested: "solo se podra hacer override si hay una variable de entorno"
+                    if custom_provider_env.is_none() && custom_model_env.is_none() {
+                        // Suppose providers.toml has "OpenAI" = "sk-..." or similar.
+                        // We will just read the first one for now as the active provider.
+                        if let Some((provider_name, api_key_val)) = providers.iter().next() {
+                            if let Some(api_key) = api_key_val.as_str() {
+                                unsafe {
+                                    std::env::set_var("BUCKET_API_KEY", api_key);
+                                }
+                                
+                                // Map known providers to base URLs
+                                match provider_name.to_lowercase().as_str() {
+                                    "openai" => {
+                                        unsafe {
+                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "https://api.openai.com/v1");
+                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.openai.com/v1");
+                                        }
+                                    }
+                                    "anthropic" => {
+                                        unsafe {
+                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "https://api.anthropic.com/v1");
+                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.anthropic.com/v1");
+                                        }
+                                    }
+                                    "ollama" => {
+                                        unsafe {
+                                            std::env::set_var("BUCKET_MODELS_BASE_URL", "http://localhost:11434/v1");
+                                            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "http://localhost:11434/v1");
+                                        }
+                                    }
+                                    _ => {
+                                        // Assume the provider name is the URL if it doesn't match known ones?
+                                        // Or maybe don't set it if it's unknown.
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    config
 }
 /// Parse `Config` from a pre-loaded TOML value. Used by both async and sync paths.
 pub fn load_config_from_toml(root: &TomlValue) -> Config {
@@ -89,7 +153,7 @@ pub fn load_config_from_toml(root: &TomlValue) -> Config {
     let permission = table
         .get("permission")
         .and_then(|v| v.clone().try_into::<PermissionConfig>().ok());
-    Config {
+    let mut config = Config {
         cli: section(table, "cli"),
         models: section(table, "models"),
         ui: section(table, "ui"),
@@ -105,7 +169,13 @@ pub fn load_config_from_toml(root: &TomlValue) -> Config {
             .and_then(|t| t.get("ask_user_question"))
             .and_then(|v| v.clone().try_into().ok())
             .unwrap_or_default(),
+    };
+    
+    if let Ok(model) = std::env::var("BUCKET_MODEL") {
+        config.models.default = Some(model);
     }
+    
+    config
 }
 /// Resolve permission config with project override semantics.
 ///

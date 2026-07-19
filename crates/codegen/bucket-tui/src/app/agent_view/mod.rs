@@ -2030,6 +2030,7 @@ fn resolve_action(action_id: Option<ActionId>) -> Option<InputOutcome> {
         ActionId::VoiceToggle => Action::VoiceToggle,
         ActionId::ShortcutsHelp => return None,
         ActionId::OpenSettings => return None,
+        ActionId::ConfigureProvider => return None,
         ActionId::ToggleTodos
         | ActionId::ToggleTasks
         | ActionId::ToggleQueue

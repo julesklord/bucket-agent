@@ -131,6 +131,9 @@ pub enum ActionId {
     DashboardToggleAutoApprove,
     DashboardOpenLocationPicker,
     DashboardToggleWorktree,
+
+    // Configure BYOK Providers
+    ConfigureProvider,
 }
 /// When an action is available / visible.
 ///
@@ -166,6 +169,7 @@ pub enum Category {
     ConversationAction,
     Panels,
     Session,
+    Settings,
     /// Agent Dashboard shortcuts.
     Dashboard,
 }

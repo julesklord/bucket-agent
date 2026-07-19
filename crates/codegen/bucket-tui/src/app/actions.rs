@@ -109,6 +109,10 @@ pub enum Action {
     ImportClaudeConfirm,
     /// User cancelled the import modal — close without applying.
     ImportClaudeCancel,
+    /// User confirmed the provider config modal.
+    ProviderConfigConfirm,
+    /// User cancelled the provider config modal.
+    ProviderConfigCancel,
     /// Hide the import-claude menu row by recording the current `.claude/`
     /// content hash as "seen". Doesn't import anything, doesn't change
     /// runtime fallback behavior. The menu reappears only if `.claude/`
@@ -568,6 +572,8 @@ pub enum Action {
     /// Open the settings modal (F2, `/settings`, command palette).
     /// If already open, closes it instead of stacking.
     OpenSettings,
+    /// Open the BYOK Provider configuration modal.
+    ConfigureProvider,
     /// Open the command palette (`/help`). The keybinding path (Ctrl+P) opens it
     /// directly in `handle_agent_action`; this lets a slash command reach the
     /// same modal through dispatch.

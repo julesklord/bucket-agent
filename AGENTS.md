@@ -22,22 +22,28 @@ Multiprovider: Ollama, OpenAI, Anthropic, any OpenAI-compatible backend.
 cargo run -p bucket-bin              # build + launch
 cargo build -p bucket-bin --release  # release binary
 cargo check -p bucket-bin            # fast validation
-cargo test -p bucket-agent-core                 # test a specific crate
-cargo clippy -p <crate>                      # lint a specific crate
-cargo fmt --all                              # format all
+cargo test -p bucket-agent-core      # test a specific crate
+cargo clippy -p <crate>              # lint a specific crate
+cargo fmt --all                      # format all
 ```
 
 **Always target specific crates** — full-workspace builds are slow.
+CI has two workflows: `ci.yml` (targeted checks on key crates) and `rust.yml` (full workspace build+test).
 
 ## Prerequisites
 
 - **DotSlash** must be on PATH (`cargo install dotslash`) — needed for `bin/protoc`.
-- **protoc** — resolved via DotSlash from `bin/protoc`, or fallback to PATH/`$PROTOC`.
+- **protoc** — resolved via DotSlash from `bin/protoc`, or fallback to PATH/`$PROTOC`. On Ubuntu: `sudo apt-get install -y protobuf-compiler`.
 - macOS and Linux supported; Windows best-effort.
 
 ## Root `Cargo.toml` is generated
 
 Do not edit it. Edit per-crate `Cargo.toml` files. The root file defines workspace members, dependency versions, profiles, and lints.
+
+To regenerate the members list after adding/removing crates:
+```sh
+python3 scripts/generate_workspace.py
+```
 
 ## Profiles
 
@@ -57,13 +63,45 @@ Do not edit it. Edit per-crate `Cargo.toml` files. The root file defines workspa
 ## Architecture
 
 Three crate directories:
-- `crates/codegen/` — main application crates (60+ crates)
+- `crates/codegen/` — main application crates (~62 crates)
 - `crates/common/` — shared leaf crates (tool-protocol, tracing, test-utils, etc.)
 - `crates/build/` — build-time crates (proto codegen)
 - `prod/mc/` — production proxy types
 - `third_party/` — vendored source (Mermaid diagram stack)
 
 User guide lives at `crates/codegen/bucket-tui/docs/user-guide/`.
+
+## Fork specifics
+
+This is a fork of xAI's Bucket Build agent. Key files for upstream tracking:
+- `SOURCE_REV` — upstream commit this fork is based on
+- `rename_mapping.json` — upstream crate names → fork crate names
+- `scripts/upstream-diff.sh` — analyze diffs from upstream (`./scripts/upstream-diff.sh summary`)
+- `scripts/release.sh` — create releases (`./scripts/release.sh <version>` or `--check`)
+
+## CI/CD
+
+- `.github/workflows/ci.yml` — targeted checks: fmt, check on `bucket-agent-core`, `bucket-tui`, `bucket-updater`, then tests
+- `.github/workflows/rust.yml` — full workspace `cargo build --verbose && cargo test --verbose`
+- `.github/workflows/release.yml` — triggered by `v*` tags; builds for linux-x86_64, linux-aarch64, macos-x86_64, macos-aarch64; creates GitHub Release with binaries + sha256sums
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/generate_workspace.py` | Regenerate root `Cargo.toml` members list |
+| `scripts/release.sh` | Create/push release tags (with readiness check) |
+| `scripts/upstream-diff.sh` | Analyze diffs from upstream xAI repo |
+| `scripts/install.sh` | Install from GitHub Releases |
+| `scripts/extract-diff.sh` | Extract diff information |
+
+## Platform quirks
+
+`.cargo/config.toml` sets per-target rustflags:
+- Linux aarch64: `target-cpu=neoverse-v2`
+- macOS: `-undefined dynamic_lookup` + `-ObjC` linker args
+- musl targets: binary hardening (RELRO, noexecstack)
+- jemalloc page sizes: Apple Silicon = 16KB, Linux aarch64 = 64KB
 
 <skills_system priority="1">
 

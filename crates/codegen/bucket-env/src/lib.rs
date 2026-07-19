@@ -20,7 +20,7 @@ pub struct BucketBuildEndpoints {
     pub ws_origin: &'static str,
 }
 const PRODUCTION_ENDPOINTS: BucketBuildEndpoints = BucketBuildEndpoints {
-    cli_chat_proxy_base_url: "",
+    cli_chat_proxy_base_url: "https://cli-chat-proxy.bucket.com",
     asset_server_url: "",
     relay_ws_url: "",
     gateway_ws_url: "",

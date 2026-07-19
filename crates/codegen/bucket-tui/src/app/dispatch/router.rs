@@ -980,7 +980,9 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
 
                         // Touch config.toml to trigger the config watcher (hot reload)
                         let config_file = home.join("config.toml");
-                        if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&config_file) {
+                        if let Ok(mut f) =
+                            std::fs::OpenOptions::new().append(true).open(&config_file)
+                        {
                             use std::io::Write;
                             let _ = writeln!(f, ""); // append empty line to trigger watcher
                         }

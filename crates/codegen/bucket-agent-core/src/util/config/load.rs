@@ -97,14 +97,18 @@ pub fn load_dotenv_if_present() {
 pub fn resolve_env_key_for_provider(provider_id: &str) -> Option<String> {
     match provider_id.to_lowercase().as_str() {
         "openai" => std::env::var("OPENAI_API_KEY").ok(),
-        "anthropic" => std::env::var("ANTHROPIC_API_KEY").or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN")).ok(),
+        "anthropic" => std::env::var("ANTHROPIC_API_KEY")
+            .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
+            .ok(),
         "nvidia_nim" | "nvidia" => std::env::var("NVIDIA_API_KEY")
             .or_else(|_| std::env::var("NIM_API_KEY"))
             .or_else(|_| std::env::var("NVAPI_KEY"))
             .ok(),
         "openrouter" => std::env::var("OPENROUTER_API_KEY").ok(),
         "groq" => std::env::var("GROQ_API_KEY").ok(),
-        "gemini" | "google" => std::env::var("GEMINI_API_KEY").or_else(|_| std::env::var("GOOGLE_API_KEY")).ok(),
+        "gemini" | "google" => std::env::var("GEMINI_API_KEY")
+            .or_else(|_| std::env::var("GOOGLE_API_KEY"))
+            .ok(),
         "ollama" => Some("ollama_local".to_string()),
         _ => std::env::var("BUCKET_API_KEY").ok(),
     }
@@ -115,10 +119,19 @@ pub fn map_provider_env(provider_name: &str, api_key: &str) {
     let (url, default_model) = match p_lower.as_str() {
         "openai" => ("https://api.openai.com/v1", "gpt-4o"),
         "anthropic" => ("https://api.anthropic.com/v1", "claude-3-5-sonnet-20241022"),
-        "nvidia_nim" | "nvidia" => ("https://integrate.api.nvidia.com/v1", "meta/llama-3.3-70b-instruct"),
-        "openrouter" => ("https://openrouter.ai/api/v1", "anthropic/claude-3.5-sonnet"),
+        "nvidia_nim" | "nvidia" => (
+            "https://integrate.api.nvidia.com/v1",
+            "meta/llama-3.3-70b-instruct",
+        ),
+        "openrouter" => (
+            "https://openrouter.ai/api/v1",
+            "anthropic/claude-3.5-sonnet",
+        ),
         "groq" => ("https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
-        "gemini" | "google" => ("https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash"),
+        "gemini" | "google" => (
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+            "gemini-2.0-flash",
+        ),
         "ollama" => ("http://localhost:11434/v1", "llama3.3"),
         _ => (
             if p_lower.starts_with("http://") || p_lower.starts_with("https://") {

@@ -88,7 +88,9 @@ impl ProviderConfigModalState {
     pub fn provider_has_env_key(&self) -> bool {
         let p = self.provider_input.trim().to_lowercase();
         match p.as_str() {
-            "openai" => std::env::var("OPENAI_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            "openai" => std::env::var("OPENAI_API_KEY")
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
             "anthropic" => std::env::var("ANTHROPIC_API_KEY")
                 .or_else(|_| std::env::var("ANTHROPIC_AUTH_TOKEN"))
                 .map(|k| !k.trim().is_empty())
@@ -98,14 +100,20 @@ impl ProviderConfigModalState {
                 .or_else(|_| std::env::var("NVAPI_KEY"))
                 .map(|k| !k.trim().is_empty())
                 .unwrap_or(false),
-            "openrouter" => std::env::var("OPENROUTER_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
-            "groq" => std::env::var("GROQ_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            "openrouter" => std::env::var("OPENROUTER_API_KEY")
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
+            "groq" => std::env::var("GROQ_API_KEY")
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
             "gemini" | "google" => std::env::var("GEMINI_API_KEY")
                 .or_else(|_| std::env::var("GOOGLE_API_KEY"))
                 .map(|k| !k.trim().is_empty())
                 .unwrap_or(false),
             "ollama" => true,
-            _ => std::env::var("BUCKET_API_KEY").map(|k| !k.trim().is_empty()).unwrap_or(false),
+            _ => std::env::var("BUCKET_API_KEY")
+                .map(|k| !k.trim().is_empty())
+                .unwrap_or(false),
         }
     }
 

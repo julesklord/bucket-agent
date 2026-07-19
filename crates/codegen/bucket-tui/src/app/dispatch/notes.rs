@@ -20,10 +20,7 @@ fn next_rewrite_nonce() -> u64 {
 
 /// Enter feedback mode: opens the GitHub feedback issue template in browser.
 pub(super) fn dispatch_enter_feedback_mode(app: &mut AppView) -> Vec<Effect> {
-    super::ctx::open_url_or_show(
-        app,
-        crate::slash::commands::feedback::FEEDBACK_ISSUE_URL,
-    );
+    super::ctx::open_url_or_show(app, crate::slash::commands::feedback::FEEDBACK_ISSUE_URL);
     vec![]
 }
 

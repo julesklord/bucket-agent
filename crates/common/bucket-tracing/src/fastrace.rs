@@ -51,17 +51,6 @@ pub fn enter_span_with_traceparent(name: impl Into<Cow<'static, str>>, tracepare
     }
 }
 
-// Tonic channel (TODO: Move into grpc_client when deprecated tracing)
-#[allow(dead_code)]
-pub type FastraceChannel = fastrace_tonic::FastraceClientService<tonic::transport::Channel>;
-
-pub fn fastrace_channel(
-    channel: tonic::transport::Channel,
-) -> fastrace_tonic::FastraceClientService<tonic::transport::Channel> {
-    tower::ServiceBuilder::new()
-        .layer(fastrace_tonic::FastraceClientLayer)
-        .service(channel)
-}
 
 // Request middleware (TODO: Move into http_client when deprecated tracing)
 #[derive(Clone)]

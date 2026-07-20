@@ -6,7 +6,7 @@ use tokio::io::AsyncBufReadExt as _;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::auth::config::LEGACY_AUTH_SCOPE;
-use crate::auth::{AuthManager, BucketAuth, BucketComConfig, parse_output};
+use crate::auth::{AuthManager, AuthMode, BucketAuth, BucketComConfig, parse_output};
 use crate::util::bucket_home;
 
 pub type StderrCallback = Box<dyn Fn(&str)>;
@@ -16,6 +16,9 @@ pub type StderrCallback = Box<dyn Fn(&str)>;
 /// pin — so interactive login starts fresh instead of reusing a stale/wrong-team
 /// session.
 fn is_cached_credential_compatible(auth: &BucketAuth, bucket_com_config: &BucketComConfig) -> bool {
+    if auth.auth_mode == AuthMode::WebLogin {
+        return false;
+    }
     let expected_issuer = bucket_com_config
         .oidc
         .as_ref()
@@ -717,7 +720,7 @@ pub(crate) async fn try_ensure_session_noninteractive(
 fn expired_refreshable_session(auth_manager: &AuthManager) -> Option<BucketAuth> {
     auth_manager
         .current_or_expired()
-        .filter(|a| a.is_xai_auth() && a.refresh_token.is_some())
+        .filter(|a| a.is_first_party_auth() && a.refresh_token.is_some())
 }
 
 /// Cold-start mint via non-interactive providers (external command, devbox);
@@ -1040,7 +1043,6 @@ pub fn run_cli_logout(config: &crate::agent::config::Config) -> anyhow::Result<(
 mod tests {
     use super::*;
     use crate::auth::AuthMode;
-    use crate::auth::config::BUCKET_OAUTH2_ISSUER;
     use crate::env::EnvVarGuard;
     use chrono::Utc;
 
@@ -1061,7 +1063,7 @@ mod tests {
         BucketAuth {
             key: key.into(),
             auth_mode: AuthMode::Oidc,
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+            oidc_issuer: Some("https://auth.x.ai".to_string()),
             refresh_token: refresh.map(str::to_string),
             ..BucketAuth::test_default()
         }
@@ -1405,7 +1407,18 @@ mod tests {
             "enterprise OIDC must stay on loopback"
         );
         // The xAI OAuth2 provider (oidc=None, oauth2=Some) does use device.
-        let xai = BucketComConfig::default();
+        let xai = {
+            unsafe {
+                std::env::set_var("BUCKET_OAUTH2_ISSUER", "https://auth.x.ai");
+                std::env::set_var("BUCKET_OAUTH2_CLIENT_ID", "client");
+            }
+            let res = BucketComConfig::default();
+            unsafe {
+                std::env::remove_var("BUCKET_OAUTH2_ISSUER");
+                std::env::remove_var("BUCKET_OAUTH2_CLIENT_ID");
+            }
+            res
+        };
         assert!(xai.oauth2.is_some() && xai.oidc.is_none());
         assert!(cli_should_use_device(&xai, LoginTransportOverride::ForceDevice).await);
     }
@@ -1584,24 +1597,37 @@ mod tests {
         }
     }
 
+    fn test_bucket_com_config() -> BucketComConfig {
+        let mut cfg = BucketComConfig::default();
+        cfg.oauth2 = Some(crate::auth::config::OAuth2ProviderConfig {
+            issuer: "https://auth.x.ai".to_string(),
+            client_id: "client-123".to_string(),
+            scopes: vec![],
+            principal_type: None,
+            principal_id: None,
+            referrer: None,
+        });
+        cfg
+    }
+
     #[test]
     fn weblogin_cred_is_never_compatible() {
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
         assert!(!is_cached_credential_compatible(&legacy_auth(), &cfg));
     }
 
     #[test]
     fn oidc_cred_with_matching_issuer_is_compatible() {
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
         assert!(is_cached_credential_compatible(
-            &oidc_auth(BUCKET_OAUTH2_ISSUER),
+            &oidc_auth("https://auth.x.ai"),
             &cfg,
         ));
     }
 
     #[test]
     fn external_cred_compatibility_follows_issuer() {
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
 
         // A first-party external credential (provider emitted the issuer) is
         // reused by interactive login like an OIDC session instead of
@@ -1609,7 +1635,7 @@ mod tests {
         assert!(is_cached_credential_compatible(
             &BucketAuth {
                 auth_mode: AuthMode::External,
-                ..oidc_auth(BUCKET_OAUTH2_ISSUER)
+                ..oidc_auth("https://auth.x.ai")
             },
             &cfg,
         ));
@@ -1648,7 +1674,7 @@ mod tests {
     fn pinned_cfg(team: &str) -> BucketComConfig {
         BucketComConfig {
             force_login_team_uuid: Some(crate::auth::config::ForceLoginTeam::Single(team.into())),
-            ..BucketComConfig::default()
+            ..test_bucket_com_config()
         }
     }
 
@@ -1658,7 +1684,7 @@ mod tests {
     fn cached_cred_with_wrong_team_is_incompatible() {
         let auth = BucketAuth {
             key: team_jwt("team-wrong"),
-            ..oidc_auth(BUCKET_OAUTH2_ISSUER)
+            ..oidc_auth("https://auth.x.ai")
         };
         assert!(!is_cached_credential_compatible(
             &auth,
@@ -1671,7 +1697,7 @@ mod tests {
     fn cached_cred_with_matching_team_is_compatible() {
         let auth = BucketAuth {
             key: team_jwt("team-good"),
-            ..oidc_auth(BUCKET_OAUTH2_ISSUER)
+            ..oidc_auth("https://auth.x.ai")
         };
         assert!(is_cached_credential_compatible(
             &auth,
@@ -1686,7 +1712,7 @@ mod tests {
     #[tokio::test]
     async fn run_auth_flow_uses_valid_disk_token_when_expired() {
         let dir = tempfile::tempdir().unwrap();
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
 
         // Write a valid token to disk via a second AuthManager (simulates
         // a sibling process that already refreshed).
@@ -1698,7 +1724,7 @@ mod tests {
             auth_mode: AuthMode::Oidc,
             expires_at: Some(Utc::now() + chrono::Duration::hours(1)),
             refresh_token: Some("new-rt".into()),
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.into()),
+            oidc_issuer: Some("https://auth.x.ai".into()),
             oidc_client_id: Some("client-1".into()),
             ..BucketAuth::test_default()
         };
@@ -1711,7 +1737,7 @@ mod tests {
             auth_mode: AuthMode::Oidc,
             expires_at: Some(Utc::now() - chrono::Duration::hours(1)),
             refresh_token: Some("old-rt".into()),
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.into()),
+            oidc_issuer: Some("https://auth.x.ai".into()),
             oidc_client_id: Some("client-1".into()),
             ..BucketAuth::test_default()
         };
@@ -1741,14 +1767,14 @@ mod tests {
     #[tokio::test]
     async fn run_auth_flow_returns_cached_when_valid() {
         let dir = tempfile::tempdir().unwrap();
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
         let mgr = Arc::new(AuthManager::new(dir.path(), cfg.clone()));
 
         let valid = BucketAuth {
             key: "still-valid".into(),
             auth_mode: AuthMode::Oidc,
             expires_at: Some(Utc::now() + chrono::Duration::hours(1)),
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.into()),
+            oidc_issuer: Some("https://auth.x.ai".into()),
             oidc_client_id: Some("client-1".into()),
             ..BucketAuth::test_default()
         };
@@ -1773,7 +1799,7 @@ mod tests {
     #[tokio::test]
     async fn run_auth_flow_defers_to_consumer_refresh_on_transient_failure() {
         let dir = tempfile::tempdir().unwrap();
-        let cfg = BucketComConfig::default();
+        let cfg = test_bucket_com_config();
 
         let writer = Arc::new(
             AuthManager::new(dir.path(), cfg.clone()).with_proxy_base_url("http://127.0.0.1:1"),
@@ -1783,7 +1809,7 @@ mod tests {
             auth_mode: AuthMode::Oidc,
             expires_at: Some(Utc::now() - chrono::Duration::hours(1)),
             refresh_token: Some("valid-refresh-token".into()),
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.into()),
+            oidc_issuer: Some("https://auth.x.ai".into()),
             oidc_client_id: Some("client-1".into()),
             ..BucketAuth::test_default()
         };
@@ -1816,7 +1842,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         // Point the OAuth2 issuer at a non-routable address so the OIDC
         // discovery fails immediately without opening a browser window.
-        let mut cfg = BucketComConfig::default();
+        let mut cfg = test_bucket_com_config();
         cfg.oauth2.as_mut().unwrap().issuer = "http://127.0.0.1:1".into();
 
         let writer = Arc::new(

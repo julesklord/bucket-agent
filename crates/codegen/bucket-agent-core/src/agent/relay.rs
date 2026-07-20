@@ -68,7 +68,7 @@ impl RelayConfig {
         alpha_test_key: Option<String>,
         auth_manager: Option<Arc<AuthManager>>,
     ) -> Option<Self> {
-        if !session.is_xai_auth() || session.key.is_empty() {
+        if !session.is_first_party_auth() || session.key.is_empty() {
             return None;
         }
         let _ = alpha_test_key;
@@ -778,22 +778,27 @@ mod tests {
     }
     #[test]
     fn for_session_builds_only_for_xai_issuer() {
-        use crate::auth::BUCKET_OAUTH2_ISSUER;
         let cfg = BucketComConfig::default();
         let builds = |a: &BucketAuth| RelayConfig::for_session(a, &cfg, None, None).is_some();
         let xai = BucketAuth {
             auth_mode: AuthMode::Oidc,
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+            oidc_issuer: Some("https://auth.x.ai".to_string()),
             ..test_auth("bucket-bearer")
         };
-        assert!(xai.is_xai_auth(), "precondition: is_xai_auth");
+        assert!(
+            xai.is_first_party_auth(),
+            "precondition: is_first_party_auth"
+        );
         assert!(builds(&xai));
         let external_xai = BucketAuth {
             auth_mode: AuthMode::External,
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+            oidc_issuer: Some("https://auth.x.ai".to_string()),
             ..test_auth("ext-bearer")
         };
-        assert!(external_xai.is_xai_auth(), "precondition: is_xai_auth");
+        assert!(
+            external_xai.is_first_party_auth(),
+            "precondition: is_first_party_auth"
+        );
         assert!(builds(&external_xai));
         assert!(!builds(&BucketAuth {
             key: String::new(),
@@ -839,7 +844,6 @@ mod tests {
     /// it can only adopt sibling disk tokens, and there are none.
     #[tokio::test]
     async fn auth_recovery_refreshes_and_heals_missing_auth_json() {
-        use crate::auth::BUCKET_OAUTH2_ISSUER;
         use crate::auth::refresh::{RefreshOutcome, TokenRefresher};
         use std::sync::atomic::AtomicU32;
         struct CountingRefresher {
@@ -855,7 +859,7 @@ mod tests {
                 RefreshOutcome::Success(Box::new(BucketAuth {
                     key: "fresh-from-authority".into(),
                     auth_mode: AuthMode::Oidc,
-                    oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+                    oidc_issuer: Some("https://auth.x.ai".to_string()),
                     refresh_token: Some("rt-rotated".into()),
                     expires_at: Some(chrono::Utc::now() + chrono::Duration::hours(1)),
                     ..BucketAuth::test_default()
@@ -870,7 +874,7 @@ mod tests {
         );
         let expired_session = BucketAuth {
             auth_mode: AuthMode::Oidc,
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+            oidc_issuer: Some("https://auth.x.ai".to_string()),
             refresh_token: Some("rt-valid-unconsumed".into()),
             expires_at: Some(chrono::Utc::now() - chrono::Duration::hours(14)),
             ..test_auth("expired-overnight")
@@ -903,7 +907,6 @@ mod tests {
     /// tight-looping — without cancelling the relay or touching the IdP.
     #[tokio::test]
     async fn attempt_auth_recovery_same_key_backs_off_without_cancel() {
-        use crate::auth::BUCKET_OAUTH2_ISSUER;
         use crate::auth::refresh::{RefreshOutcome, TokenRefresher};
         struct PanicRefresher;
         #[async_trait::async_trait]
@@ -920,7 +923,7 @@ mod tests {
         let am = Arc::new(AuthManager::new(dir.path(), cfg.clone()));
         let fresh_session = BucketAuth {
             auth_mode: AuthMode::Oidc,
-            oidc_issuer: Some(BUCKET_OAUTH2_ISSUER.to_string()),
+            oidc_issuer: Some("https://auth.x.ai".to_string()),
             refresh_token: Some("rt-valid".into()),
             expires_at: Some(chrono::Utc::now() + chrono::Duration::hours(1)),
             ..test_auth("fresh-key")

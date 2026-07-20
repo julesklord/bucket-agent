@@ -106,7 +106,9 @@ fn resolve_config(cfg: &AgentConfig, auth_manager: &AuthManager) -> AgentConfig 
     }
     // Writeback talks to the code backend; requires bucket.com auth.
     if cfg.storage_mode == StorageMode::Writeback
-        && !auth_manager.current().is_some_and(|a| a.is_xai_auth())
+        && !auth_manager
+            .current()
+            .is_some_and(|a| a.is_first_party_auth())
     {
         tracing::info!("Writeback is disabled: requires auth with bucket.com");
         cfg.storage_mode = StorageMode::Local;
@@ -174,7 +176,7 @@ fn init_process(cfg: &AgentConfig, auth_manager: &AuthManager) {
 /// Apply current telemetry config + auth identity. Tears down the client
 /// when telemetry is disabled, so it's safe to call repeatedly.
 pub fn update_telemetry_config(config: &AgentConfig, auth_manager: &AuthManager) {
-    let bucket_auth = auth_manager.current().filter(|a| a.is_xai_auth());
+    let bucket_auth = auth_manager.current().filter(|a| a.is_first_party_auth());
     let user_id = bucket_auth.as_ref().map(|a| a.user_id.clone());
     let team_id = bucket_auth.as_ref().and_then(|a| a.team_id.clone());
     let subscription_tier = super::mvp_agent::resolve_subscription_tier_for_telemetry(

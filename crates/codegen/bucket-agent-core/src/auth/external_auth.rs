@@ -197,7 +197,7 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(auth.oidc_issuer.as_deref(), Some("https://auth.x.ai"));
-        assert!(auth.is_xai_auth());
+        assert!(auth.is_first_party_auth());
 
         // Non-x.ai issuer is stored but stays third-party.
         let auth = parse_output(&ok(
@@ -208,19 +208,19 @@ mod tests {
             auth.oidc_issuer.as_deref(),
             Some("https://idp.acme.example")
         );
-        assert!(!auth.is_xai_auth());
+        assert!(!auth.is_first_party_auth());
 
         // Missing / empty / whitespace issuer → None.
         let auth = parse_output(&ok(r#"{"access_token":"t"}"#)).unwrap();
         assert_eq!(auth.oidc_issuer, None);
-        assert!(!auth.is_xai_auth());
+        assert!(!auth.is_first_party_auth());
         let auth = parse_output(&ok(r#"{"access_token":"t","issuer":"  "}"#)).unwrap();
         assert_eq!(auth.oidc_issuer, None);
 
         // Bare-token output never carries an issuer.
         let auth = parse_output(&ok("bare-token")).unwrap();
         assert_eq!(auth.oidc_issuer, None);
-        assert!(!auth.is_xai_auth());
+        assert!(!auth.is_first_party_auth());
     }
 
     #[test]

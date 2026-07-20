@@ -1769,7 +1769,7 @@ impl MvpAgent {
     /// users, reads `allow_access` from remote settings. Defaults to
     /// `false` (blocked) when remote settings are unavailable.
     pub(super) async fn enforce_bucket_code_access(&self, auth: &crate::auth::BucketAuth) {
-        if !auth.is_xai_auth() {
+        if !auth.is_first_party_auth() {
             self.tier_allowed.set(true);
             return;
         }
@@ -2038,7 +2038,7 @@ impl MvpAgent {
         let Some(auth) = self.auth_manager.current() else {
             return;
         };
-        let is_xai_auth = auth.is_xai_auth();
+        let is_first_party_auth = auth.is_first_party_auth();
         let Some(settings) = self.fetch_remote_settings(auth).await else {
             return;
         };
@@ -2056,7 +2056,7 @@ impl MvpAgent {
                     None,
                     cfg.remote_settings.as_ref(),
                 );
-                if cfg.storage_mode == StorageMode::Writeback && !is_xai_auth {
+                if cfg.storage_mode == StorageMode::Writeback && !is_first_party_auth {
                     cfg.storage_mode = StorageMode::Local;
                 }
             }
@@ -2281,7 +2281,7 @@ async fn handle_synthetic_turn_trace(
         let auth = this.auth_manager.current();
         let user_id = auth
             .as_ref()
-            .filter(|a| a.is_xai_auth())
+            .filter(|a| a.is_first_party_auth())
             .map(|a| a.user_id.clone());
         let user_email = auth.as_ref().and_then(|a| a.email.clone());
         let init_meta = this.initialize_request.get().and_then(|req| req.meta.as_ref());

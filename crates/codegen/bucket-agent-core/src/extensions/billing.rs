@@ -202,7 +202,7 @@ fn billing_unified_log_ctx(billing: &BillingConfigResponse) -> serde_json::Value
 }
 
 async fn handle_get_billing(agent: &MvpAgent) -> ExtResult {
-    let auth = super::auth_gate::require_xai_auth(
+    let auth = super::auth_gate::require_first_party_auth(
         &agent.auth_manager,
         "Authentication required to fetch billing data",
         "Billing data requires auth with bucket.com. Run `bucket login` to authenticate.",
@@ -293,7 +293,7 @@ async fn handle_get_billing(agent: &MvpAgent) -> ExtResult {
 }
 
 async fn handle_get_auto_topup_rule(agent: &MvpAgent) -> ExtResult {
-    let auth = super::auth_gate::require_xai_auth(
+    let auth = super::auth_gate::require_first_party_auth(
         &agent.auth_manager,
         "Authentication required to fetch auto top-up rule",
         "Auto top-up data requires auth with bucket.com. Run `bucket login` to authenticate.",

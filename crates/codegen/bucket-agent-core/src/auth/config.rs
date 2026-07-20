@@ -190,9 +190,9 @@ pub fn use_local_auth() -> bool {
 /// Returns `true` if `issuer` matches a recognised first-party OAuth2 issuer
 /// (production or local-dev). When `BUCKET_OIDC_ISSUER` is configured,
 /// that issuer is also recognised as first-party.
-pub fn is_xai_oauth2_issuer(issuer: &str) -> bool {
+pub fn is_first_party_issuer(issuer: &str) -> bool {
     let configured = oidc_issuer();
-    (!BUCKET_OAUTH2_ISSUER.is_empty() && issuer == BUCKET_OAUTH2_ISSUER)
+    issuer == "https://auth.x.ai"
         || issuer == BUCKET_OAUTH2_LOCAL_ISSUER
         || (!configured.is_empty() && issuer == configured)
 }

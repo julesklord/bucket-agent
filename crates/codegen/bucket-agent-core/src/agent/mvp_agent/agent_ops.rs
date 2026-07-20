@@ -64,7 +64,7 @@ impl MvpAgent {
     }
     fn has_proxy_credentials(&self) -> bool {
         self.cfg.borrow().endpoints.deployment_key.is_some()
-            || self.auth_manager.current_or_expired().is_some_and(|a| a.is_xai_auth())
+            || self.auth_manager.current_or_expired().is_some_and(|a| a.is_first_party_auth())
     }
     /// `true` for session-based ACP auth methods.
     fn is_session_based_auth(&self) -> bool {
@@ -401,7 +401,7 @@ impl MvpAgent {
         let user_token = self
             .auth_manager
             .current_or_expired()
-            .filter(|a| a.is_xai_auth())
+            .filter(|a| a.is_first_party_auth())
             .map(|a| a.key.clone());
         let cfg = self.cfg.borrow();
         let base_url = cfg.endpoints.resolve_feedback_base_url();
@@ -418,7 +418,7 @@ impl MvpAgent {
                 .auth_manager
                 .current()
                 .filter(|a| {
-                    a.is_xai_auth() || a.auth_mode == crate::auth::AuthMode::ApiKey
+                    a.is_first_party_auth() || a.auth_mode == crate::auth::AuthMode::ApiKey
                 }) else {
                 return;
             };
@@ -429,7 +429,7 @@ impl MvpAgent {
                     .and_then(|rs| rs.subscription_tier_display.clone()),
                 Some(&auth),
             );
-            let (user_id, team_id) = if auth.is_xai_auth() {
+            let (user_id, team_id) = if auth.is_first_party_auth() {
                 (Some(auth.user_id), auth.team_id)
             } else {
                 (None, auth.team_id)
@@ -472,7 +472,7 @@ impl MvpAgent {
             return None;
         }
         let auth = self.auth_manager.current_or_expired()?;
-        if !auth.is_xai_auth() {
+        if !auth.is_first_party_auth() {
             return None;
         }
         let key = auth.key.clone();
@@ -769,7 +769,7 @@ impl MvpAgent {
             tracing::debug!("post-auth settings refresh skipped: remote_fetch disabled");
             return;
         }
-        let is_xai = auth.is_xai_auth();
+        let is_first_party = auth.is_first_party_auth();
         let user_id = auth.user_id.clone();
         let team_id = auth.team_id.clone();
         let Some(settings) = self.fetch_remote_settings(auth.clone()).await else {
@@ -797,8 +797,8 @@ impl MvpAgent {
                 telemetry = % telemetry_mode, trace_upload = % trace_upload,
                 "post-auth data capture config re-resolved",
             );
-            let bucket_user_id = is_xai.then(|| user_id.clone());
-            let bucket_team_id = is_xai.then(|| team_id.clone()).flatten();
+            let bucket_user_id = is_first_party.then(|| user_id.clone());
+            let bucket_team_id = is_first_party.then(|| team_id.clone()).flatten();
             let telemetry_config = cfg.telemetry.clone();
             let deployment_key = cfg.endpoints.deployment_key.clone();
             let subscription_tier_display = cfg
@@ -1156,7 +1156,7 @@ impl MvpAgent {
         let user_id = self
             .auth_manager
             .current_or_expired()
-            .filter(|a| a.is_xai_auth())
+            .filter(|a| a.is_first_party_auth())
             .map(|a| a.user_id);
         let mut config = crate::agent::config::sampling_config_for_model(
             model,
@@ -1229,7 +1229,7 @@ impl MvpAgent {
         let Some(auth) = self.auth_manager.current() else {
             return false;
         };
-        if !auth.is_xai_auth() || auth.team_id.is_some() {
+        if !auth.is_first_party_auth() || auth.team_id.is_some() {
             return false;
         }
         let tier = self
@@ -1426,10 +1426,10 @@ impl MvpAgent {
         let default_auto_mode = cfg.default_auto_mode;
         let tui_mode = cfg.mode == crate::agent::config::AgentMode::Tui;
         let relay_config_enabled = crate::util::config::load_relay_sync_enabled_sync();
-        let has_xai_auth = auth_manager
+        let has_first_party_auth = auth_manager
             .current_or_expired()
-            .is_some_and(|a| a.is_xai_auth());
-        let relay_sync_enabled = tui_mode && relay_config_enabled && has_xai_auth;
+            .is_some_and(|a| a.is_first_party_auth());
+        let relay_sync_enabled = tui_mode && relay_config_enabled && has_first_party_auth;
         let config_root = crate::config::load_effective_config().ok();
         let empty_config = toml::Value::Table(toml::map::Map::new());
         let raw = config_root.as_ref().unwrap_or(&empty_config);
@@ -1450,7 +1450,7 @@ impl MvpAgent {
         );
         if relay_sync_enabled {
             tracing::info!("[bucket] Relay sync: ENABLED");
-        } else if tui_mode && relay_config_enabled && !has_xai_auth {
+        } else if tui_mode && relay_config_enabled && !has_first_party_auth {
             tracing::info!(
                 "[bucket] Relay sync: DISABLED (no auth - run 'bucket login' first)"
             );
@@ -2095,7 +2095,7 @@ impl MvpAgent {
         let auth_token = if cfg.endpoints.deployment_key.is_none() {
             self.auth_manager
                 .current_or_expired()
-                .filter(|auth| auth.is_xai_auth())
+                .filter(|auth| auth.is_first_party_auth())
                 .map(|auth| auth.key)
         } else {
             None
@@ -2196,7 +2196,7 @@ impl MvpAgent {
                         .auth()
                         .await
                         .ok()
-                        .filter(|auth| auth.is_xai_auth())
+                        .filter(|auth| auth.is_first_party_auth())
                         .map(|auth| auth.key)
             };
             if auth_token.is_some() || has_deployment_key {
@@ -3016,8 +3016,8 @@ impl MvpAgent {
             }
             None => (bucket_hunk_tracker::HunkTrackerHandle::noop(), None),
         };
-        let has_xai_auth = self.auth_manager.current().is_some_and(|a| a.is_xai_auth());
-        let loc_tracking_enabled = hunk_tracking_enabled && has_xai_auth
+        let has_first_party_auth = self.auth_manager.current().is_some_and(|a| a.is_first_party_auth());
+        let loc_tracking_enabled = hunk_tracking_enabled && has_first_party_auth
             && (self
                 .cfg
                 .borrow()

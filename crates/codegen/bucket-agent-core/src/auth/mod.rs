@@ -18,7 +18,7 @@ pub(crate) mod token_type;
 pub(crate) use config::LEGACY_AUTH_SCOPE;
 pub use config::{
     BUCKET_OAUTH2_ISSUER, BucketComConfig, ForceLoginTeam, OAuth2ProviderConfig, OidcAuthConfig,
-    PreferredAuthMethod, is_xai_oauth2_issuer, oauth2_issuer, oidc_issuer,
+    PreferredAuthMethod, is_first_party_issuer, oauth2_issuer, oidc_issuer,
 };
 pub(crate) use external_auth::{parse_output, refresh_with_command};
 pub(crate) use flow::{

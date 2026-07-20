@@ -32,7 +32,7 @@ async fn handle_share_session(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtRe
     let request: ShareSessionRequest = parse_params(args)?;
 
     // Get auth - required for sharing.
-    let auth = require_xai_auth_for_share(&agent.auth_manager)?;
+    let auth = require_first_party_auth_for_share(&agent.auth_manager)?;
 
     // Remote settings / feature-flag gate: sharing_enabled defaults to false
     // and is only enabled for eligible accounts.
@@ -170,10 +170,10 @@ async fn upload_share_data_to_gcs(
     }
 }
 
-fn require_xai_auth_for_share(
+fn require_first_party_auth_for_share(
     auth_manager: &crate::auth::AuthManager,
 ) -> Result<crate::auth::BucketAuth, acp::Error> {
-    super::auth_gate::require_xai_auth(
+    super::auth_gate::require_first_party_auth(
         auth_manager,
         "Authentication required to share session",
         "Share session is disabled. Run `bucket login` to authenticate.",
@@ -200,10 +200,10 @@ mod tests {
 
         let expires_at = Utc::now() + ttl;
 
-        // We must explicitly set oidc_issuer to a first-party xAI issuer.
-        // Only OIDC tokens against https://auth.x.ai (or the local-dev equivalent)
-        // return true from is_xai_auth(). This is required for the share tests to
-        // exercise the happy path through require_xai_auth_for_share.
+        // We must explicitly set oidc_issuer to a first-party issuer.
+        // Only OIDC tokens against the first-party issuer (or the local-dev equivalent)
+        // return true from is_first_party_auth(). This is required for the share tests to
+        // exercise the happy path through require_first_party_auth_for_share.
         let auth = BucketAuth {
             auth_mode: AuthMode::Oidc,
             oidc_issuer: Some("https://auth.x.ai".to_string()),
@@ -220,7 +220,7 @@ mod tests {
     fn share_works_outside_the_5m_early_invalidation_window() {
         let (mgr, _dir) = make_auth_manager_with_token_expiring_in(Duration::minutes(10));
         assert!(mgr.current().is_some());
-        assert!(require_xai_auth_for_share(&mgr).is_ok());
+        assert!(require_first_party_auth_for_share(&mgr).is_ok());
     }
 
     #[test]
@@ -234,10 +234,10 @@ mod tests {
         assert!(mgr.expired_auth().is_some());
 
         // Now that we use current_or_expired(), this passes.
-        let res = require_xai_auth_for_share(&mgr);
+        let res = require_first_party_auth_for_share(&mgr);
         assert!(
             res.is_ok(),
-            "require_xai_auth_for_share must succeed for a still-valid buffered xAI token"
+            "require_first_party_auth_for_share must succeed for a still-valid buffered token"
         );
     }
 
@@ -248,7 +248,7 @@ mod tests {
             dir.path(),
             BucketComConfig::default(),
         ));
-        assert!(require_xai_auth_for_share(&mgr).is_err());
+        assert!(require_first_party_auth_for_share(&mgr).is_err());
     }
 
     #[test]
@@ -259,18 +259,19 @@ mod tests {
             BucketComConfig::default(),
         ));
 
-        // API key is the simplest non-xAI credential (External and enterprise OIDC
+        // API key is the simplest non-first-party credential (External and enterprise OIDC
         // are also rejected the same way).
-        let non_xai = BucketAuth {
+        let non_first_party = BucketAuth {
             auth_mode: AuthMode::ApiKey,
             key: "bucket-test-key".into(),
             create_time: Utc::now(),
             ..Default::default()
         };
-        mgr.hot_swap(non_xai);
+        mgr.hot_swap(non_first_party);
 
-        let err = require_xai_auth_for_share(&mgr)
-            .expect_err("non-xAI accounts (API key, External, enterprise IdP) must be rejected");
+        let err = require_first_party_auth_for_share(&mgr).expect_err(
+            "non-first-party accounts (API key, External, enterprise IdP) must be rejected",
+        );
 
         // This is the key assertion the review asked for: we must test the *exact*
         // actionable data string for the non-xAI path (distinct from the generic

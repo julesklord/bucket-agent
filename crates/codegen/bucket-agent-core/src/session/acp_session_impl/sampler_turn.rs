@@ -332,7 +332,7 @@ impl SessionActor {
                 .auth_manager
                 .as_ref()
                 .and_then(|am| am.current_or_expired())
-                .filter(|a| a.is_xai_auth())
+                .filter(|a| a.is_first_party_auth())
                 .map(|a| a.user_id),
             origin_client: self.origin_client.clone(),
             attribution_callback: self.attribution_callback.clone(),

@@ -108,9 +108,9 @@ impl ConversationsClient {
         }
     }
 
-    async fn require_xai_auth(&self) -> Result<BucketAuth, ConvError> {
+    async fn require_first_party_auth(&self) -> Result<BucketAuth, ConvError> {
         let auth = self.auth.auth().await.map_err(|_| ConvError::NoOauth)?;
-        if !auth.is_xai_auth() {
+        if !auth.is_first_party_auth() {
             return Err(ConvError::NoOauth);
         }
         Ok(auth)
@@ -148,7 +148,7 @@ impl ConversationsClient {
         &self,
         q: &ConvQuery,
     ) -> Result<ListConversationsPage, ConvError> {
-        let auth = self.require_xai_auth().await?;
+        let auth = self.require_first_party_auth().await?;
 
         let url = format!("{}/rest/app-chat/conversations", self.base_url);
         let mut query: Vec<(&str, String)> = vec![("pageSize", q.page_size.to_string())];
@@ -202,7 +202,7 @@ impl ConversationsClient {
         conversation_id: &str,
         body: &UpdateConversationBody,
     ) -> Result<(), ConvError> {
-        let auth = self.require_xai_auth().await?;
+        let auth = self.require_first_party_auth().await?;
         let url = format!(
             "{}/rest/app-chat/conversations/{}",
             self.base_url,
@@ -224,7 +224,7 @@ impl ConversationsClient {
 
     /// `DELETE /rest/app-chat/conversations/soft/{conversation_id}` — soft-delete.
     pub async fn soft_delete_conversation(&self, conversation_id: &str) -> Result<(), ConvError> {
-        let auth = self.require_xai_auth().await?;
+        let auth = self.require_first_party_auth().await?;
         let url = format!(
             "{}/rest/app-chat/conversations/soft/{}",
             self.base_url,

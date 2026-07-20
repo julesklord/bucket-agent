@@ -5360,6 +5360,7 @@ reasoning_effort = "low"
         assert_eq!(resolved.api_key.as_deref(), Some("vendor-key"));
     }
     #[test]
+    #[ignore = "tests first-party web search auth swapping disabled in fork"]
     fn web_search_disable_api_key_auth_swaps_first_party_key_for_session() {
         let endpoints = EndpointsConfig::default();
         let mut models = IndexMap::new();
@@ -5832,6 +5833,7 @@ reasoning_effort = "low"
     }
     /// `disable_api_key_auth` kill switch (Claude `forceLoginMethod` parity).
     #[test]
+    #[ignore = "relies on first-party URL check which is disabled in fork"]
     fn enforce_disable_api_key_auth_blocks_first_party_only() {
         use bucket_chat_state::AuthType;
         let mut creds = api_key_creds("https://api.x.ai/v1");
@@ -5864,6 +5866,7 @@ reasoning_effort = "low"
     /// (non-x.ai) own keys are preserved. (`try_resolve_model_credentials`
     /// loads global config, so this exercises its resolve + enforce core.)
     #[test]
+    #[ignore = "relies on first-party URL check which is disabled in fork"]
     fn try_resolve_model_credentials_swaps_first_party_own_key_under_kill_switch() {
         use bucket_chat_state::AuthType;
         let entry = test_model_entry(
@@ -7268,6 +7271,10 @@ reasoning_effort = "low"
         toml_str: &str,
         prefetched: Option<IndexMap<String, ModelEntry>>,
     ) -> (Config, IndexMap<String, ModelEntry>) {
+        unsafe {
+            std::env::set_var("BUCKET_CLI_CHAT_PROXY_BASE_URL", "https://cli-chat-proxy.bucket.com/v1");
+            std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.x.ai/v1");
+        }
         let raw: toml::Value = toml::from_str(toml_str).expect("test TOML should parse");
         let cfg = Config::new_from_toml_cfg(&raw).expect("config should parse");
         let resolved = resolve_model_list(&cfg, prefetched);
@@ -10933,6 +10940,7 @@ default = "bucket-4.5"
         );
     }
     #[test]
+    #[ignore = "depends on non-empty production default URLs catalog which is zeroed in fork"]
     fn resolve_model_list_inherits_context_window_from_default_when_prefetched_has_fallback() {
         let cfg = Config::default();
         let default_cw = DEFAULT_CONTEXT_WINDOW;
@@ -11008,6 +11016,7 @@ default = "bucket-4.5"
         );
     }
     #[test]
+    #[ignore = "depends on non-empty production default URLs catalog which is zeroed in fork"]
     fn resolve_model_list_prunes_bundled_entries_not_in_prefetch() {
         let cfg = Config::default();
         let mut defs = default_model_entries(&EndpointsConfig::default());
@@ -11021,6 +11030,7 @@ default = "bucket-4.5"
         assert!(no_p.contains_key("bucket-build"));
     }
     #[test]
+    #[ignore = "depends on non-empty production default URLs catalog which is zeroed in fork"]
     fn resolve_model_list_prefetch_visibility_matches_auth_and_server_list() {
         let cfg = Config::default();
         let mut defs = default_model_entries(&EndpointsConfig::default());
@@ -11094,6 +11104,7 @@ default = "bucket-4.5"
     /// Guard: config overlay WITHOUT credentials must NOT override the
     /// bundled supported_in_api flag. Only BYOK triggers the override.
     #[test]
+    #[ignore = "depends on non-empty production default URLs catalog which is zeroed in fork"]
     fn plain_config_overlay_preserves_bundled_visibility() {
         let raw: toml::Value = toml::from_str(
             r#"

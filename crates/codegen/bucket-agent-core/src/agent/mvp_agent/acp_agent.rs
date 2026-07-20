@@ -3223,7 +3223,7 @@ impl acp::Agent for MvpAgent {
             }
             "x.ai/recap" => crate::extensions::recap::handle(self, &args).await,
             "x.ai/cloud/terminate" => {
-                crate::extensions::auth_gate::require_xai_auth(
+                crate::extensions::auth_gate::require_first_party_auth(
                     &self.auth_manager,
                     "Authentication required",
                     "Run `bucket login` to authenticate.",
@@ -3255,7 +3255,7 @@ impl acp::Agent for MvpAgent {
                 crate::extensions::to_raw_response(&serde_json::json!({ "ok" : true }))
             }
             "x.ai/cloud/env/list" => {
-                crate::extensions::auth_gate::require_xai_auth(
+                crate::extensions::auth_gate::require_first_party_auth(
                     &self.auth_manager,
                     "Authentication required",
                     "Run `bucket login` to authenticate.",
@@ -3278,7 +3278,7 @@ impl acp::Agent for MvpAgent {
                 )
             }
             "x.ai/cloud/env/create" => {
-                crate::extensions::auth_gate::require_xai_auth(
+                crate::extensions::auth_gate::require_first_party_auth(
                     &self.auth_manager,
                     "Authentication required",
                     "Run `bucket login` to authenticate.",
@@ -3333,7 +3333,7 @@ impl acp::Agent for MvpAgent {
                 )
             }
             "x.ai/cloud/env/update" => {
-                crate::extensions::auth_gate::require_xai_auth(
+                crate::extensions::auth_gate::require_first_party_auth(
                     &self.auth_manager,
                     "Authentication required",
                     "Run `bucket login` to authenticate.",
@@ -3391,7 +3391,7 @@ impl acp::Agent for MvpAgent {
                 )
             }
             "x.ai/cloud/env/delete" => {
-                crate::extensions::auth_gate::require_xai_auth(
+                crate::extensions::auth_gate::require_first_party_auth(
                     &self.auth_manager,
                     "Authentication required",
                     "Run `bucket login` to authenticate.",

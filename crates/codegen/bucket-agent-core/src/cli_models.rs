@@ -162,6 +162,7 @@ mod tests {
         };
         let json = serde_json::to_string(&token).unwrap();
         let _auth = EnvGuard::set("BUCKET_AUTH", &json);
+        let _origin = EnvGuard::set("BUCKET_WS_ORIGIN", "https://bucket.com");
 
         assert_eq!(
             AuthStatus::resolve(&Config::default()),
@@ -254,6 +255,7 @@ mod tests {
         };
         let json = serde_json::to_string(&token).unwrap();
         let _auth = EnvGuard::set("BUCKET_AUTH", &json);
+        let _origin = EnvGuard::set("BUCKET_WS_ORIGIN", "https://bucket.com");
 
         let dm = crate::models::default_model();
         let cfg = config_from_toml(&byok_and_deployment_toml(dm));

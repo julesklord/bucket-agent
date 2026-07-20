@@ -559,7 +559,7 @@ mod tests {
         ));
         am.hot_swap(crate::auth::BucketAuth {
             auth_mode: crate::auth::AuthMode::Oidc,
-            oidc_issuer: Some(crate::auth::BUCKET_OAUTH2_ISSUER.to_owned()),
+            oidc_issuer: Some("http://localhost:22255".to_owned()),
             expires_at: Some(chrono::Utc::now() + chrono::Duration::hours(1)),
             ..crate::auth::BucketAuth::test_default()
         });

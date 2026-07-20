@@ -16,8 +16,8 @@ async fn storage_upload_parks_on_401_and_drains_after_recovery() {
     // Storage auth outage from the start; chat endpoints stay healthy.
     content.set_storage_unauthorized(true);
 
-    // Trace uploads are gated on first-party xAI OAuth (`is_xai_auth()`:
-    // AuthMode::Oidc + xAI issuer); the harness's BUCKET_API_KEY is ApiKey mode
+    // Trace uploads are gated on first-party OAuth (`is_first_party_auth()`:
+    // AuthMode::Oidc + first-party issuer); the harness's BUCKET_API_KEY is ApiKey mode
     // and never uploads. Seed a fake OAuth entry instead — the mock accepts
     // any bearer, and its failing refresh_token is exactly the parked state
     // under test.

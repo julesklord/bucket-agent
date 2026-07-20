@@ -1829,6 +1829,7 @@ mod tests {
     /// it means the agent never registers with the backend ("No online
     /// agents") even though the box is healthy.
     #[tokio::test]
+    #[ignore = "tests first-party relay feature deactivated in fork"]
     async fn eager_relay_connects_without_any_ipc_client() {
         let (addr, count) = spawn_mock_relay_server().await;
         let config = test_relay_config(addr);
@@ -1870,6 +1871,7 @@ mod tests {
     /// client), the relay must stay off until the first headless registration
     /// flips the demand watch, then connect.
     #[tokio::test]
+    #[ignore = "tests first-party relay feature deactivated in fork"]
     async fn on_demand_relay_waits_for_headless_demand_signal() {
         let (addr, count) = spawn_mock_relay_server().await;
         let config = test_relay_config(addr);

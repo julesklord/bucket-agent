@@ -144,7 +144,7 @@ fn pump_until(
 }
 
 /// Like [`seed_fake_oauth`], but under the `BUCKET_LOCAL_AUTH` dev issuer
-/// (`http://localhost:22255`). Two reasons: `is_xai_oauth2_issuer()` accepts
+/// (`http://localhost:22255`). Two reasons: `is_first_party_issuer()` accepts
 /// the local issuer, so the subscription gate applies (an enterprise/unknown
 /// issuer bypasses it); and the qualifying-tier JWT refresh then hits
 /// `localhost:22255` — instant connection-refused instead of a real network

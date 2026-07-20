@@ -5153,6 +5153,7 @@ pub(crate) mod tests {
             plan_mode: false,
             subagents: false,
             ask_user: false,
+            provider_capabilities: Default::default(),
             chat_mode: false,
             mouse_captured: true,
             new_worktree_dialog: None,

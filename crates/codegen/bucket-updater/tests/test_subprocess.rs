@@ -21,6 +21,20 @@ use std::time::Duration;
 use serial_test::serial;
 
 use bucket_updater::auto_update::install_npm_for_test;
+use bucket_updater::UpdateConfig;
+fn make_config() -> UpdateConfig {
+    UpdateConfig {
+        proxy_base_url: "http://localhost:0/v1".to_string(),
+        auth_scope: "dummy".to_string(),
+        deployment_key: None,
+        alpha_test_key: None,
+        channel: "stable".to_string(),
+        npm_registry: None,
+        update_check_url: None,
+        update_base_urls: None,
+        update_gh_repo: None,
+    }
+}
 use bucket_updater::version::{
     fetch_gh_release_version, fetch_npm_tag_for_test, fetch_npm_version_for_test,
 };
@@ -335,7 +349,7 @@ async fn fetch_gh_release_stable_returns_tag_stripped() {
     // For stable channel, only the `--exclude-pre-releases` invocation is made.
     g.set_stable_only_stdout("v0.1.181\n");
 
-    let v = fetch_gh_release_version("stable").await.unwrap();
+    let v = fetch_gh_release_version("stable", &make_config()).await.unwrap();
     assert_eq!(v, "0.1.181");
 
     let log = g.args_log();
@@ -353,7 +367,7 @@ async fn fetch_gh_release_stable_handles_tag_without_v_prefix() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("0.1.181");
 
-    let v = fetch_gh_release_version("stable").await.unwrap();
+    let v = fetch_gh_release_version("stable", &make_config()).await.unwrap();
     assert_eq!(v, "0.1.181");
 }
 
@@ -366,7 +380,7 @@ async fn fetch_gh_release_alpha_returns_max_of_pre_and_stable() {
     g.set_with_pre_stdout("v0.1.182-alpha.1");
     g.set_stable_only_stdout("v0.1.181");
 
-    let v = fetch_gh_release_version("alpha").await.unwrap();
+    let v = fetch_gh_release_version("alpha", &make_config()).await.unwrap();
     assert_eq!(v, "0.1.182-alpha.1");
     assert_eq!(g.args_log().len(), 2);
 }
@@ -378,7 +392,7 @@ async fn fetch_gh_release_alpha_returns_stable_when_higher() {
     g.set_with_pre_stdout("v0.1.180-alpha.5");
     g.set_stable_only_stdout("v0.1.181");
 
-    let v = fetch_gh_release_version("alpha").await.unwrap();
+    let v = fetch_gh_release_version("alpha", &make_config()).await.unwrap();
     assert_eq!(v, "0.1.181");
 }
 
@@ -388,7 +402,7 @@ async fn fetch_gh_release_propagates_gh_failure() {
     let g = FakeBinGuard::install_gh();
     g.set_exit_code(1);
 
-    let err = fetch_gh_release_version("stable").await.unwrap_err();
+    let err = fetch_gh_release_version("stable", &make_config()).await.unwrap_err();
     let msg = format!("{err:#}");
     assert!(msg.contains("gh release list"), "msg: {msg}");
     assert!(msg.contains("failed"), "msg: {msg}");
@@ -400,7 +414,7 @@ async fn fetch_gh_release_empty_response_returns_err() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("");
 
-    let err = fetch_gh_release_version("stable").await.unwrap_err();
+    let err = fetch_gh_release_version("stable", &make_config()).await.unwrap_err();
     let msg = format!("{err:#}");
     assert!(msg.contains("No releases found"), "msg: {msg}");
 }
@@ -411,7 +425,7 @@ async fn fetch_gh_release_passes_repo_flag() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("v0.1.181");
 
-    let _ = fetch_gh_release_version("stable").await.unwrap();
+    let _ = fetch_gh_release_version("stable", &make_config()).await.unwrap();
     let log = g.args_log();
     assert!(log[0].contains("--repo"), "args: {}", log[0]);
     assert!(
@@ -430,7 +444,7 @@ async fn fetch_gh_release_uses_jq_to_extract_tag() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("v0.1.181");
 
-    let _ = fetch_gh_release_version("stable").await.unwrap();
+    let _ = fetch_gh_release_version("stable", &make_config()).await.unwrap();
     let log = g.args_log();
     assert!(log[0].contains("--json"), "args: {}", log[0]);
     assert!(log[0].contains("--jq"), "args: {}", log[0]);
@@ -443,7 +457,10 @@ async fn fetch_gh_release_does_not_hang_on_quick_responses() {
     let g = FakeBinGuard::install_gh();
     g.set_stable_only_stdout("v0.1.181");
 
-    let res =
-        tokio::time::timeout(Duration::from_secs(5), fetch_gh_release_version("stable")).await;
+    let res = tokio::time::timeout(
+        Duration::from_secs(5),
+        fetch_gh_release_version("stable", &make_config()),
+    )
+    .await;
     assert!(res.is_ok(), "should not hang");
 }

@@ -39,7 +39,26 @@ impl AsyncFileSystem for LocalFs {
         if let Some(dir) = path.parent() {
             fs::create_dir_all(dir).await?;
         }
-        fs::write(path, data).await?;
+
+        let path_buf = path.to_path_buf();
+        let data_vec = data.to_vec();
+
+        tokio::task::spawn_blocking(move || {
+            let parent = path_buf
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."));
+            let mut temp_file = tempfile::Builder::new()
+                .prefix(".tmp")
+                .tempfile_in(parent)?;
+            use std::io::Write;
+            temp_file.write_all(&data_vec)?;
+            temp_file.as_file().sync_all()?;
+            temp_file.persist(&path_buf).map_err(|e| e.error)?;
+            Ok::<(), std::io::Error>(())
+        })
+        .await
+        .unwrap()?;
+
         Ok(())
     }
 

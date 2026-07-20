@@ -74,6 +74,7 @@ use std::time::Instant;
 fn test_app() -> AppView {
     let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
     AppView {
+        provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
         active_view: ActiveView::Welcome,
         auth_return_view: None,
         agents: IndexMap::new(),

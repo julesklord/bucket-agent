@@ -11,7 +11,6 @@ pub enum FsError {
     Other(String),
 }
 
-// TODO: handle atomic write
 #[async_trait::async_trait]
 pub trait AsyncFileSystem: Send + Sync {
     /// Get the root directory for this filesystem.

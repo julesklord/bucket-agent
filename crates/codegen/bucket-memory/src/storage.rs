@@ -766,7 +766,7 @@ mod tests {
     fn test_compute_workspace_hash_human_readable() {
         let name = compute_workspace_hash(Path::new("/users/me/work/xai"));
         assert!(
-            name.starts_with("bucket-"),
+            name.starts_with("xai-"),
             "should start with project name slug, got: {name}"
         );
         // Format: {slug}-{8 hex chars}

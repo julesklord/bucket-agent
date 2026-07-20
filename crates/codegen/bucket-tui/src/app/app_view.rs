@@ -5280,6 +5280,7 @@ pub(crate) mod tests {
             optimistic_prompt_echoes: std::collections::HashMap::new(),
             pending_running_adoptions: std::collections::HashMap::new(),
             session_picker_grouped: false,
+            provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
             cancel_rewind_enabled: true,
             session_recap_available: false,
             dashboard: None,

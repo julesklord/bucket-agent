@@ -216,6 +216,26 @@ pub(crate) fn resolve_voice_mode_live(remote: Option<bool>, is_api_key: bool) ->
         is_api_key,
     )
 }
+
+/// Resolve whether the session picker groups entries by repo.
+///
+/// Precedence: `BUCKET_SESSION_PICKER_GROUPED` env var > config > remote settings > true.
+pub(crate) fn resolve_session_picker_grouped(remote: Option<bool>) -> bool {
+    std::env::var("BUCKET_SESSION_PICKER_GROUPED")
+        .ok()
+        .and_then(|v| match v.as_str() {
+            "1" | "true" => Some(true),
+            "0" | "false" => Some(false),
+            _ => None,
+        })
+        .or_else(|| {
+            bucket_agent_core::config::load_effective_config()
+                .ok()
+                .and_then(|cfg| cfg.get("cli")?.get("session_picker_grouped")?.as_bool())
+        })
+        .or_else(|| remote)
+        .unwrap_or(true)
+}
 #[cfg(test)]
 mod voice_gate_tests {
     use super::resolve_voice_mode_enabled;

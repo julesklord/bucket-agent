@@ -3705,7 +3705,7 @@ impl acp::Agent for MvpAgent {
         {
             crate::extensions::terminal::handle_pty_input(&params).await;
         }
-        if args.method.as_ref() == "_x.ai/session/update" {
+        if args.method.as_ref() == "_x.ai/session/update" || args.method.as_ref() == "_bucket/session/update" {
             if let Ok(notification) = serde_json::from_str::<
                 SessionNotification,
             >(args.params.get()) {

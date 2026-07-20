@@ -61,7 +61,9 @@ pub fn find_latest_compaction_checkpoint(
             continue;
         };
 
-        if env.method != Some("_x.ai/session/update") {
+        if env.method != Some("_x.ai/session/update")
+            && env.method != Some("_bucket/session/update")
+        {
             continue;
         }
 

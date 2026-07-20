@@ -921,7 +921,8 @@ fn collect_all_indexable_content_single_pass(updates_path: &Path) -> io::Result<
         let (raw_params, is_xai) = if let Ok(env) = serde_json::from_str::<RawLinePeek<'_>>(trimmed)
         {
             let raw = env.params.map(|p| p.get()).unwrap_or(trimmed);
-            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD);
+            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD)
+                || env.method == Some("_x.ai/session/update");
             (raw, xai)
         } else {
             (trimmed, false)
@@ -1176,7 +1177,8 @@ fn collect_delta_content(updates_path: &Path, offset: u64) -> io::Result<DeltaRe
         let (raw_params, is_xai) = if let Ok(env) = serde_json::from_str::<RawLinePeek<'_>>(trimmed)
         {
             let raw = env.params.map(|p| p.get()).unwrap_or(trimmed);
-            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD);
+            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD)
+                || env.method == Some("_x.ai/session/update");
             (raw, xai)
         } else {
             (trimmed, false)

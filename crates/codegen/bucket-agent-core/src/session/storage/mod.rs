@@ -183,7 +183,7 @@ impl SessionUpdateEnvelope {
 
     /// Convert this envelope back into a SessionUpdate.
     pub(crate) fn into_update(self) -> Result<SessionUpdate, serde_json::Error> {
-        if self.method == BUCKET_SESSION_UPDATE_METHOD {
+        if self.method == BUCKET_SESSION_UPDATE_METHOD || self.method == "_x.ai/session/update" {
             let notification: SessionNotification = serde_json::from_value(self.params)?;
             Ok(SessionUpdate::Xai(Box::new(notification)))
         } else {
@@ -224,7 +224,9 @@ impl SessionUpdateEnvelope {
         // Try to parse as envelope first (has "method" + "params")
         if let Ok(envelope) = serde_json::from_str::<BorrowedEnvelope<'_>>(line) {
             let raw_params = envelope.params.get();
-            return if envelope.method == Some(BUCKET_SESSION_UPDATE_METHOD) {
+            return if envelope.method == Some(BUCKET_SESSION_UPDATE_METHOD)
+                || envelope.method == Some("_x.ai/session/update")
+            {
                 let notification: SessionNotification = serde_json::from_str(raw_params)?;
                 Ok(SessionUpdate::Xai(Box::new(notification)))
             } else {
@@ -774,7 +776,8 @@ pub(crate) fn filter_rewind_lines<'a>(lines: Vec<&'a str>) -> Vec<&'a str> {
     for line in &lines {
         let (raw_params, is_xai) = if let Ok(env) = serde_json::from_str::<RawLinePeek<'_>>(line) {
             let raw = env.params.map(|p| p.get()).unwrap_or(line);
-            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD);
+            let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD)
+                || env.method == Some("_x.ai/session/update");
             (raw, xai)
         } else {
             (*line, false)
@@ -1666,7 +1669,8 @@ pub(crate) fn parse_prompt_extract_event(line: &str) -> PromptExtractEvent {
     // Step 1: try to extract the envelope (method + raw params).
     let (raw_params, is_xai) = if let Ok(env) = serde_json::from_str::<RawLinePeek<'_>>(line) {
         let raw = env.params.map(|p| p.get()).unwrap_or(line);
-        let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD);
+        let xai = env.method == Some(BUCKET_SESSION_UPDATE_METHOD)
+            || env.method == Some("_x.ai/session/update");
         (raw, xai)
     } else {
         // Not a valid envelope → try legacy format: the line IS the params.

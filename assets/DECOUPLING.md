@@ -1,1113 +1,1157 @@
-# Bucket Agent — Decoupling Plan & Memory
-
-> **Base:** fork of xAI Bucket Build (`d5e79b1`)
-> **Team:** 3-4 contributors
-> **Horizon:** 6-9 months
-> **Started:** 2025
-> **Last updated:** 2026-07-18
+> Reviewed status: 2026-07-20  
+> Immediate objective: Run Bucket without mandatory login and connect third-party providers from `~/.bucket/config.toml`  
+> Document scope: Inference runtime, model configuration, auth, billing, telemetry, and diagnostics
 
 ---
 
-## Architecture Overview
+## Executive Summary
 
-```mermaid
-graph TD
-    BB["bucket-bin<br/>CLI args, startup, auto-update,<br/>telemetry init, session launch"]
+Bucket Agent must no longer depend on an xAI account to boot or run the basic agentic loop. The correct path for third-party providers is not to write a new plugin yet: the current path is to declare models in `~/.bucket/config.toml` under `[model.<id>]`, select the correct `api_backend`, and resolve credentials using `api_key`, `env_key`, or a global variable.
 
-    BB --> AAC["bucket-agent-core"]
-    BB --> BA["bucket-agent<br/>System prompt, AGENTS.md,<br/>skills injection"]
-    BB --> BBT["bucket-tui<br/>ratatui rendering, modals,<br/>credit bar (gated by caps)"]
+The most common failure when connecting third parties is confusing these three parts:
 
-    AAC --> BCT["bucket-config-types<br/>Config, CliConfig,<br/>ProviderCapabilities"]
+| Component | What it controls | Correct value |
+|---|---|---|
+| `base_url` | Base URL where Bucket appends the backend path | Must end in `/v1` for OpenAI- and Anthropic-style APIs |
+| `api_backend` | Request shape and final endpoint | `chat_completions`, `responses`, or `messages` |
+| `auth_scheme` | Authentication header | `bearer` by default, `x_api_key` for direct Anthropic |
 
-    subgraph "AcpSession (actor)"
-        CHATPROV["chat_provider: Arc&lt;dyn ChatProvider&gt;"]
-        SAMPLER["sampler_handle: SamplerHandle"]
-    end
+The sampler constructs endpoints like this:
 
-    AAC --> CHATPROV
-    AAC --> SAMPLER
+| `api_backend` | Final endpoint |
+|---|---|
+| `chat_completions` | `{base_url}/chat/completions` |
+| `responses` | `{base_url}/responses` |
+| `messages` | `{base_url}/messages` |
 
-    CHATPROV --> SP["SamplerProvider"]
-    CHATPROV -.-> MP["MockProvider<br/>(tests)"]
-
-    SAMPLER --> SDK["bucket-sampler<br/>Multi-backend dispatch"]
-    SDK --> CC["ChatCompletions"]
-    SDK --> MSG["Messages"]
-    SDK --> RES["Responses"]
-
-    SP --> SAMPLER
-
-    AAC --> AUTH["Auth (OIDC)<br/>configurable via<br/>BUCKET_OIDC_ISSUER"]
-    AAC --> TELE["Telemetry<br/>opt-in via<br/>config.toml"]
-
-    AAC --> WS["bucket-workspace<br/>Host filesystem, VCS, exec"]
-
-    style CHATPROV fill:#f9f,stroke:#333,stroke-width:3px
-    style SP fill:#bbf,stroke:#333
-    style MP fill:#bfb,stroke:#333
-```
-
-**Key abstraction (highlighted in pink):** The session holds `chat_provider: Arc<dyn ChatProvider>` — all inference flows through this single trait object. The concrete `SamplerProvider` wraps `SamplerHandle` which handles multi-backend dispatch. This is the central seam of the decoupling.
+Therefore, `base_url = "https://api.openai.com/v1"` produces `https://api.openai.com/v1/chat/completions`, and `base_url = "https://api.anthropic.com/v1"` produces `https://api.anthropic.com/v1/messages`.
 
 ---
 
-## Current Status Summary
+## Current Decoupling Status
 
-| Phase | Name | Status | Completion |
-|-------|------|--------|------------|
-| 1 | Naming Cleanup | ✅ DONE | 100% |
-| 2 | Auth & Billing Decoupling | 🟡 PARTIAL | ~90% |
-| 2.5 | Zero Outbound (Default) | ✅ DONE | 100% |
-| 3 | Agent Runtime Decoupling | ✅ DONE | 100% |
-| 4 | Project Infrastructure | 🟡 PARTIAL | ~60% |
-| 5 | Community Extensibility | 🟢 IN PROGRESS | ~40% |
-
-**Key metrics (verified 2026-07-19):**
-- Crates in workspace: ~75
-- `.rs` files with `xai`, `x.ai`, `superbucket` references: **0**
-- Phase 3 completion commit: `8c7c1af`
-- **Zero outbound connections by default** (all endpoint URLs empty)
-
-```mermaid
-pie title Decoupling Progress by Phase
-    "Phase 1 — Naming ✅" : 100
-    "Phase 2 — Auth/Billing 🟡" : 90
-    "Phase 3 — Runtime ✅" : 100
-    "Phase 4 — Infra 🟡" : 60
-    "Phase 5 — Extensibility 🟢" : 40
-```
+| Area | Status | Decision |
+|---|---|---|
+| Mandatory login | Closed for BYOK/local use | Users can boot with their own models |
+| Billing UI | Functionally closed via capabilities | TUI must hide billing when the provider does not support it |
+| Third-party model config | Operational | Primary source is `[model.*]` |
+| OpenAI-compatible local/remote | Operational | Use `api_backend = "chat_completions"` unless provider supports Responses |
+| Direct Anthropic | Operational with correct config | Use `api_backend = "messages"` and `auth_scheme = "x_api_key"` |
+| External telemetry | Must remain opt-in | Must not send data without a configured endpoint |
+| Update checker | Must point to fork or be disabled | Must not depend on proprietary endpoints |
+| External plugin API for providers | Not required for v1 | First consolidate the `[model.*]` contract |
 
 ---
 
-## Phase 1 — Naming Cleanup ✅ DONE
+## Multiprovider Configuration Contract
 
-**Goal:** No internal names reference `xai` or `xai` except network protocol (model names, endpoints).
+The current contract lives in `~/.bucket/config.toml`.
 
-### What was done
+The `[models]` table defines global defaults. Each `[model.<id>]` defines a routable model. The `<id>` is the name appearing in the picker, in `/model`, and in `bucket -m`.
 
-All crates already follow the `bucket-*` convention. Verified with:
+Important fields:
 
-```bash
-$ rg -c "x\.ai|xAI|x\.ai" -g '*.rs'
-0
+| Field | Required | Usage |
+|---|---|---|
+| `model` | Yes | Identifier sent to the provider |
+| `base_url` | Yes for third-party providers | Base URL without final endpoint |
+| `name` | No | Human-readable name in UI |
+| `api_key` | No | Direct secret in config; useful only for local testing |
+| `env_key` | No | Environment variable containing the secret; recommended |
+| `api_backend` | No | Default: `chat_completions` |
+| `auth_scheme` | No | Default: `bearer`; use `x_api_key` for direct Anthropic |
+| `extra_headers` | No | Non-secret headers or provider-required headers |
+| `context_window` | Recommended | Window size used by auto-compaction |
+| `max_completion_tokens` | Recommended | Output limit per turn |
+| `temperature` | No | Request temperature |
+| `top_p` | No | Nucleus sampling |
 
-$ rg -c "superbucket|SuperBucket|super_bucket" -g '*.rs'
-0
-```
+Credential resolution order:
 
-### Crate structure
+1. `api_key` in the `[model.<id>]` block
+2. First non-empty variable listed in `env_key`
+3. Session token, if present
+4. `BUCKET_API_KEY` as global fallback
 
-```mermaid
-graph TD
-    subgraph "crates/codegen"
-        BAC["bucket-agent-core<br/>Agent runtime + leader"]
-        BTUI["bucket-tui<br/>TUI: scrollback, modals"]
-        BBIN["bucket-bin<br/>→ 'bucket' binary"]
-        BTOOLS["bucket-tools<br/>Tool implementations"]
-        BWS["bucket-workspace<br/>Filesystem, VCS, exec"]
-        BCFG["bucket-config-types<br/>Config structs"]
-        BAGENT["bucket-agent<br/>Prompt construction"]
-        BACP["bucket-acp<br/>Agent Client Protocol"]
-        BUPD["bucket-updater<br/>Auto-update"]
-    end
-
-    subgraph "crates/common"
-        BTRC["bucket-tracing<br/>Structured logging"]
-        BMCP["bucket-hub-mcp-adapter<br/>MCP support"]
-        BHSDK["bucket-hub-sdk<br/>Hub integration"]
-        BTEST["bucket-test-utils<br/>Test helpers"]
-    end
-
-    subgraph "crates/build"
-        BBLD["bucket-build-*<br/>Build-time codegen"]
-    end
-
-    BBIN --> BAC
-    BBIN --> BTUI
-    BAC --> BTOOLS
-    BAC --> BWS
-    BAC --> BCFG
-    BAC --> BAGENT
-    BAC --> BACP
-    BBIN --> BUPD
-    BAC --> BTRC
-    BAC --> BMCP
-```
-
-### Env vars (standardized)
-
-All use `BUCKET_*` prefix. Legacy aliases kept for 2+ releases:
-
-| Variable | Purpose |
-|----------|---------|
-| `BUCKET_HOME` | Config directory root |
-| `BUCKET_LOG_FILE` | Log file path |
-| `BUCKET_AUTH_PROVIDER_COMMAND` | Custom auth provider |
-| `BUCKET_OIDC_ISSUER` | OIDC issuer URL (replaces hardcoded `auth.x.ai`) |
-| `BUCKET_API_KEY` | API key (backward compat alias) |
-| `BUCKET_LOCAL_AUTH` | Use local accounts-app (`1` = on) |
-| `BUCKET_TELEMETRY_ENDPOINT` | OTLP endpoint (empty = off) |
-
-### Config paths
-
-Unified under `~/.bucket/`:
-
-```mermaid
-graph TD
-    ROOT["~/.bucket/"] --> CFG["config.toml<br/>Main configuration"]
-    ROOT --> AUTH["auth.json<br/>Credentials"]
-    ROOT --> SESS["sessions/<br/>Session history"]
-    ROOT --> HOOKS["hooks/<br/>User-defined hooks"]
-    ROOT --> AGENTS["AGENTS.md<br/>Global agent instructions"]
-
-    style ROOT fill:#e1f5fe
-```
+Practical recommendation: for third parties, always use `env_key`; avoid `api_key` in version-controlled files.
 
 ---
 
-## Phase 2 — Auth & Billing Decoupling 🟡 ~90%
+## Minimum Working Configurations
 
-**Goal:** Remove all logic that assumes a xAI/bucket account exists.
+### Local Ollama
 
-### 2.1 Login Screen from bucket.com ✅ DONE
+Start Ollama and pull the model:
 
-**Before:** OIDC issuer was hardcoded to `auth.x.ai`:
+```sh
+ollama serve
+ollama pull qwen2.5-coder:latest
 
-```rust
-// OLD — hardcoded in auth/config.rs
-const BUCKET_OAUTH2_ISSUER: &str = "https://auth.x.ai";
 ```
 
-**After:** Configurable via `BUCKET_OIDC_ISSUER` env var:
-
-```rust
-// CURRENT — crates/codegen/bucket-agent-core/src/auth/config.rs:132-173
-/// Default OAuth2 issuer for production — overridden by `BUCKET_OIDC_ISSUER` env var.
-pub const BUCKET_OAUTH2_ISSUER: &str = "https://auth.x.ai";
-
-/// Returns the configured OIDC issuer URL from `BUCKET_OIDC_ISSUER` env var.
-/// Returns empty string if not set (no default issuer — provider must be configured explicitly).
-pub fn oidc_issuer() -> String {
-    std::env::var("BUCKET_OIDC_ISSUER").unwrap_or_default()
-}
-```
-
-The `oauth2_issuer()` function chains: local auth → `BUCKET_OIDC_ISSUER` → empty:
-
-```mermaid
-graph LR
-    A["oauth2_issuer()"] --> B{"BUCKET_LOCAL_AUTH=1?"}
-    B -- Yes --> C["localhost:22255"]
-    B -- No --> D{"BUCKET_OIDC_ISSUER set?"}
-    D -- Yes --> E["Use configured issuer"]
-    D -- No --> F["Empty (no auth)"]
-
-    style C fill:#c8e6c9
-    style E fill:#c8e6c9
-    style F fill:#ffcdd2
-```
-
-```rust
-pub fn oauth2_issuer() -> String {
-    if use_local_auth() {
-        BUCKET_OAUTH2_LOCAL_ISSUER.to_owned()
-    } else {
-        oidc_issuer()
-    }
-}
-```
-
-**Commit:** `96ae86b` — `feat: make OIDC issuer configurable via BUCKET_OIDC_ISSUER`
-
-**Remaining work:**
-- `PROD_ACCOUNTS_APP_ORIGINS` still hardcoded to `["https://accounts.x.ai"]` (line 138)
-- `is_xai_oauth2_issuer()` function name still references "xai" (should be `is_first_party_issuer`)
-- `LEGACY_AUTH_SCOPE` const still references `accounts.x.ai` (line 203)
-
-### 2.2 Billing/Subscription Logic ✅ DONE
-
-**Before:** TUI checked billing state directly, showed credit bars, SuperBucket CTAs unconditionally.
-
-**After:** `ProviderCapabilities` gates everything:
-
-```rust
-// crates/codegen/bucket-agent-core/src/provider/capabilities.rs
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ProviderCapabilities {
-    pub has_billing: bool,           // false for Ollama/custom
-    pub has_credit_limit: bool,
-    pub has_subscription_gate: bool,
-    pub supports_streaming: bool,
-    pub supports_image_gen: bool,
-    pub supports_video_gen: bool,
-    pub max_context_tokens: usize,  // 0 = unknown
-}
-
-impl Default for ProviderCapabilities {
-    fn default() -> Self {
-        Self {
-            has_billing: false,           // ← KEY: billing OFF by default
-            has_credit_limit: false,
-            has_subscription_gate: false,
-            supports_streaming: true,
-            supports_image_gen: true,
-            supports_video_gen: true,
-            max_context_tokens: 0,
-        }
-    }
-}
-
-impl ProviderCapabilities {
-    pub fn shows_billing_ui(&self) -> bool {
-        self.has_billing || self.has_credit_limit || self.has_subscription_gate
-    }
-}
-```
-
-**How the TUI uses it:**
-
-```mermaid
-graph TD
-    A["TUI renders view"] --> B{"caps.shows_billing_ui()?"}
-    B -- "has_billing=true" --> C["Render credit bar"]
-    B -- "has_billing=true" --> D["Render SuperBucket CTA"]
-    B -- "has_billing=false" --> E["Clean UI — no billing noise"]
-
-    style E fill:#c8e6c9
-    style C fill:#ffcdd2
-    style D fill:#ffcdd2
-```
-
-**Commit:** `3db3f80` — `feat: ProviderCapabilities gating + telemetry decoupling`
-
-### 2.3 Update Checker ✅ DONE
-
-**Before:** `bucket-updater` pointed to `https://x.ai/cli/...`.
-
-**After:** URLs configurable via `CliConfig`:
+Config:
 
 ```toml
-# ~/.bucket/config.toml
-[cli]
-auto_update = true
-update_check_url = "https://api.github.com/repos/your-org/bucket-agent/releases/latest"
-```
-
-```mermaid
-graph LR
-    A["auto_update::run_update_if_available()"] --> B{"CliConfig.update_check_url"}
-    B -- "Some(url)" --> C["Check configured URL"]
-    B -- "None" --> D["Use DEFAULT_UPDATE_URL<br/>(fork, not x.ai)"]
-    C --> E{"New version?"}
-    D --> E
-    E -- Yes --> F["Download + replace binary"]
-    E -- No --> G["No-op"]
-
-    style F fill:#c8e6c9
-```
-
-**Commit:** `a8a45fa` — `feat(updater): make update URLs configurable via CliConfig`
-
-### 2.4 Telemetry ✅ DONE
-
-**Before:** OTLP telemetry sent data to xAI infrastructure unconditionally.
-
-**After:** Opt-in via config:
-
-```toml
-# ~/.bucket/config.toml
-[telemetry]
-enabled = false           # off by default
-mode = "off"              # "off" | "session-metrics" | "full"
-```
-
-Config fields in `bucket-config-types`:
-
-```rust
-// crates/codegen/bucket-config-types/src/lib.rs:467-479
-pub external_otel_disabled: Option<bool>,
-pub telemetry_enabled: Option<bool>,
-/// "session-metrics" | "full" | "off"
-pub telemetry_mode: Option<String>,
-pub trace_upload_enabled: Option<bool>,
-```
-
-```mermaid
-graph TD
-    A["Telemetry init"] --> B{"telemetry_mode"}
-    B -- "off" --> C["No external telemetry"]
-    B -- "session-metrics" --> D["Lightweight session metrics only"]
-    B -- "full" --> E["Full OTLP export"]
-    B -- "None" --> F{"telemetry_enabled"}
-    F -- "Some(true)" --> D
-    F -- "Some(false)" --> C
-    F -- "None" --> C
-
-    style C fill:#c8e6c9
-```
-
-**Internal structured logging** (`unified_log`) is kept — it's useful for debugging.
-**External OTLP** only activates if the user configures an endpoint.
-
-### Remaining Phase 2 Work
-
-| # | Task | File/Location | Status |
-|---|------|---------------|--------|
-| 1 | Rename `require_xai_auth` → `require_first_party_auth` | Deprecated alias exists, callers still use old name | 🟡 |
-| 2 | ~~Soften `PROD_ACCOUNTS_APP_ORIGINS` hardcoding~~ | Now empty `&[]` | ✅ |
-| 3 | Rename `is_xai_oauth2_issuer()` → `is_first_party_issuer()` | Function name still references "xai" | 🟡 |
-| 4 | Make SuperBucket tier strings configurable or remove | Hardcoded tier references | 🟡 |
-
----
-
-## Phase 2.5 — Zero Outbound by Default ✅ DONE
-
-**Goal:** Running `bucket` with no config file produces zero outbound connections.
-
-### What was done (2026-07-19)
-
-All 5 categories of hardcoded external URLs were neutralized:
-
-| Category | Before | After | File |
-|----------|--------|-------|------|
-| Chat proxy | `https://cli-chat-proxy.bucket.com/v1` | `""` | `bucket-env/src/lib.rs` |
-| Asset server | `https://assets.bucket.com` | `""` | `bucket-env/src/lib.rs` |
-| WebSocket relay | `wss://code.bucket.com/ws/code-agent` | `""` | `bucket-env/src/lib.rs` |
-| Gateway WS | `wss://bucket.com/ws/gw/` | `""` | `bucket-env/src/lib.rs` |
-| WS origin | `https://bucket.com` | `""` | `bucket-env/src/lib.rs` |
-| OAuth2 issuer | `https://auth.x.ai` | `""` | `auth/config.rs` |
-| Accounts app origins | `["https://accounts.x.ai"]` | `[]` | `auth/config.rs` |
-| Legacy auth scope | `https://accounts.x.ai/sign-in` | `""` | `auth/config.rs` |
-| Updater primary URL | `https://x.ai/cli` | `""` | `bucket-updater/version.rs` |
-| Updater GCS fallback | `https://storage.googleapis.com/...` | `""` | `bucket-updater/version.rs` |
-| Auto-update | Enabled by default | Disabled by default | `agent/config.rs` |
-
-### How it works
-
-```mermaid
-graph TD
-    A["bucket starts"] --> B{"Any endpoint URL non-empty?"}
-    B -- "No (default)" --> C["Zero outbound connections"]
-    B -- "Yes (user configured)" --> D["Connects to configured endpoint"]
-    
-    C --> E["Agent works locally with<br/>Ollama / local models"]
-    D --> F["Agent connects to<br/>remote API"]
-    
-    style C fill:#c8e6c9
-    style E fill:#c8e6c9
-```
-
-### Opt-in mechanisms
-
-Users who want remote features can enable them:
-
-```toml
-# ~/.bucket/config.toml
-[cli]
-auto_update = true
-
-[features]
-remote_fetch = true
-
-# Or via env vars:
-# BUCKET_OIDC_ISSUER=https://auth.example.com
-# BUCKET_WS_URL=wss://relay.example.com/ws
-# BUCKET_WS_ORIGIN=https://example.com
-```
-
-### What's already safe (no changes needed)
-
-- **Telemetry**: `TelemetryMode::default() = Disabled` ✅
-- **Mixpanel**: Off by default ✅
-- **Sentry**: Off by default ✅
-- **OTLP**: Off by default ✅
-- **`BUCKET_CODE_BACKEND_URL`**: Already empty ✅
-- **`BUCKET_CODE_WEB_URL`**: Already empty ✅
-
----
-
-## Phase 3 — Agent Runtime Decoupling ✅ 100%
-
-**Goal:** `bucket-agent-core` knows nothing about proprietary infrastructure and assumes no specific backend.
-
-This is the most architecturally significant phase. It introduced the `ChatProvider` trait as the central abstraction for all inference.
-
-### 3.1 The ChatProvider Trait
-
-```rust
-// crates/codegen/bucket-agent-core/src/provider/mod.rs
-#[async_trait]
-pub trait ChatProvider: Send + Sync {
-    /// Submit a conversation request and await the complete response.
-    /// Streaming events still flow through the shared SamplingEvent
-    /// channel for live UI updates.
-    async fn complete(
-        &self,
-        request: ConversationRequest,
-    ) -> Result<(ConversationResponse, InferenceLatencyStats), SamplingError>;
-
-    /// Get the current provider capabilities.
-    fn capabilities(&self) -> ProviderCapabilities;
-
-    /// Get the current model ID.
-    fn model_id(&self) -> &str;
-
-    /// Update the provider configuration (model switch, auth refresh).
-    fn update_config(&self, config: SamplerConfig);
-
-    /// Cancel an in-flight request.
-    fn cancel(&self, request_id: RequestId);
-}
-```
-
-**Design rationale:** The trait wraps `SamplerHandle` which already handles multi-backend dispatch (`ApiBackend`: ChatCompletions, Messages, Responses). Future implementations could provide entirely different backends (local model runner, gRPC provider, etc.).
-
-### 3.2 Implementations
-
-```mermaid
-classDiagram
-    class ChatProvider {
-        <<trait>>
-        +complete(request) Result~ConversationResponse~
-        +capabilities() ProviderCapabilities
-        +model_id() &str
-        +update_config(config)
-        +cancel(request_id)
-    }
-
-    class SamplerProvider {
-        -handle: SamplerHandle
-        -model_id: String
-        +new(handle, config)
-        +handle() &SamplerHandle
-    }
-
-    class MockProvider {
-        -model_id: String
-        +new(model_id)
-    }
-
-    ChatProvider <|.. SamplerProvider : production
-    ChatProvider <|.. MockProvider : testing
-
-    SamplerProvider --> SamplerHandle : wraps
-    SamplerHandle --> ApiBackend : dispatches to
-    ApiBackend --> ChatCompletions
-    ApiBackend --> Messages
-    ApiBackend --> Responses
-```
-
-```rust
-// crates/codegen/bucket-agent-core/src/provider/mod.rs:52-97
-pub struct SamplerProvider {
-    handle: SamplerHandle,
-    model_id: String,
-}
-
-impl SamplerProvider {
-    pub fn new(handle: SamplerHandle, config: SamplerConfig) -> Self {
-        Self {
-            handle,
-            model_id: config.model.clone(),
-        }
-    }
-}
-
-#[async_trait]
-impl ChatProvider for SamplerProvider {
-    async fn complete(
-        &self,
-        request: ConversationRequest,
-    ) -> Result<(ConversationResponse, InferenceLatencyStats), SamplingError> {
-        let request_id = RequestId::random();
-        self.handle.submit_and_collect(request_id, request).await
-    }
-
-    fn capabilities(&self) -> ProviderCapabilities {
-        ProviderCapabilities::default()  // no billing, streaming on
-    }
-
-    fn model_id(&self) -> &str { &self.model_id }
-
-    fn update_config(&self, config: SamplerConfig) {
-        self.handle.update_config(config);
-    }
-
-    fn cancel(&self, request_id: RequestId) {
-        self.handle.cancel(request_id);
-    }
-}
-```
-
-### 3.3 MockProvider — For Testing
-
-```rust
-// crates/codegen/bucket-agent-core/src/provider/mod.rs:104-137
-#[cfg(test)]
-pub struct MockProvider {
-    model_id: String,
-}
-
-#[async_trait]
-impl ChatProvider for MockProvider {
-    async fn complete(
-        &self,
-        _request: ConversationRequest,
-    ) -> Result<(ConversationResponse, InferenceLatencyStats), SamplingError> {
-        Err(SamplingError::Auth("mock provider not implemented".into()))
-    }
-
-    fn capabilities(&self) -> ProviderCapabilities {
-        ProviderCapabilities::default()
-    }
-
-    fn model_id(&self) -> &str { &self.model_id }
-    fn update_config(&self, _config: SamplerConfig) {}
-    fn cancel(&self, _request_id: RequestId) {}
-}
-```
-
-### 3.4 AcpSession Integration
-
-The session holds a trait object — the critical wiring point:
-
-```rust
-// crates/codegen/bucket-agent-core/src/session/acp_session.rs:1015-1016
-pub(crate) sampler_handle: bucket_sampler::SamplerHandle,
-pub(crate) chat_provider: Arc<dyn crate::provider::ChatProvider>,
-```
-
-**How it's wired at spawn time:**
-
-```rust
-// crates/codegen/bucket-agent-core/src/session/acp_session_impl/spawn.rs:1328-1332
-sampler_handle: sampler_handle.clone(),
-chat_provider: Arc::new(crate::provider::SamplerProvider::new(
-    sampler_handle,
-    bucket_sampler::SamplerConfig::default(),
-)),
-```
-
-**Inference flow:**
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Session as AcpSession
-    participant Auth as auth_gate()
-    participant CP as chat_provider
-    participant SP as SamplerProvider
-    participant SH as SamplerHandle
-    participant API as ApiBackend
-    participant TUI as TUI (streaming)
-
-    User->>Session: prompt
-    Session->>Auth: auth_gate(model_id, base_url)
-    Auth-->>Session: token / no-op
-
-    Session->>CP: complete(request)
-    CP->>SP: submit_and_collect(request_id, request)
-    SP->>SH: submit_and_collect(request_id, request)
-    SH->>API: dispatch (ChatCompletions / Messages / Responses)
-
-    loop Streaming
-        API-->>TUI: SamplingEvent chunks
-    end
-
-    API-->>SH: ConversationResponse
-    SH-->>SP: (response, latency_stats)
-    SP-->>CP: Result
-    CP-->>Session: Result
-    Session-->>User: turn complete
-```
-
-### 3.5 Model System
-
-**Before:** Hardcoded proprietary model catalog in `default_models.json`.
-
-**After:** Neutral config-based resolution:
-
-```toml
-# ~/.bucket/config.toml
 [models]
 default = "ollama-coder"
 
 [model.ollama-coder]
-provider    = "ollama"
-model       = "qwen2.5-coder:32b"
-base_url    = "http://localhost:11434"
-api_backend = "ChatCompletions"
+model = "qwen2.5-coder:latest"
+base_url = "http://localhost:11434/v1"
+name = "Qwen 2.5 Coder (Ollama)"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
 
-[model.gpt-4o]
-provider    = "openai"
-model       = "gpt-4o"
-api_backend = "ChatCompletions"
-# uses OPENAI_API_KEY env var
+```
+
+Direct provider test:
+
+```sh
+curl -s http://localhost:11434/v1/models
+
+```
+
+Bucket test:
+
+```sh
+bucket -m ollama-coder -p "Respond with only: connected"
+
+```
+
+### OpenAI
+
+Export key:
+
+```sh
+export OPENAI_API_KEY="sk-proj-replace-this-value"
+
+```
+
+Config:
+
+```toml
+[models]
+default = "openai-gpt-4o"
+
+[model.openai-gpt-4o]
+model = "gpt-4o"
+base_url = "[https://api.openai.com/v1](https://api.openai.com/v1)"
+name = "GPT-4o"
+env_key = "OPENAI_API_KEY"
+api_backend = "chat_completions"
+context_window = 128000
+max_completion_tokens = 8192
+
+```
+
+Direct test:
+
+```sh
+curl -s [https://api.openai.com/v1/models](https://api.openai.com/v1/models) \\
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+
+```
+
+Bucket test:
+
+```sh
+bucket -m openai-gpt-4o -p "Respond with only: connected"
+
+```
+
+### OpenAI Responses API
+
+Use this backend only with models and providers supporting `/v1/responses`.
+
+```toml
+[models]
+default = "openai-responses"
+
+[model.openai-responses]
+model = "gpt-4.1"
+base_url = "[https://api.openai.com/v1](https://api.openai.com/v1)"
+name = "GPT 4.1 Responses"
+env_key = "OPENAI_API_KEY"
+api_backend = "responses"
+context_window = 1047576
+max_completion_tokens = 32768
+
+```
+
+Bucket test:
+
+```sh
+bucket -m openai-responses -p "Respond with only: connected"
+
+```
+
+### Direct Anthropic
+
+Anthropic does not use `Authorization: Bearer` in the direct Messages API. It must use `x-api-key`.
+
+Export key:
+
+```sh
+export ANTHROPIC_API_KEY="sk-ant-replace-this-value"
+
+```
+
+Config:
+
+```toml
+[models]
+default = "claude-sonnet"
 
 [model.claude-sonnet]
-provider    = "anthropic"
-model       = "claude-sonnet-4-20250514"
-api_backend = "Messages"
-# uses ANTHROPIC_API_KEY env var
+model = "claude-sonnet-4-5"
+base_url = "[https://api.anthropic.com/v1](https://api.anthropic.com/v1)"
+name = "Claude Sonnet"
+env_key = "ANTHROPIC_API_KEY"
+api_backend = "messages"
+auth_scheme = "x_api_key"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
 ```
 
-```mermaid
-graph TD
-    A["config.toml [models]"] --> B["Default model"]
-    A --> C["Model definitions"]
+Direct test:
 
-    C --> D["ollama-coder<br/>ChatCompletions<br/>localhost:11434"]
-    C --> E["gpt-4o<br/>ChatCompletions<br/>OPENAI_API_KEY"]
-    C --> F["claude-sonnet<br/>Messages<br/>ANTHROPIC_API_KEY"]
+```sh
+curl -s [https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages) \\
+  -H "x-api-key: $ANTHROPIC_API_KEY" \\
+  -H "anthropic-version: 2023-06-01" \\
+  -H "content-type: application/json" \\
+  -d '{"model":"claude-sonnet-4-5","max_tokens":16,"messages":[{"role":"user","content":"Respond with only: connected"}]}'
 
-    D --> G["Runtime: /v1/models<br/>resolves available models"]
-    E --> G
-    F --> G
-
-    style B fill:#e1f5fe
-    style G fill:#c8e6c9
 ```
 
-The agent resolves available models at runtime via `/v1/models` endpoint.
+Bucket test:
 
-### 3.6 System Prompts
+```sh
+bucket -m claude-sonnet -p "Respond with only: connected"
 
-Configurable identity — no more hardcoded xAI persona:
-
-```rust
-// crates/codegen/bucket-agent/src/prompt/context.rs:149-156
-/// Identity in the primary system prompt (`You are <label>…`).
-#[serde(default = "default_system_prompt_label")]
-pub system_prompt_label: String,
-
-pub const DEFAULT_SYSTEM_PROMPT_LABEL: &str = "Bucket";
-fn default_system_prompt_label() -> String {
-    DEFAULT_SYSTEM_PROMPT_LABEL.to_string()
-}
 ```
 
-**Override mechanisms (3 ways):**
+### OpenRouter
 
-```mermaid
-graph LR
-    A["System prompt"] --> B["CLI flag"]
-    A --> C["config.toml"]
-    A --> D["Runtime command"]
+OpenRouter uses an OpenAI Chat Completions-compatible endpoint.
 
-    B --> B1["--system-prompt-override<br/>'You are a Rust expert'"]
-    C --> C1["[agent]<br/>system_prompt_label = 'MyCustomAgent'"]
-    D --> D1["SessionCommand::<br/>ReplaceSystemPrompt"]
+```sh
+export OPENROUTER_API_KEY="sk-or-replace-this-value"
 
-    style A fill:#e1f5fe
 ```
-
-### 3.7 Session Serialization
-
-Provider-agnostic metadata — sessions record `model_id` and `base_url`, not provider-specific tokens:
-
-```rust
-// crates/codegen/bucket-agent-core/src/session/persistence.rs:29,787-813
-pub const CHAT_FORMAT_VERSION: u8 = 1;
-
-pub struct Summary {
-    pub info: Info,
-    pub session_summary: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub num_messages: usize,
-    pub current_model_id: acp::ModelId,        // ← generic model ID
-    pub chat_format_version: u8,                // ← 1 = ConversationItem format
-    // ... fork metadata, telemetry IDs, etc.
-}
-```
-
----
-
-## Phase 4 — Project Infrastructure 🟡 ~60%
-
-**Goal:** Project lives and maintains itself without xAI dependency.
-
-### 4.1 CI/CD ✅ DONE
-
-Three GitHub Actions workflows:
-
-```mermaid
-graph TD
-    A["Push to main / PR"] --> B["ci.yml"]
-
-    B --> C["check job"]
-    B --> D["test job"]
-
-    C --> C1["cargo fmt --check"]
-    C --> C2["cargo check bucket-agent-core"]
-    C --> C3["cargo check bucket-tui"]
-    C --> C4["cargo check bucket-updater"]
-
-    D --> D1["cargo test bucket-agent-core"]
-    D --> D2["cargo test bucket-updater"]
-    D --> D3["cargo test -- config"]
-
-    style C1 fill:#c8e6c9
-    style C2 fill:#c8e6c9
-    style C3 fill:#c8e6c9
-    style C4 fill:#c8e6c9
-```
-
-```yaml
-# .github/workflows/ci.yml
-name: CI
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.92.0"
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - name: Install protobuf compiler
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - name: Install DotSlash
-        run: cargo install dotslash
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-      - name: Check bucket-agent-core
-        run: cargo check -p bucket-agent-core
-      - name: Check bucket-tui
-        run: cargo check -p bucket-tui
-      - name: Check bucket-updater
-        run: cargo check -p bucket-updater
-
-  test:
-    needs: check
-    steps:
-      - run: cargo test -p bucket-agent-core
-      - run: cargo test -p bucket-updater
-      - run: cargo test -p bucket-agent-core -- config
-```
-
-### 4.2 Release Pipeline ✅ DONE
-
-Multi-platform releases via GitHub Actions:
-
-```mermaid
-graph TD
-    A["git tag v0.3.0"] --> B["release.yml triggers"]
-    B --> C["Build matrix"]
-
-    C --> C1["linux-x86_64"]
-    C --> C2["linux-aarch64"]
-    C --> C3["macos-x86_64"]
-    C --> C4["macos-aarch64"]
-
-    C1 --> D["bucket-{version}-{target}"]
-    C2 --> D
-    C3 --> D
-    C4 --> D
-
-    D --> E["sha256sum for verification"]
-    D --> F["GitHub Release created"]
-    F --> G["softprops/action-gh-release"]
-    G --> H["Release assets published"]
-
-    style A fill:#e1f5fe
-    style H fill:#c8e6c9
-```
-
-```yaml
-# .github/workflows/release.yml (summarized)
-on:
-  push:
-    tags: ["v*"]
-
-jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - target: linux-x86_64
-            rust_target: x86_64-unknown-linux-gnu
-          - target: linux-aarch64
-            rust_target: aarch64-unknown-linux-gnu
-          - target: macos-x86_64
-            rust_target: x86_64-apple-darwin
-          - target: macos-aarch64
-            rust_target: aarch64-apple-darwin
-    steps:
-      - cargo build -p bucket-bin --release --target ${{ matrix.rust_target }}
-
-  release:
-    needs: build
-    steps:
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*
-          generate_release_notes: true
-```
-
-### 4.3 Technical Documentation ❌ NOT DONE
-
-| Doc | Purpose | Status |
-|-----|---------|--------|
-| `ARCHITECTURE.md` | Crate map, responsibilities, data flow | Missing |
-| `PROVIDERS.md` | How to add a new ChatProvider implementation | Missing |
-| `HACKING.md` | 5-minute dev env setup | Missing |
-| `UPSTREAM_DIFF.md` | What changed vs xAI upstream, for cherry-pick | Missing |
-
-### 4.4 Rust Toolchain ✅ DONE
 
 ```toml
-# rust-toolchain.toml
-[toolchain]
-channel = "1.92.0"   # edition 2024
+[models]
+default = "openrouter-claude"
+
+[model.openrouter-claude]
+model = "anthropic/claude-3.5-sonnet"
+base_url = "[https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)"
+name = "Claude via OpenRouter"
+env_key = "OPENROUTER_API_KEY"
+api_backend = "chat_completions"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "HTTP-Referer" = "[https://github.com/julesklord/bucket-agent](https://github.com/julesklord/bucket-agent)", "X-Title" = "Bucket Agent" }
+
 ```
 
-Bump every 4-6 weeks to avoid deuda tecnica.
+Direct test:
 
----
+```sh
+curl -s [https://openrouter.ai/api/v1/models](https://openrouter.ai/api/v1/models) \\
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
 
-## Phase 5 — Community Extensibility 🟢 IN PROGRESS
-
-**Goal:** Any contributor can add providers and tools without touching core.
-
-### 5.1 Plugin API for Providers 🟡 PARTIAL
-
-The `ChatProvider` trait exists and works internally. To make it a public API:
-
-```mermaid
-graph TD
-    subgraph "External crate (user writes)"
-        EXT["my-corporate-provider<br/>Cargo.toml:<br/>bucket-acp = '0.3'"]
-        IMPL["impl ChatProvider for<br/>MyCorporateProvider"]
-    end
-
-    subgraph "bucket-acp (public API)"
-        TRAIT["pub trait ChatProvider"]
-        CAPS["ProviderCapabilities"]
-        TYPES["ConversationRequest<br/>ConversationResponse<br/>SamplingError"]
-    end
-
-    IMPL --> TRAIT
-    EXT --> TRAIT
-    TRAIT --> CAPS
-    TRAIT --> TYPES
-
-    IMPL -.-> |"Phase 5"| PLUGIN["Plugin loaded<br/>at runtime"]
-
-    style PLUGIN fill:#c8e6c9
 ```
 
-```rust
-// FUTURE: crates/codegen/bucket-acp/src/lib.rs
-// Expose ChatProvider as stable public trait for external crates:
+Bucket test:
 
-/// ```toml
-/// # Cargo.toml of an external crate
-/// [dependencies]
-/// bucket-acp = "0.3"
-/// ```
-///
-/// ```rust
-/// use bucket_acp::ChatProvider;
-///
-/// struct MyCorporateProvider { /* ... */ }
-///
-/// #[async_trait]
-/// impl ChatProvider for MyCorporateProvider {
-///     async fn complete(&self, request: ConversationRequest)
-///         -> Result<(ConversationResponse, InferenceLatencyStats), SamplingError>
-///     {
-///         // Call your corporate API
-///     }
-///     fn capabilities(&self) -> ProviderCapabilities { /* ... */ }
-///     fn model_id(&self) -> &str { "corporate-llm" }
-///     fn update_config(&self, _config: SamplerConfig) {}
-///     fn cancel(&self, _request_id: RequestId) {}
-/// }
-/// ```
+```sh
+bucket -m openrouter-claude -p "Respond with only: connected"
+
 ```
 
-### 5.2 MCP as Extension Vector ✅ DONE
+### Together AI
 
-MCP support via `bucket-hub-mcp-adapter`. Configuration:
+```sh
+export TOGETHER_API_KEY="replace-this-value"
+
+```
 
 ```toml
-# ~/.bucket/config.toml
-[[mcp.server]]
-name    = "github"
-command = "npx -y @modelcontextprotocol/server-github"
+[models]
+default = "together-qwen"
 
-[[mcp.server]]
-name    = "postgres"
-command = "npx -y @modelcontextprotocol/server-postgres postgresql://localhost/mydb"
+[model.together-qwen]
+model = "Qwen/Qwen2.5-Coder-32B-Instruct"
+base_url = "[https://api.together.xyz/v1](https://api.together.xyz/v1)"
+name = "Qwen Coder via Together"
+env_key = "TOGETHER_API_KEY"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
 ```
 
-### 5.3 Skills as First-Class Citizen ✅ DONE
+Direct test:
 
-The `SKILL.md` system works. Example skill structure:
+```sh
+curl -s [https://api.together.xyz/v1/models](https://api.together.xyz/v1/models) \\
+  -H "Authorization: Bearer $TOGETHER_API_KEY"
 
-```mermaid
-graph TD
-    A["~/.config/opencode/skills/"] --> B["rust-expert/SKILL.md"]
-    A --> C["mcp-builder/SKILL.md"]
-    A --> D["frontend-design/SKILL.md"]
-
-    style A fill:#e1f5fe
 ```
 
-**Future:** Public registry at `bucket-agent/skills` GitHub repo.
+Bucket test:
 
----
+```sh
+bucket -m together-qwen -p "Respond with only: connected"
 
-## Dependency Removal Map
-
-```mermaid
-graph LR
-    subgraph "BEFORE (xAI coupled)"
-        B1["auth.x.ai<br/>OIDC endpoint"]
-        B2["billing always on"]
-        B3["x.ai/cli<br/>updates"]
-        B4["OTLP → xAI infra"]
-        B5["hardcoded<br/>model catalog"]
-        B6["You are Bucket,<br/>by xAI"]
-        B7["SuperBucket<br/>CTA always"]
-    end
-
-    subgraph "AFTER (decoupled)"
-        A1["BUCKET_OIDC_ISSUER<br/>configurable"]
-        A2["has_billing:<br/>false default"]
-        A3["configurable<br/>update URL"]
-        A4["opt-in via<br/>config"]
-        A5["config.toml<br/>+ /v1/models"]
-        A6["'Bucket'<br/>(neutral default)"]
-        A7["shows_billing_<br/>ui() gate"]
-    end
-
-    B1 -->|"✅"| A1
-    B2 -->|"✅"| A2
-    B3 -->|"✅"| A3
-    B4 -->|"✅"| A4
-    B5 -->|"✅"| A5
-    B6 -->|"✅"| A6
-    B7 -->|"✅"| A7
-
-    style A1 fill:#c8e6c9
-    style A2 fill:#c8e6c9
-    style A3 fill:#c8e6c9
-    style A4 fill:#c8e6c9
-    style A5 fill:#c8e6c9
-    style A6 fill:#c8e6c9
-    style A7 fill:#c8e6c9
 ```
 
-| Dependency | Before | After | Status |
-|------------|--------|-------|--------|
-| auth.x.ai (OIDC) | Hardcoded | `BUCKET_OIDC_ISSUER` configurable | ✅ |
-| bucket.com (login) | Required | Generic OIDC or none | ✅ |
-| x.ai/cli (updates) | Hardcoded URL | Configurable `update_check_url` | ✅ |
-| OTLP → xAI infra | Unconditional | `BUCKET_TELEMETRY_ENDPOINT` or off | ✅ |
-| Crate names | Mixed | All `bucket-*` | ✅ |
-| Env vars | Mixed | All `BUCKET_*` + deprecated aliases | ✅ |
-| Config dir | `~/.bucket/` | `~/.bucket/` with auto-migration | ✅ |
-| Model catalog | Hardcoded JSON | `config.toml` + `/v1/models` | ✅ |
-| Billing UI | Always shown | `ProviderCapabilities.has_billing` | ✅ |
-| System prompt | xAI references | Configurable, neutral default | ✅ |
+### LM Studio
 
----
+LM Studio exposes an OpenAI-compatible local server.
 
-## Priority Order for Team
+```toml
+[models]
+default = "lmstudio-local"
 
-| Sprint | Owner | Task | Est. |
-|--------|-------|------|------|
-| 1 | Agent + 1 | Phase 1 (done — was automatable) | — |
-| 2-3 | 2 people | Phase 2: remaining auth cleanup | 2 wks |
-| 4-6 | 3 people | Phase 3 (done — ChatProvider) | — |
-| 7 | 1 person | Phase 4: docs (ARCHITECTURE, PROVIDERS, HACKING) | 2 wks |
-| 8 | 1 person | Phase 5: expose ChatProvider as public API | 1 wk |
-| ongoing | all | Community, skills registry, upstream sync | — |
+[model.lmstudio-local]
+model = "local-model"
+base_url = "http://localhost:1234/v1"
+name = "LM Studio Local"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
 
----
+```
 
-## What NOT to Touch (v1)
+Direct test:
 
-```mermaid
-mindmap
-  root((Keep As-Is))
-    ACP protocol
-      Well-designed
-      xAI-agnostic
-    Session system
-      Solid
-      Only nominal cleanup
-    TUI engine
-      ratatui
-      No xAI coupling
-    Existing tests
-      Solid base
-      Extend, not rewrite
-    Hooks system
-      Generic
-      Powerful
-    Subagent architecture
-      Advanced
-      Valuable
+```sh
+curl -s http://localhost:1234/v1/models
+
+```
+
+Bucket test:
+
+```sh
+bucket -m lmstudio-local -p "Respond with only: connected"
+
 ```
 
 ---
 
-## Risk: Upstream Divergence
+## Recommended Complete File for Testing
 
-xAI may release major source updates (happened several times in 2025). Each new upstream release can diverge from the fork in areas already modified.
+This file allows testing a local provider, an OpenAI-compatible provider, and direct Anthropic without mixing secrets into TOML.
 
-```mermaid
-graph TD
-    A["Upstream xAI release"] --> B{"Diverges from<br/>our fork?"}
-    B -- No --> C["No action needed"]
-    B -- Yes --> D{"Affects our<br/>decoupled areas?"}
-    D -- No --> E["Ignore — no conflict"]
-    D -- Yes --> F["Consult UPSTREAM_DIFF.md"]
-    F --> G{"Can we cherry-pick?"}
-    G -- Yes --> H["Cherry-pick upstream fix"]
-    G -- No --> I["Manual merge + document"]
-    H --> J["Update UPSTREAM_DIFF.md"]
-    I --> J
+```toml
+[models]
+default = "ollama-coder"
 
-    style J fill:#fff9c4
-    style C fill:#c8e6c9
-    style E fill:#c8e6c9
+[model.ollama-coder]
+model = "qwen2.5-coder:latest"
+base_url = "http://localhost:11434/v1"
+name = "Qwen 2.5 Coder (Ollama)"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
+[model.openai-gpt-4o]
+model = "gpt-4o"
+base_url = "[https://api.openai.com/v1](https://api.openai.com/v1)"
+name = "GPT-4o"
+env_key = "OPENAI_API_KEY"
+api_backend = "chat_completions"
+context_window = 128000
+max_completion_tokens = 8192
+
+[model.claude-sonnet]
+model = "claude-sonnet-4-5"
+base_url = "[https://api.anthropic.com/v1](https://api.anthropic.com/v1)"
+name = "Claude Sonnet"
+env_key = "ANTHROPIC_API_KEY"
+api_backend = "messages"
+auth_scheme = "x_api_key"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
 ```
 
-**Mitigation:**
+Validation:
 
-1. Maintain `UPSTREAM_DIFF.md` — documents exactly what changed and why
-2. Rotate "upstream sync" duty monthly
-3. Keep diffs minimal and well-documented for cherry-pick
+```sh
+bucket models
+bucket -m ollama-coder -p "Respond with only: ollama ok"
+bucket -m openai-gpt-4o -p "Respond with only: openai ok"
+bucket -m claude-sonnet -p "Respond with only: anthropic ok"
+
+```
 
 ---
 
-## Commit Reference Log
+## Diagnostic Checklist
 
-| Commit | Phase | Description |
-|--------|-------|-------------|
-| TBD | **2.5** | **feat(decoupling): zero outbound connections by default** |
-| `d905a29` | 4 | fix(release): update release script readiness check |
-| `e229cdb` | 4 | docs(release): prepare v0.1.0 release docs, workflows, installer |
-| `efa6cbf` | 2 | fix(auth): restore missing brace in acp_agent match block |
-| `3c3848d` | 2 | fix(auth): handle LOCAL_METHOD_ID in ACP agent authenticate handler |
-| `8c7c1af` | **3** | **feat(decoupling): complete Phase 3 agent runtime decoupling** |
-| `4bd3b22` | 4 | chore: update Cargo.lock for version 0.1.0 |
-| `678065b` | 4 | chore: set version to 0.1.0 for initial fork release |
-| `bf120a3` | 2,4 | feat: prepare release infrastructure and retarget auto-updater |
-| `a8a45fa` | **2.3** | **feat(updater): make update URLs configurable** |
-| `96ae86b` | **2.1** | **feat: make OIDC issuer configurable via BUCKET_OIDC_ISSUER** |
-| `3db3f80` | **2** | **feat: ProviderCapabilities gating + telemetry decoupling** |
-| `36ec730` | 1 | tool: Add generate_workspace.py script and sort workspace members |
+### 1. Confirm Bucket sees the model
+
+```sh
+bucket models
+
+```
+
+If the model does not appear:
+
+| Cause | Fix |
+| --- | --- |
+| Miswritten TOML header | Use `[model.my-id]`, not `[models.my-id]` |
+| Invalid `context_window` | Use a positive integer |
+| Invalid `api_backend` | Use `chat_completions`, `responses`, or `messages` |
+| File in wrong path | Must be located at `~/.bucket/config.toml` |
+
+### 2. Confirm environment variable exists
+
+```sh
+printenv OPENAI_API_KEY
+printenv ANTHROPIC_API_KEY
+printenv OPENROUTER_API_KEY
+printenv TOGETHER_API_KEY
+
+```
+
+If `printenv` returns nothing, Bucket will not see the key either. Export it in the same shell where you run `bucket`.
+
+### 3. Confirm endpoint responds
+
+For OpenAI-compatible:
+
+```sh
+curl -i [https://api.openai.com/v1/models](https://api.openai.com/v1/models) \\
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+
+```
+
+For Anthropic:
+
+```sh
+curl -i [https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages) \\
+  -H "x-api-key: $ANTHROPIC_API_KEY" \\
+  -H "anthropic-version: 2023-06-01" \\
+  -H "content-type: application/json" \\
+  -d '{"model":"claude-sonnet-4-5","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
+
+```
+
+For Ollama:
+
+```sh
+curl -i http://localhost:11434/v1/models
+
+```
+
+### 4. Enable sampler logs
+
+```sh
+RUST_LOG=bucket_sampler=debug,bucket_agent_core=debug BUCKET_LOG_FILE=/tmp/bucket.log bucket -m ollama-coder -p "ping"
+tail -n 200 /tmp/bucket.log
+
+```
+
+Look for these fields:
+
+| Log field | Interpretation |
+| --- | --- |
+| `base_url` | Must be the provider host |
+| `model` | Must be the model ID sent to the provider |
+| `api_backend` | Must match the expected endpoint |
+| `auth_scheme` | `Bearer` or `XApiKey` depending on provider |
+| `has_api_key` | Must be `true` for remote providers requiring auth |
+| `has_authorization_header` | Must be `true` for OpenAI-compatible bearer |
+| `has_x_api_key_header` | Must be `true` for direct Anthropic |
+
+### 5. Read error by type
+
+| Error | Probable meaning | Fix |
+| --- | --- | --- |
+| 401 Unauthorized | Missing or invalid key, or incorrect header | Check `env_key`, `auth_scheme`, and current shell |
+| 404 Not Found | Incorrect `base_url` or incorrect backend | Ensure `/v1` and the correct `api_backend` |
+| 400 Bad Request | Payload incompatible with provider | Change backend or model; try `chat_completions` first |
+| 429 Rate Limit | Provider rate limit reached | Change model, account, or wait |
+| Connection refused | Local provider stopped or wrong port | Start Ollama/LM Studio and verify port |
+| Serialization error | Provider does not return expected format | Use a real compatible backend |
+
+---
+
+## Closure Decisions
+
+### 1. The public `ChatProvider` trait does not block v1
+
+The original plan proposed extracting a public `ChatProvider` trait. That remains desirable for a mature plugin API, but does not block current third-party connectivity. The runtime already routes via model configuration and `bucket-sampler`.
+
+Decision: v1 closes with `[model.*]` as the stable user contract. The public trait is deferred to a later phase.
+
+### 2. `ProviderCapabilities` is already the right boundary for UI
+
+The UI must not deduce billing from the model name or host. It must inspect capabilities. If a provider does not report billing, credit bars, subscription gates, and commercial banners are hidden.
+
+Decision: Retain `ProviderCapabilities` and treat any BYOK/local provider as having no billing.
+
+### 3. Anthropic requires `auth_scheme = "x_api_key"`
+
+Setting `api_backend = "messages"` alone is insufficient. Authentication must switch from bearer to `x-api-key`.
+
+Decision: All official documentation must present Anthropic like this:
+
+```toml
+api_backend = "messages"
+auth_scheme = "x_api_key"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
+```
+
+### 4. `extra_headers` should not be the primary place for secrets
+
+Although `extra_headers` works for custom headers, primary keys should enter via `api_key` or `env_key` so the sampler can properly record auth state and apply `auth_scheme`.
+
+Decision: Use `extra_headers` for version, routing, or metadata headers; use `env_key` for keys.
+
+### 5. Global default `BUCKET_API_KEY` is a fallback, not multiprovider config
+
+`BUCKET_API_KEY` exists for compatibility. For multiple providers simultaneously, each model must declare its own `env_key`.
+
+Decision: Multiprovider configs must prefer `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `TOGETHER_API_KEY`, or per-model custom names.
+
+---
+
+## Post-Closure Action Items
+
+| Priority | Task | Expected Result | Status |
+| --- | --- | --- | --- |
+| High | Add direct Anthropic config test | Guarantee `env_key` flows to `x-api-key` header | Done (3 E2E tests) |
+| Medium | Add model diagnostic command | Display final URL, backend, auth scheme, and non-sensitive headers | Done (`bucket models --diagnose`) |
+| Medium | Improve error handling for wrong backend | Concrete 404/400 messages suggesting correct `api_backend` | Done |
+| Medium | Decouple Voice/STT from hardcoded `api.x.ai` | Configurable via `[voice].api_base` or `BUCKET_VOICE_API_BASE` | Done |
+| Medium | Replace xAI-specific strings | Remove `console.x.ai` and `docs.x.ai` hardcoded refs | Done |
+| Low | Design provider plugin API | Allow external providers outside the main binary | Pending |
+
+---
+
+## Definition of Done
+
+Decoupling v1 is considered done when these tests pass on a clean machine:
+
+```sh
+bucket models
+bucket -m ollama-coder -p "Respond with only: ok"
+bucket -m openai-gpt-4o -p "Respond with only: ok"
+bucket -m claude-sonnet -p "Respond with only: ok"
+
+```
+
+And the following conditions are met:
+
+| Condition | Expected State |
+| --- | --- |
+| Boot without login | Bucket opens without requiring a browser |
+| Local model | Ollama responds via `/v1/chat/completions` |
+| Remote OpenAI-compatible | Auth via `Authorization: Bearer` |
+| Direct Anthropic | Auth via `x-api-key` |
+| Billing | Does not appear for BYOK/local |
+| Telemetry | Off by default |
+| Logs | Allow inspecting `base_url`, `model`, `api_backend`, and `auth_scheme` |
+
+With this, Bucket remains usable as a multiprovider agent without relying on proprietary infrastructure for the main inference flow.
+"""
+
+file_path = "bucket-agent-decoupling-report-en.md"
+with open(file_path, "w", encoding="utf-8") as f:
+f.write(content)
+
+print(f"File saved successfully: {file_path}")
+
+```
+
+```text?code_stdout&code_event_index=1
+File saved successfully: bucket-agent-decoupling-report-en.md
+
+
+```
+
+Your Markdown file is ready
+
+
+# Bucket Agent - Decoupling Completion and Providers
+
+> Reviewed status: 2026-07-20
+> Immediate objective: Run Bucket without mandatory login and connect third-party providers from `~/.bucket/config.toml`
+> Document scope: Inference runtime, model configuration, auth, billing, telemetry, and diagnostics
+
+---
+
+## Executive Summary
+
+Bucket Agent must no longer depend on an xAI account to boot or run the basic agentic loop. The correct path for third-party providers is not to write a new plugin yet: the current path is to declare models in `~/.bucket/config.toml` under `[model.<id>]`, select the correct `api_backend`, and resolve credentials using `api_key`, `env_key`, or a global variable.
+
+The most common failure when connecting third parties is confusing these three parts:
+
+| Component | What it controls | Correct value |
+| --- | --- | --- |
+| `base_url` | Base URL where Bucket appends the backend path | Must end in `/v1` for OpenAI- and Anthropic-style APIs |
+| `api_backend` | Request shape and final endpoint | `chat_completions`, `responses`, or `messages` |
+| `auth_scheme` | Authentication header | `bearer` by default, `x_api_key` for direct Anthropic |
+
+The sampler constructs endpoints like this:
+
+| `api_backend` | Final endpoint |
+| --- | --- |
+| `chat_completions` | `{base_url}/chat/completions` |
+| `responses` | `{base_url}/responses` |
+| `messages` | `{base_url}/messages` |
+
+Therefore, `base_url = "[https://api.openai.com/v1](https://api.openai.com/v1)"` produces `[https://api.openai.com/v1/chat/completions](https://api.openai.com/v1/chat/completions)`, and `base_url = "[https://api.anthropic.com/v1](https://api.anthropic.com/v1)"` produces `[https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages)`.
+
+---
+
+## Current Decoupling Status
+
+| Area | Status | Decision |
+| --- | --- | --- |
+| Mandatory login | Closed for BYOK/local use | Users can boot with their own models |
+| Billing UI | Functionally closed via capabilities | TUI must hide billing when the provider does not support it |
+| Third-party model config | Operational | Primary source is `[model.*]` |
+| OpenAI-compatible local/remote | Operational | Use `api_backend = "chat_completions"` unless provider supports Responses |
+| Direct Anthropic | Operational with correct config | Use `api_backend = "messages"` and `auth_scheme = "x_api_key"` |
+| External telemetry | Must remain opt-in | Must not send data without a configured endpoint |
+| Update checker | Must point to fork or be disabled | Must not depend on proprietary endpoints |
+| External plugin API for providers | Not required for v1 | First consolidate the `[model.*]` contract |
+
+---
+
+## Multiprovider Configuration Contract
+
+The current contract lives in `~/.bucket/config.toml`.
+
+The `[models]` table defines global defaults. Each `[model.<id>]` defines a routable model. The `<id>` is the name appearing in the picker, in `/model`, and in `bucket -m`.
+
+Important fields:
+
+| Field | Required | Usage |
+| --- | --- | --- |
+| `model` | Yes | Identifier sent to the provider |
+| `base_url` | Yes for third-party providers | Base URL without final endpoint |
+| `name` | No | Human-readable name in UI |
+| `api_key` | No | Direct secret in config; useful only for local testing |
+| `env_key` | No | Environment variable containing the secret; recommended |
+| `api_backend` | No | Default: `chat_completions` |
+| `auth_scheme` | No | Default: `bearer`; use `x_api_key` for direct Anthropic |
+| `extra_headers` | No | Non-secret headers or provider-required headers |
+| `context_window` | Recommended | Window size used by auto-compaction |
+| `max_completion_tokens` | Recommended | Output limit per turn |
+| `temperature` | No | Request temperature |
+| `top_p` | No | Nucleus sampling |
+
+Credential resolution order:
+
+1. `api_key` in the `[model.<id>]` block
+2. First non-empty variable listed in `env_key`
+3. Session token, if present
+4. `BUCKET_API_KEY` as global fallback
+
+Practical recommendation: for third parties, always use `env_key`; avoid `api_key` in version-controlled files.
+
+---
+
+## Minimum Working Configurations
+
+### Local Ollama
+
+Start Ollama and pull the model:
+
+```sh
+ollama serve
+ollama pull qwen2.5-coder:latest
+
+```
+
+Config:
+
+```toml
+[models]
+default = "ollama-coder"
+
+[model.ollama-coder]
+model = "qwen2.5-coder:latest"
+base_url = "http://localhost:11434/v1"
+name = "Qwen 2.5 Coder (Ollama)"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
+```
+
+Direct provider test:
+
+```sh
+curl -s http://localhost:11434/v1/models
+
+```
+
+Bucket test:
+
+```sh
+bucket -m ollama-coder -p "Respond with only: connected"
+
+```
+
+### OpenAI
+
+Export key:
+
+```sh
+export OPENAI_API_KEY="sk-proj-replace-this-value"
+
+```
+
+Config:
+
+```toml
+[models]
+default = "openai-gpt-4o"
+
+[model.openai-gpt-4o]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+name = "GPT-4o"
+env_key = "OPENAI_API_KEY"
+api_backend = "chat_completions"
+context_window = 128000
+max_completion_tokens = 8192
+
+```
+
+Direct test:
+
+```sh
+curl -s https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+
+```
+
+Bucket test:
+
+```sh
+bucket -m openai-gpt-4o -p "Respond with only: connected"
+
+```
+
+### OpenAI Responses API
+
+Use this backend only with models and providers supporting `/v1/responses`.
+
+```toml
+[models]
+default = "openai-responses"
+
+[model.openai-responses]
+model = "gpt-4.1"
+base_url = "https://api.openai.com/v1"
+name = "GPT 4.1 Responses"
+env_key = "OPENAI_API_KEY"
+api_backend = "responses"
+context_window = 1047576
+max_completion_tokens = 32768
+
+```
+
+Bucket test:
+
+```sh
+bucket -m openai-responses -p "Respond with only: connected"
+
+```
+
+### Direct Anthropic
+
+Anthropic does not use `Authorization: Bearer` in the direct Messages API. It must use `x-api-key`.
+
+Export key:
+
+```sh
+export ANTHROPIC_API_KEY="sk-ant-replace-this-value"
+
+```
+
+Config:
+
+```toml
+[models]
+default = "claude-sonnet"
+
+[model.claude-sonnet]
+model = "claude-sonnet-4-5"
+base_url = "https://api.anthropic.com/v1"
+name = "Claude Sonnet"
+env_key = "ANTHROPIC_API_KEY"
+api_backend = "messages"
+auth_scheme = "x_api_key"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
+```
+
+Direct test:
+
+```sh
+curl -s https://api.anthropic.com/v1/messages \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":16,"messages":[{"role":"user","content":"Respond with only: connected"}]}'
+
+```
+
+Bucket test:
+
+```sh
+bucket -m claude-sonnet -p "Respond with only: connected"
+
+```
+
+### OpenRouter
+
+OpenRouter uses an OpenAI Chat Completions-compatible endpoint.
+
+```sh
+export OPENROUTER_API_KEY="sk-or-replace-this-value"
+
+```
+
+```toml
+[models]
+default = "openrouter-claude"
+
+[model.openrouter-claude]
+model = "anthropic/claude-3.5-sonnet"
+base_url = "https://openrouter.ai/api/v1"
+name = "Claude via OpenRouter"
+env_key = "OPENROUTER_API_KEY"
+api_backend = "chat_completions"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "HTTP-Referer" = "https://github.com/julesklord/bucket-agent", "X-Title" = "Bucket Agent" }
+
+```
+
+Direct test:
+
+```sh
+curl -s https://openrouter.ai/api/v1/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+
+```
+
+Bucket test:
+
+```sh
+bucket -m openrouter-claude -p "Respond with only: connected"
+
+```
+
+### Together AI
+
+```sh
+export TOGETHER_API_KEY="replace-this-value"
+
+```
+
+```toml
+[models]
+default = "together-qwen"
+
+[model.together-qwen]
+model = "Qwen/Qwen2.5-Coder-32B-Instruct"
+base_url = "https://api.together.xyz/v1"
+name = "Qwen Coder via Together"
+env_key = "TOGETHER_API_KEY"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
+```
+
+Direct test:
+
+```sh
+curl -s https://api.together.xyz/v1/models \
+  -H "Authorization: Bearer $TOGETHER_API_KEY"
+
+```
+
+Bucket test:
+
+```sh
+bucket -m together-qwen -p "Respond with only: connected"
+
+```
+
+### LM Studio
+
+LM Studio exposes an OpenAI-compatible local server.
+
+```toml
+[models]
+default = "lmstudio-local"
+
+[model.lmstudio-local]
+model = "local-model"
+base_url = "http://localhost:1234/v1"
+name = "LM Studio Local"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
+```
+
+Direct test:
+
+```sh
+curl -s http://localhost:1234/v1/models
+
+```
+
+Bucket test:
+
+```sh
+bucket -m lmstudio-local -p "Respond with only: connected"
+
+```
+
+---
+
+## Recommended Complete File for Testing
+
+This file allows testing a local provider, an OpenAI-compatible provider, and direct Anthropic without mixing secrets into TOML.
+
+```toml
+[models]
+default = "ollama-coder"
+
+[model.ollama-coder]
+model = "qwen2.5-coder:latest"
+base_url = "http://localhost:11434/v1"
+name = "Qwen 2.5 Coder (Ollama)"
+api_backend = "chat_completions"
+context_window = 32768
+max_completion_tokens = 8192
+
+[model.openai-gpt-4o]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+name = "GPT-4o"
+env_key = "OPENAI_API_KEY"
+api_backend = "chat_completions"
+context_window = 128000
+max_completion_tokens = 8192
+
+[model.claude-sonnet]
+model = "claude-sonnet-4-5"
+base_url = "https://api.anthropic.com/v1"
+name = "Claude Sonnet"
+env_key = "ANTHROPIC_API_KEY"
+api_backend = "messages"
+auth_scheme = "x_api_key"
+context_window = 200000
+max_completion_tokens = 8192
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
+```
+
+Validation:
+
+```sh
+bucket models
+bucket -m ollama-coder -p "Respond with only: ollama ok"
+bucket -m openai-gpt-4o -p "Respond with only: openai ok"
+bucket -m claude-sonnet -p "Respond with only: anthropic ok"
+
+```
+
+---
+
+## Diagnostic Checklist
+
+### 1. Confirm Bucket sees the model
+
+```sh
+bucket models
+
+```
+
+If the model does not appear:
+
+| Cause | Fix |
+| --- | --- |
+| Miswritten TOML header | Use `[model.my-id]`, not `[models.my-id]` |
+| Invalid `context_window` | Use a positive integer |
+| Invalid `api_backend` | Use `chat_completions`, `responses`, or `messages` |
+| File in wrong path | Must be located at `~/.bucket/config.toml` |
+
+### 2. Confirm environment variable exists
+
+```sh
+printenv OPENAI_API_KEY
+printenv ANTHROPIC_API_KEY
+printenv OPENROUTER_API_KEY
+printenv TOGETHER_API_KEY
+
+```
+
+If `printenv` returns nothing, Bucket will not see the key either. Export it in the same shell where you run `bucket`.
+
+### 3. Confirm endpoint responds
+
+For OpenAI-compatible:
+
+```sh
+curl -i https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+
+```
+
+For Anthropic:
+
+```sh
+curl -i https://api.anthropic.com/v1/messages \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
+
+```
+
+For Ollama:
+
+```sh
+curl -i http://localhost:11434/v1/models
+
+```
+
+### 4. Enable sampler logs
+
+```sh
+RUST_LOG=bucket_sampler=debug,bucket_agent_core=debug BUCKET_LOG_FILE=/tmp/bucket.log bucket -m ollama-coder -p "ping"
+tail -n 200 /tmp/bucket.log
+
+```
+
+Look for these fields:
+
+| Log field | Interpretation |
+| --- | --- |
+| `base_url` | Must be the provider host |
+| `model` | Must be the model ID sent to the provider |
+| `api_backend` | Must match the expected endpoint |
+| `auth_scheme` | `Bearer` or `XApiKey` depending on provider |
+| `has_api_key` | Must be `true` for remote providers requiring auth |
+| `has_authorization_header` | Must be `true` for OpenAI-compatible bearer |
+| `has_x_api_key_header` | Must be `true` for direct Anthropic |
+
+### 5. Read error by type
+
+| Error | Probable meaning | Fix |
+| --- | --- | --- |
+| 401 Unauthorized | Missing or invalid key, or incorrect header | Check `env_key`, `auth_scheme`, and current shell |
+| 404 Not Found | Incorrect `base_url` or incorrect backend | Ensure `/v1` and the correct `api_backend` |
+| 400 Bad Request | Payload incompatible with provider | Change backend or model; try `chat_completions` first |
+| 429 Rate Limit | Provider rate limit reached | Change model, account, or wait |
+| Connection refused | Local provider stopped or wrong port | Start Ollama/LM Studio and verify port |
+| Serialization error | Provider does not return expected format | Use a real compatible backend |
+
+---
+
+## Closure Decisions
+
+### 1. The public `ChatProvider` trait does not block v1
+
+The original plan proposed extracting a public `ChatProvider` trait. That remains desirable for a mature plugin API, but does not block current third-party connectivity. The runtime already routes via model configuration and `bucket-sampler`.
+
+Decision: v1 closes with `[model.*]` as the stable user contract. The public trait is deferred to a later phase.
+
+### 2. `ProviderCapabilities` is already the right boundary for UI
+
+The UI must not deduce billing from the model name or host. It must inspect capabilities. If a provider does not report billing, credit bars, subscription gates, and commercial banners are hidden.
+
+Decision: Retain `ProviderCapabilities` and treat any BYOK/local provider as having no billing.
+
+### 3. Anthropic requires `auth_scheme = "x_api_key"`
+
+Setting `api_backend = "messages"` alone is insufficient. Authentication must switch from bearer to `x-api-key`.
+
+Decision: All official documentation must present Anthropic like this:
+
+```toml
+api_backend = "messages"
+auth_scheme = "x_api_key"
+env_key = "ANTHROPIC_API_KEY"
+extra_headers = { "anthropic-version" = "2023-06-01" }
+
+```
+
+### 4. `extra_headers` should not be the primary place for secrets
+
+Although `extra_headers` works for custom headers, primary keys should enter via `api_key` or `env_key` so the sampler can properly record auth state and apply `auth_scheme`.
+
+Decision: Use `extra_headers` for version, routing, or metadata headers; use `env_key` for keys.
+
+### 5. Global default `BUCKET_API_KEY` is a fallback, not multiprovider config
+
+`BUCKET_API_KEY` exists for compatibility. For multiple providers simultaneously, each model must declare its own `env_key`.
+
+Decision: Multiprovider configs must prefer `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `TOGETHER_API_KEY`, or per-model custom names.
+
+---
+
+## Post-Closure Action Items
+
+| Priority | Task | Expected Result | Status |
+| --- | --- | --- | --- |
+| High | Add direct Anthropic config test | Guarantee `env_key` flows to `x-api-key` header | Done (3 E2E tests) |
+| Medium | Add model diagnostic command | Display final URL, backend, auth scheme, and non-sensitive headers | Done (`bucket models --diagnose`) |
+| Medium | Improve error handling for wrong backend | Concrete 404/400 messages suggesting correct `api_backend` | Done |
+| Medium | Decouple Voice/STT from hardcoded `api.x.ai` | Configurable via `[voice].api_base` or `BUCKET_VOICE_API_BASE` | Done |
+| Medium | Replace xAI-specific strings | Remove `console.x.ai` and `docs.x.ai` hardcoded refs | Done |
+| Low | Design provider plugin API | Allow external providers outside the main binary | Pending |
+
+---
+
+## Definition of Done
+
+Decoupling v1 is considered done when these tests pass on a clean machine:
+
+```sh
+bucket models
+bucket -m ollama-coder -p "Respond with only: ok"
+bucket -m openai-gpt-4o -p "Respond with only: ok"
+bucket -m claude-sonnet -p "Respond with only: ok"
+
+```
+
+And the following conditions are met:
+
+| Condition | Expected State |
+| --- | --- |
+| Boot without login | Bucket opens without requiring a browser |
+| Local model | Ollama responds via `/v1/chat/completions` |
+| Remote OpenAI-compatible | Auth via `Authorization: Bearer` |
+| Direct Anthropic | Auth via `x-api-key` |
+| Billing | Does not appear for BYOK/local |
+| Telemetry | Off by default |
+| Logs | Allow inspecting `base_url`, `model`, `api_backend`, and `auth_scheme` |
+
+With this, Bucket remains usable as a multiprovider agent without relying on proprietary infrastructure for the main inference flow.

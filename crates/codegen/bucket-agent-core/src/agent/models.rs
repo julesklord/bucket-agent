@@ -1140,7 +1140,8 @@ impl ModelsManager {
     ///
     /// Provider models are added alongside existing models (they don't
     /// replace prefetched or config-overridden entries). Called after
-    /// `apply_config` when a BYOK provider is configured.
+    /// `apply_config` when a BYOK provider is configured. Notifies
+    /// connected TUI clients so the model picker refreshes.
     pub fn merge_provider_models(&self, provider_models: IndexMap<String, ModelEntry>) {
         let config = self.inner.cfg.read().clone();
         let mut existing = self.inner.prefetched.read().clone().unwrap_or_default();
@@ -1159,6 +1160,7 @@ impl ModelsManager {
             *self.inner.prefetched.write() = Some(existing.clone());
             self.rebuild(&config, Some(existing));
             self.reselect_current_model_if_missing(&config);
+            self.notify_models_updated();
         }
     }
 

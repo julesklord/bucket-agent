@@ -168,7 +168,7 @@ async fn handle_connection(ws: WebSocket, state: Arc<ServerState>, peer_addr: So
                     let auth = agent_config.create_auth_manager().current();
                     let fetch_auth =
                         ModelFetchAuth::resolve(&agent_config.endpoints, auth.is_some());
-                    let prefetched_models = if auth.is_some()
+                    let mut prefetched_models = if auth.is_some()
                         || agent_config.endpoints.has_custom_endpoint()
                         || fetch_auth != ModelFetchAuth::Session
                     {
@@ -176,6 +176,18 @@ async fn handle_connection(ws: WebSocket, state: Arc<ServerState>, peer_addr: So
                     } else {
                         None
                     };
+
+                    // Also discover models from a configured BYOK provider.
+                    if let Some(provider_models) =
+                        crate::agent::provider_models::discover_provider_models()
+                    {
+                        let existing = prefetched_models.get_or_insert_with(IndexMap::new);
+                        for (key, entry) in provider_models {
+                            if !existing.contains_key(&key) {
+                                existing.insert(key, entry);
+                            }
+                        }
+                    }
 
                     info!("Prefetched models: {:?}", prefetched_models);
 

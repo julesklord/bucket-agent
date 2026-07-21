@@ -175,7 +175,7 @@ async fn prefetch_models(agent_config: &AgentConfig) -> Option<IndexMap<String, 
     let endpoints = agent_config.endpoints.clone();
     let fetch_auth = ModelFetchAuth::resolve(&endpoints, auth.is_some());
 
-    if auth.is_some() || endpoints.has_custom_endpoint() || fetch_auth != ModelFetchAuth::Session {
+    let mut result = if auth.is_some() || endpoints.has_custom_endpoint() || fetch_auth != ModelFetchAuth::Session {
         tokio::task::spawn_blocking(move || {
             prefetch_models_blocking(&endpoints, auth.as_ref(), fetch_auth)
         })
@@ -184,7 +184,20 @@ async fn prefetch_models(agent_config: &AgentConfig) -> Option<IndexMap<String, 
         .flatten()
     } else {
         None
+    };
+
+    // Also discover models from a configured BYOK provider (OpenAI-compatible,
+    // Ollama, or Anthropic) and merge them into the prefetched catalog.
+    if let Some(provider_models) = crate::agent::provider_models::discover_provider_models() {
+        let existing = result.get_or_insert_with(IndexMap::new);
+        for (key, entry) in provider_models {
+            if !existing.contains_key(&key) {
+                existing.insert(key, entry);
+            }
+        }
     }
+
+    result
 }
 
 /// Spawn the agent inside a LocalSet and return a handle to the I/O future.

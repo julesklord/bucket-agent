@@ -179,7 +179,8 @@ async fn run_setup_command(json: bool) {
                 println!("{out}");
                 if !report.configured {
                     eprintln!(
-                        "Your team doesn't have a managed configuration yet. A team admin can set one up at console.x.ai."
+                        "Your team doesn't have a managed configuration yet. \
+                         A team admin can set one up via `bucket setup`."
                     );
                 }
             }
@@ -194,7 +195,8 @@ async fn run_setup_command(json: bool) {
         SetupOutcome::Installed => eprintln!("Applied managed configuration."),
         SetupOutcome::NothingConfigured => {
             eprintln!(
-                "Your team doesn't have a managed configuration yet. A team admin can set one up at console.x.ai."
+                "Your team doesn't have a managed configuration yet. \
+                 A team admin can set one up via `bucket setup`."
             );
         }
         SetupOutcome::Skipped => {
@@ -1800,14 +1802,14 @@ async fn async_main() -> Result<()> {
                 let _otel_guard = bucket_telemetry::otel_layer::otel_guard();
                 return bucket_tui::plugin_cmd::run(plugin_args).await;
             }
-            Command::Models => {
+            Command::Models(models_args) => {
                 init_tracing_simple("cli");
                 let _otel_guard = bucket_telemetry::otel_layer::otel_guard();
                 let config = bucket_agent_core::config::load_effective_config_disk_only()
                     .map_err(|e| anyhow::anyhow!("Failed to load config: {e}"))?;
                 let agent_config = AgentConfig::new_from_toml_cfg(&config)
                     .map_err(|e| anyhow::anyhow!("Failed to create agent config: {e}"))?;
-                return bucket_tui::models::list_available_models(&agent_config).await;
+                return bucket_tui::models::run_models_command(&agent_config, &models_args).await;
             }
             Command::Leader(leader_args) => {
                 init_tracing_simple("cli");

@@ -548,8 +548,9 @@ fn cwd_matches(session_cwd: &std::path::Path, target_cwd: &std::path::Path) -> b
 ///
 /// Re-reads config from disk, re-runs the same resolution logic as
 /// `new_with_models()` for user TOML config entries, and swaps the model list
-/// in-place. Prefetched (API) and default models are NOT re-fetched -- only
-/// BYOK entries from config are updated.
+/// in-place. Additionally, discovers models from the configured BYOK provider's
+/// API endpoint (OpenAI-compatible `/v1/models`, Ollama `/api/tags`, or
+/// Anthropic hardcoded list) and merges them into the catalog.
 fn handle_reload_models(agent: &MvpAgent) -> ExtResult {
     let disk_config = crate::config::load_effective_config()
         .map_err(|e| acp::Error::internal_error().data(e.to_string()))?;
@@ -586,6 +587,12 @@ fn handle_reload_models(agent: &MvpAgent) -> ExtResult {
     let merged_config = agent.cfg.borrow().clone();
 
     agent.models_manager.apply_config(merged_config);
+
+    // Discover models from the configured BYOK provider (OpenAI-compatible,
+    // Ollama, or Anthropic) and merge them into the catalog.
+    if let Some(provider_models) = crate::agent::provider_models::discover_provider_models() {
+        agent.models_manager.merge_provider_models(provider_models);
+    }
 
     let count = agent.models_manager.models().len();
     tracing::info!(count, "model list reloaded from config.toml");

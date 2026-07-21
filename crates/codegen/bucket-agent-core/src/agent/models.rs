@@ -1136,6 +1136,32 @@ impl ModelsManager {
         self.inner.allowlist_excludes_all.load(Ordering::Relaxed)
     }
 
+    /// Merge newly discovered provider models into the existing catalog.
+    ///
+    /// Provider models are added alongside existing models (they don't
+    /// replace prefetched or config-overridden entries). Called after
+    /// `apply_config` when a BYOK provider is configured.
+    pub fn merge_provider_models(&self, provider_models: IndexMap<String, ModelEntry>) {
+        let config = self.inner.cfg.read().clone();
+        let mut existing = self.inner.prefetched.read().clone().unwrap_or_default();
+
+        // Only add models that don't already exist in the catalog
+        let mut added = 0;
+        for (key, entry) in provider_models {
+            if !existing.contains_key(&key) {
+                existing.insert(key, entry);
+                added += 1;
+            }
+        }
+
+        if added > 0 {
+            tracing::info!(added, "merging provider-discovered models into catalog");
+            *self.inner.prefetched.write() = Some(existing.clone());
+            self.rebuild(&config, Some(existing));
+            self.reselect_current_model_if_missing(&config);
+        }
+    }
+
     /// Re-pick the default if `current_model_id` is gone from the catalog *or*
     /// is no longer `user_selectable` (e.g. a config reload narrowed
     /// `allowed_models`), so UI and sampling don't disagree on the active model.

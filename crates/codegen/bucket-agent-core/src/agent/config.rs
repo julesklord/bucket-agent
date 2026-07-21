@@ -3474,7 +3474,7 @@ pub struct ModelEntryConfig {
     pub id: Option<String>,
     /// The routing slug sent in API requests.
     pub model: String,
-    /// The base URL of the model. e.g. "https://api.x.ai/v1"
+    /// The base URL of the model. e.g. "https://api.openai.com/v1"
     pub base_url: String,
     /// Human-readable display name of the model.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -7875,6 +7875,102 @@ reasoning_effort = "low"
             model_override.base_url.is_none(),
             "base_url should be None when user didn't set it"
         );
+    }
+    #[test]
+    #[serial]
+    fn e2e_anthropic_direct_config_flows_to_sampler() {
+        let (_, models) = resolve_models_from_toml(
+            r#"
+            [model.claude-sonnet]
+            model = "claude-sonnet-4-5"
+            base_url = "https://api.anthropic.com/v1"
+            name = "Claude Sonnet"
+            env_key = "ANTHROPIC_API_KEY"
+            api_backend = "messages"
+            auth_scheme = "x_api_key"
+            context_window = 200000
+            max_completion_tokens = 8192
+
+            [model.claude-sonnet.extra_headers]
+            anthropic-version = "2023-06-01"
+            "#,
+            None,
+        );
+        let model = models.get("claude-sonnet").expect("model should exist");
+        assert_eq!(model.info.model, "claude-sonnet-4-5");
+        assert_eq!(model.info.base_url, "https://api.anthropic.com/v1");
+        assert_eq!(model.info.api_backend, ApiBackend::Messages);
+        assert_eq!(model.info.auth_scheme, AuthScheme::XApiKey);
+        assert_eq!(
+            model.info.extra_headers.get("anthropic-version").map(String::as_str),
+            Some("2023-06-01"),
+        );
+        unsafe { std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-test-key-e2e") };
+        let creds = resolve_credentials(model, None);
+        assert_eq!(creds.auth_scheme, AuthScheme::XApiKey);
+        assert_eq!(creds.api_key.as_deref(), Some("sk-ant-test-key-e2e"));
+        assert_eq!(creds.base_url, "https://api.anthropic.com/v1");
+        let sampling = resolve_sampling(model, None);
+        assert_eq!(sampling.auth_scheme, AuthScheme::XApiKey);
+        assert_eq!(sampling.api_backend, ApiBackend::Messages);
+        assert_eq!(sampling.base_url, "https://api.anthropic.com/v1");
+        assert_eq!(sampling.api_key.as_deref(), Some("sk-ant-test-key-e2e"));
+        assert_eq!(
+            sampling.extra_headers.get("anthropic-version").map(String::as_str),
+            Some("2023-06-01"),
+        );
+        let client = bucket_sampler::SamplingClient::new(sampling).expect("client should build");
+        let info = client.auth_info();
+        assert_eq!(info.auth_type, "x-api-key");
+        unsafe { std::env::remove_var("ANTHROPIC_API_KEY") };
+    }
+    #[test]
+    #[serial]
+    fn e2e_anthropic_config_from_toml_minimal_fields() {
+        let raw_config: toml::Value = toml::from_str(
+            r#"
+            [model.claude-direct]
+            model = "claude-sonnet-4-5"
+            base_url = "https://api.anthropic.com/v1"
+            env_key = "ANTHROPIC_API_KEY"
+            api_backend = "messages"
+            auth_scheme = "x_api_key"
+            context_window = 200000
+            "#,
+        )
+        .unwrap();
+        let cfg = Config::new_from_toml_cfg(&raw_config).expect("config should parse");
+        let resolved = resolve_model_list(&cfg, None);
+        let model = resolved.get("claude-direct").expect("model should exist");
+        assert_eq!(model.info.api_backend, ApiBackend::Messages);
+        assert_eq!(model.info.auth_scheme, AuthScheme::XApiKey);
+    }
+    #[test]
+    #[serial]
+    fn e2e_openai_compatible_default_backend_and_bearer() {
+        let (_, models) = resolve_models_from_toml(
+            r#"
+            [model.openai-compat]
+            model = "gpt-4o"
+            base_url = "https://api.openai.com/v1"
+            env_key = "OPENAI_API_KEY"
+            context_window = 128000
+            max_completion_tokens = 8192
+            "#,
+            None,
+        );
+        let model = models.get("openai-compat").expect("model should exist");
+        assert_eq!(model.info.api_backend, ApiBackend::ChatCompletions);
+        assert_eq!(model.info.auth_scheme, AuthScheme::Bearer);
+        unsafe { std::env::set_var("OPENAI_API_KEY", "sk-test-openai") };
+        let sampling = resolve_sampling(model, None);
+        assert_eq!(sampling.api_backend, ApiBackend::ChatCompletions);
+        assert_eq!(sampling.auth_scheme, AuthScheme::Bearer);
+        assert_eq!(sampling.api_key.as_deref(), Some("sk-test-openai"));
+        let client = bucket_sampler::SamplingClient::new(sampling).expect("client should build");
+        let info = client.auth_info();
+        assert_eq!(info.auth_type, "bearer");
+        unsafe { std::env::remove_var("OPENAI_API_KEY") };
     }
     #[test]
     #[serial]

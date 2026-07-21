@@ -1702,7 +1702,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-bin"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "bucket-acp",
@@ -2955,7 +2955,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-version"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "semver",
 ]

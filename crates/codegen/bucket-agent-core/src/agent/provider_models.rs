@@ -13,7 +13,7 @@
 use indexmap::IndexMap;
 use std::time::Duration;
 
-use crate::agent::config::{ModelEntry, ModelInfo};
+use crate::agent::config::{EnvKeys, ModelEntry, ModelInfo};
 use crate::sampling::ApiBackend;
 use bucket_sampler::AuthScheme;
 
@@ -46,6 +46,30 @@ pub fn is_anthropic_provider(provider: &str) -> bool {
 /// Whether the provider is Ollama (uses `/api/tags` instead of `/v1/models`).
 pub fn is_ollama_provider(provider: &str) -> bool {
     provider.to_lowercase() == "ollama"
+}
+
+/// Resolve the provider-specific env var name(s) from a base URL.
+///
+/// Returns `None` for unknown providers or providers that need no auth (Ollama).
+/// This allows `ModelEntry::own_credential()` to resolve the correct BYOK API
+/// key at credential resolution time, so it takes precedence over session tokens.
+fn env_key_for_base_url(base_url: &str) -> Option<EnvKeys> {
+    let url = base_url.to_lowercase();
+    if url.contains("nvidia.com") {
+        Some(EnvKeys::single("NVIDIA_API_KEY"))
+    } else if url.contains("openai.com") {
+        Some(EnvKeys::single("OPENAI_API_KEY"))
+    } else if url.contains("anthropic.com") {
+        Some(EnvKeys::single("ANTHROPIC_API_KEY"))
+    } else if url.contains("groq.com") {
+        Some(EnvKeys::single("GROQ_API_KEY"))
+    } else if url.contains("openrouter.ai") {
+        Some(EnvKeys::single("OPENROUTER_API_KEY"))
+    } else if url.contains("googleapis.com") || url.contains("google.com") {
+        Some(EnvKeys::new(["GEMINI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"]))
+    } else {
+        None
+    }
 }
 
 // ── OpenAI-compatible /v1/models ───────────────────────────────────────
@@ -138,7 +162,7 @@ fn openai_entry_to_model(
     let entry = ModelEntry {
         info,
         api_key: None,
-        env_key: None,
+        env_key: env_key_for_base_url(base_url),
         api_base_url: Some(base_url.to_string()),
     };
     (key, entry)
@@ -293,7 +317,7 @@ fn anthropic_model_entries(base_url: &str) -> IndexMap<String, ModelEntry> {
         let entry = ModelEntry {
             info,
             api_key: None,
-            env_key: None,
+            env_key: Some(EnvKeys::single("ANTHROPIC_API_KEY")),
             api_base_url: Some(base_url.to_string()),
         };
         map.insert(model_id.to_string(), entry);
@@ -414,6 +438,30 @@ mod tests {
         assert_eq!(model.info.api_backend, ApiBackend::ChatCompletions);
         assert_eq!(model.info.auth_scheme, AuthScheme::Bearer);
         assert!(model.info.user_selectable);
+        let env_key = model.env_key.as_ref().expect("env_key should be set");
+        assert_eq!(env_key.primary(), Some("OPENAI_API_KEY"));
+    }
+
+    #[test]
+    fn openai_entry_nvidia_nim_has_env_key() {
+        let entry = OpenAiModelEntry {
+            id: "nvidia/llama-3.1-70b-instruct".to_string(),
+            owned_by: Some("nvidia".to_string()),
+        };
+        let (key, model) = openai_entry_to_model(&entry, "https://integrate.api.nvidia.com/v1");
+        assert_eq!(key, "nvidia/llama-3.1-70b-instruct");
+        let env_key = model.env_key.as_ref().expect("env_key should be set for NVIDIA");
+        assert_eq!(env_key.primary(), Some("NVIDIA_API_KEY"));
+    }
+
+    #[test]
+    fn openai_entry_unknown_provider_has_no_env_key() {
+        let entry = OpenAiModelEntry {
+            id: "custom-model".to_string(),
+            owned_by: None,
+        };
+        let (_, model) = openai_entry_to_model(&entry, "https://my-custom-api.example.com/v1");
+        assert!(model.env_key.is_none(), "unknown provider should have no env_key");
     }
 
     #[test]
@@ -434,6 +482,55 @@ mod tests {
         for (key, model) in &models {
             assert_eq!(model.info.api_backend, ApiBackend::Messages, "Anthropic model {key} should use messages backend");
             assert_eq!(model.info.auth_scheme, AuthScheme::XApiKey, "Anthropic model {key} should use x-api-key auth");
+            let env_key = model.env_key.as_ref().expect("Anthropic model should have env_key");
+            assert_eq!(env_key.primary(), Some("ANTHROPIC_API_KEY"), "Anthropic model {key} env_key");
         }
+    }
+
+    #[test]
+    fn env_key_for_base_url_nvidia() {
+        let key = env_key_for_base_url("https://integrate.api.nvidia.com/v1");
+        assert_eq!(key.unwrap().primary(), Some("NVIDIA_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_openai() {
+        let key = env_key_for_base_url("https://api.openai.com/v1");
+        assert_eq!(key.unwrap().primary(), Some("OPENAI_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_anthropic() {
+        let key = env_key_for_base_url("https://api.anthropic.com/v1");
+        assert_eq!(key.unwrap().primary(), Some("ANTHROPIC_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_groq() {
+        let key = env_key_for_base_url("https://api.groq.com/openai/v1");
+        assert_eq!(key.unwrap().primary(), Some("GROQ_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_openrouter() {
+        let key = env_key_for_base_url("https://openrouter.ai/api/v1");
+        assert_eq!(key.unwrap().primary(), Some("OPENROUTER_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_google() {
+        let key = env_key_for_base_url("https://generativelanguage.googleapis.com/v1beta/openai");
+        let env_keys = key.unwrap();
+        assert!(env_keys.names().contains(&"GEMINI_API_KEY"));
+    }
+
+    #[test]
+    fn env_key_for_base_url_ollama_returns_none() {
+        assert!(env_key_for_base_url("http://localhost:11434").is_none());
+    }
+
+    #[test]
+    fn env_key_for_base_url_unknown_returns_none() {
+        assert!(env_key_for_base_url("https://my-custom-api.example.com/v1").is_none());
     }
 }

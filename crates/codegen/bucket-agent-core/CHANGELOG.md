@@ -1,5 +1,23 @@
 # Changelog
 
+# 0.1.3 — 2026-07-20
+
+## Features
+
+- **`bucket models --diagnose`**: new flag prints routing/auth diagnostics for any model (base_url, resolved endpoint, api_backend, auth_scheme, context_window, extra_headers, credential resolution).
+- **Voice/STT configurable**: STT `api_base` now reads `BUCKET_VOICE_API_BASE` env var before falling back to the hardcoded default. Full fallback chain: `[voice].api_base` → `[endpoints].xai_api_base_url` → `resolved_endpoints_base` → `BUCKET_VOICE_API_BASE` → `api.x.ai`.
+
+## Bug Fixes
+
+- **Better 404/400 errors**: provider errors now include actionable hints — 400 suggests the correct `api_backend` based on error content; 404 suggests checking `base_url`, `api_backend`, and running `bucket models --diagnose`.
+- **Replaced xAI-specific strings**: `console.x.ai` references replaced with `bucket setup` instructions; doc comments updated to be provider-agnostic.
+
+## Testing
+
+- **E2E Anthropic config test**: verifies full TOML → ModelEntry → ResolvedCredentials → SamplerConfig → SamplingClient flow with `api_backend=messages`, `auth_scheme=x_api_key`, and `extra_headers`.
+- **E2E Anthropic minimal TOML test**: verifies parsing of minimal Anthropic config.
+- **E2E OpenAI-compat test**: verifies default `chat_completions` + `bearer` auth for OpenAI-compatible providers.
+
 # 0.2.101 — 2026-07-13
 
 ## Features

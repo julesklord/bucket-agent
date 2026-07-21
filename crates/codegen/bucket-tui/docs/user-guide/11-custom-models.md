@@ -75,14 +75,15 @@ model                = "model-id"                       # Model identifier sent 
 base_url             = "https://api.example.com/v1"    # OpenAI-compatible endpoint
 name                 = "Display Name"                   # Shown in the model picker
 description          = "Model description"              # Optional
-api_key              = "sk-..."                         # API key for this provider (optional)
+api_key              = "sk-provider-key"                # API key for this provider (optional)
 env_key              = "MY_API_KEY"                     # Env var holding the API key (optional)
 api_backend          = "chat_completions"               # "chat_completions", "responses", or "messages"
+auth_scheme          = "bearer"                         # "bearer" or "x_api_key"
 temperature          = 0.7
 top_p                = 0.95
 max_completion_tokens = 8192
 context_window       = 128000
-extra_headers        = { "x-api-key" = "sk-..." }      # Extra request headers (optional)
+extra_headers        = { "X-Provider-Route" = "team-a" } # Extra non-secret request headers (optional)
 ```
 
 ### Credential resolution
@@ -128,7 +129,7 @@ name     = "DeepSeek Coder V2 (Ollama)"
 ### xAI (bucket-build)
 
 ```toml
-# Or just: export BUCKET_API_KEY="bucket-..."
+# Or just: export BUCKET_API_KEY="bucket-api-key"
 [model.bucket-build]
 model   = "bucket-build"
 env_key = "BUCKET_API_KEY"
@@ -141,9 +142,11 @@ env_key = "BUCKET_API_KEY"
 model       = "claude-opus-4-6"
 base_url    = "https://api.anthropic.com/v1"
 name        = "Claude Opus 4.6"
+env_key     = "ANTHROPIC_API_KEY"
 api_backend = "messages"
+auth_scheme = "x_api_key"
 context_window = 200000
-extra_headers = { "x-api-key" = "sk-ant-...", "anthropic-version" = "2023-06-01" }
+extra_headers = { "anthropic-version" = "2023-06-01" }
 ```
 
 ### OpenAI
@@ -198,7 +201,7 @@ Point Bucket at a custom OpenAI-compatible `/v1/models` endpoint:
 
 ```bash
 export BUCKET_MODELS_BASE_URL="https://api.acme.com/v1"
-export BUCKET_API_KEY="bucket-..."
+export BUCKET_API_KEY="bucket-api-key"
 bucket
 ```
 

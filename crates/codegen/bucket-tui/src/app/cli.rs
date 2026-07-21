@@ -49,7 +49,7 @@ pub enum Command {
     /// Manage cross-session memory
     Memory(crate::memory_cmd::MemoryArgs),
     /// List available models and exit
-    Models,
+    Models(ModelsArgs),
     /// List, search, or restore sessions
     Sessions(crate::sessions_cmd::SessionsArgs),
     /// Fetch and install managed configuration
@@ -152,6 +152,13 @@ pub struct WrapArgs {
         value_name = "CMD"
     )]
     pub command: Vec<String>,
+}
+
+#[derive(Debug, clap::Args, Clone, Default)]
+pub struct ModelsArgs {
+    /// Print routing/auth diagnostics for the default model, or for MODEL when provided.
+    #[arg(long, value_name = "MODEL", num_args = 0..=1)]
+    pub diagnose: Option<Option<String>>,
 }
 /// Targets a running leader process by PID (used by `bucket leader` / `bucket workspace`).
 #[derive(Debug, clap::Args, Clone, Default)]

@@ -1,5 +1,16 @@
 # Changelog
 
+# 0.1.4 — 2026-07-20
+
+## Features
+
+- **Provider model discovery**: auto-fetches available models from BYOK providers (NVIDIA NIM, OpenAI, Anthropic, Groq, OpenRouter, Ollama) on startup and `/models refresh`. Discovered models appear in the model selector alongside configured ones.
+
+## Bug Fixes
+
+- **BYOK credential resolution**: discovered model entries now include `env_key` so `own_credential()` resolves correctly. Previously, logged-in users would have their bucket.com JWT sent to third-party endpoints instead of the provider's API key.
+- **TUI model list sync**: TUI is notified when provider discovery completes; models are now discovered at startup as well as on `/models refresh`.
+
 # 0.1.3 — 2026-07-20
 
 ## Features

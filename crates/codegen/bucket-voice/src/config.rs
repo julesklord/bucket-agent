@@ -31,7 +31,7 @@ pub struct VoiceConfig {
 impl Default for VoiceConfig {
     fn default() -> Self {
         Self {
-            api_base: "https://api.x.ai".into(),
+            api_base: default_api_base(),
             stt_ws_path: "/v1/stt".into(),
             language: "en".into(),
             sample_rate: 16_000,
@@ -43,6 +43,14 @@ impl Default for VoiceConfig {
     }
 }
 
+/// Default STT API base: `BUCKET_VOICE_API_BASE` env var, else `https://api.x.ai`.
+fn default_api_base() -> String {
+    std::env::var("BUCKET_VOICE_API_BASE")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "https://api.x.ai".into())
+}
+
 impl VoiceConfig {
     /// Streaming STT WebSocket URL. Rejects plaintext `http://` / `ws://`.
     pub fn stt_ws_url(&self) -> Result<String, VoiceError> {
@@ -50,7 +58,8 @@ impl VoiceConfig {
     }
 
     /// `api_base`: non-empty `[voice].api_base`, else `[endpoints].xai_api_base_url`
-    /// from `root`, else `resolved_endpoints_base`, else `https://api.x.ai`.
+    /// from `root`, else `resolved_endpoints_base`, else `BUCKET_VOICE_API_BASE`
+    /// env var, else `https://api.x.ai`.
     ///
     /// `resolved_endpoints_base` carries the caller's env / CLI overrides; it
     /// ranks below the raw table so config keeps beating env (shell precedence).
@@ -61,7 +70,7 @@ impl VoiceConfig {
             .unwrap_or_default();
 
         // Read `[voice].api_base` from the raw table, not `cfg`: serde default
-        // makes "unset" and an explicit `https://api.x.ai` indistinguishable.
+        // makes "unset" and an explicit URL indistinguishable.
         cfg.api_base = non_empty_str(
             voice_table
                 .and_then(|t| t.get("api_base"))
@@ -75,8 +84,14 @@ impl VoiceConfig {
             )
         })
         .or_else(|| non_empty_str(resolved_endpoints_base))
-        .map(|base| base.trim_end_matches('/').to_owned())
-        .unwrap_or_else(|| Self::default().api_base);
+        .map(|base| base.trim().trim_end_matches('/').to_owned())
+        .or_else(|| {
+            std::env::var("BUCKET_VOICE_API_BASE")
+                .ok()
+                .filter(|s| !s.trim().is_empty())
+                .map(|s| s.trim().trim_end_matches('/').to_owned())
+        })
+        .unwrap_or_else(|| default_api_base());
         cfg
     }
 }

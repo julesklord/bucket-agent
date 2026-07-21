@@ -72,8 +72,29 @@ pub fn map_sampling_err_to_acp(err: SamplingError) -> acp::Error {
                 };
                 acp::Error::internal_error().data(message)
             }
-            StatusCode::BAD_REQUEST => acp::Error::invalid_params().data(message),
-            StatusCode::NOT_FOUND => acp::Error::resource_not_found(None).data(message),
+            StatusCode::BAD_REQUEST => {
+                let hint = if message.to_lowercase().contains("messages")
+                    || message.to_lowercase().contains("anthropic")
+                {
+                    "\n\nHint: if this is an Anthropic model, set api_backend = \"messages\" \
+                     and auth_scheme = \"x_api_key\" in your config.toml."
+                } else if message.to_lowercase().contains("chat completions")
+                    || message.to_lowercase().contains("openai")
+                {
+                    "\n\nHint: for OpenAI-compatible providers, use \
+                     api_backend = \"chat_completions\" (the default)."
+                } else {
+                    ""
+                };
+                acp::Error::invalid_params().data(format!("{message}{hint}"))
+            }
+            StatusCode::NOT_FOUND => {
+                let hint = "\n\nHint: 404 usually means the endpoint path is wrong. \
+                     Check that base_url ends with /v1 and api_backend matches \
+                     your provider (chat_completions, messages, or responses). \
+                     Run `bucket models --diagnose <model>` to see the resolved endpoint.";
+                acp::Error::resource_not_found(None).data(format!("{message}{hint}"))
+            }
             StatusCode::PAYLOAD_TOO_LARGE => acp::Error::invalid_params().data(message),
             StatusCode::TOO_MANY_REQUESTS => {
                 acp::Error::new(RATE_LIMITED_ERROR_CODE, "Rate limited".to_string()).data(message)

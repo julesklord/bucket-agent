@@ -1828,6 +1828,82 @@ impl AgentView {
                         false,
                     );
                 }
+                } else if let modal::ActiveModal::ModelPicker {
+                entries,
+                state,
+                window,
+            } = active_modal
+            {
+                // Model picker: ModalWindow chrome + picker content.
+                let picker_entries: Vec<PickerEntry> = entries
+                    .iter()
+                    .enumerate()
+                    .map(|(i, entry)| {
+                        let mut right_label = format!(
+                            "{} | {}",
+                            entry.id.0.as_ref(),
+                            entry.api_backend
+                        );
+                        right_label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
+                        if entry.supports_reasoning_effort {
+                            right_label.push_str(" | reasoning");
+                        }
+                        if entry.has_own_credentials {
+                            right_label.push_str(" | BYOK");
+                        }
+                        if entry.is_current {
+                            right_label.push_str(" (current)");
+                        }
+                        PickerEntry::Row(PickerRow {
+                            label: &entry.name,
+                            right_label: Box::leak(right_label.to_string().into_boxed_str()),
+                            selected: state.hovered == Some(i)
+                                || (state.hovered.is_none() && i == state.selected),
+                            expanded: false,
+                            fields: &[],
+                            description_lines: &[],
+                            summary_lines: &[],
+                            dimmed: false,
+                            indent: 0,
+                            badge: entry.id.0.as_ref(),
+                            badge_color: Some(theme.accent_user),
+                            collapsible: false,
+                            underline_last_desc: false,
+                        })
+                    })
+                    .collect();
+                let compact = self.scrollback.appearance().prompt.compact;
+                mw::push_vim_nav_search_hint(&mut picker_shortcuts, state.search_active);
+                let modal_config = ModalWindowConfig {
+                    title: "Select Model",
+                    tabs: None,
+                    shortcuts: &picker_shortcuts,
+                    sizing: ModalSizing {
+                        width_pct: 0.50,
+                        max_width: 80,
+                        min_width: 44,
+                        v_margin: 4,
+                        h_pad: 2,
+                        v_pad: 1,
+                        footer_lines: 2,
+                    }
+                    .with_compact(compact),
+                    fold_info: None,
+                };
+                if let Some(mca) = mw::render_modal_window(buf, area, window, &modal_config, &theme)
+                {
+                    picker::render_picker_in_modal(
+                        buf,
+                        mca.content,
+                        mca.inner_x,
+                        mca.inner_width,
+                        &theme,
+                        state,
+                        &picker_entries,
+                        &[],
+                        false,
+                    );
+                }
             } else if let modal::ActiveModal::SessionPicker {
                 entries,
                 state,

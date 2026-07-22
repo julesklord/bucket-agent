@@ -2771,6 +2771,8 @@ dependencies = [
  "bucket-prompt-queue",
  "bucket-ratatui-inline",
  "bucket-ratatui-textarea",
+ "bucket-sampler",
+ "bucket-sampling-types",
  "bucket-sandbox",
  "bucket-telemetry",
  "bucket-test-support",

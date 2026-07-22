@@ -2,12 +2,14 @@ use crate::app::actions::Effect;
 use crate::app::app_view::{AppView, SessionPickerEntry};
 use crate::app::dispatch::ctx::get_active_agent_mut;
 use crate::app::effects::ConversationsPartial;
+use agent_client_protocol::ModelId;
 use crate::views::modal::ActiveModal;
 use crate::views::picker::PickerState;
 use crate::views::session_picker::{
     PickerSelectionAnchor, SessionPickerLanes, SessionPickerPendingNotice, SourceFilter,
     capture_picker_selection, effective_filter_query, repo_name_from_cwd, restore_picker_selection,
 };
+use std::sync::Arc;
 
 type SearchHit = bucket_agent_core::extensions::session_search::SearchSessionHit;
 
@@ -183,6 +185,92 @@ pub(in crate::app::dispatch) fn dispatch_fetch_session_list(app: &mut AppView) -
     app.session_picker_lanes.pending_notice = None;
     effects.extend(foreign_effect);
     effects
+}
+
+pub(in crate::app::dispatch) fn dispatch_open_model_picker(app: &mut AppView) -> Vec<Effect> {
+    let is_api_key_auth = app.is_api_key_auth;
+    let current_model = app.models.current.clone();
+    let entries: Vec<crate::acp::model_state::ModelPickerEntry> = app
+        .models
+        .available
+        .values()
+        .filter(|m| {
+            let meta = m.meta.as_ref();
+            let user_selectable = meta
+                .and_then(|m| m.get("userSelectable"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true);
+            let supported_in_api = meta
+                .and_then(|m| m.get("supportedInApi"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true);
+            user_selectable && (is_api_key_auth || supported_in_api)
+        })
+        .map(|m| {
+            let meta = m.meta.as_ref();
+            let base_url = meta
+                .and_then(|m| m.get("base_url"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let api_backend = meta
+                .and_then(|m| m.get("api_backend"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("chat_completions")
+                .to_string();
+            crate::acp::model_state::ModelPickerEntry {
+                id: m.model_id.clone(),
+                name: m.name.clone(),
+                model: m.model_id.0.to_string(),
+                base_url,
+                api_backend,
+                context_window: meta
+                    .and_then(|m| m.get("totalContextTokens"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(128000),
+                supports_reasoning_effort: meta
+                    .and_then(|m| m.get("supportsReasoningEffort"))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+                reasoning_effort: None,
+                is_current: Some(m.model_id.clone()) == current_model,
+                has_own_credentials: false,
+                auth_scheme: "bearer".to_string(),
+            }
+        })
+        .collect();
+    
+    app.welcome_models_picker_state.selected = 0;
+    app.welcome_models_picker_state.query.clear();
+    app.welcome_models_picker_state.query_cursor = 0;
+    app.welcome_models_picker_state.search_active = true;
+    app.welcome_models_picker_state.expanded.clear();
+    
+    let picker_state = app.welcome_models_picker_state.clone();
+    
+    if let Some(agent) = get_active_agent_mut(app) {
+        agent.active_modal = Some(ActiveModal::ModelPicker {
+            entries,
+            state: picker_state,
+            window: crate::views::modal_window::ModalWindowState::new(),
+        });
+    }
+    vec![]
+}
+
+pub(in crate::app::dispatch) fn dispatch_start_session_with_model(
+    app: &mut AppView,
+    model_id: String,
+) -> Vec<Effect> {
+    let model_id = ModelId::new(Arc::from(model_id));
+    app.models.set_current(model_id.clone(), None);
+    vec![Effect::CreateSession {
+        agent_id: crate::app::agent::AgentId(0),
+        cwd: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
+        model_id: Some(model_id),
+        preferred_session_id: None,
+        chat_kind: false,
+    }]
 }
 
 pub(in crate::app::dispatch) fn handle_session_list_loaded(

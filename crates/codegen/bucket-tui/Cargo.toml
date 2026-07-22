@@ -24,7 +24,9 @@ crossterm = { workspace = true, features = ["event-stream", "bracketed-paste"] }
 textwrap = { workspace = true }
 regex = { workspace = true }
 unicode-width = { workspace = true }
+bucket-sampling-types = { workspace = true }
 unicode-segmentation = { workspace = true }
+bucket-sampler = { workspace = true }
 strip-ansi-escapes = { workspace = true }
 enum_delegate = { workspace = true }
 

@@ -72,6 +72,10 @@ pub enum Action {
     OpenPrevLink,
     /// Fetch the session list for the session picker on the welcome screen.
     FetchSessionList,
+    /// Open the model picker on the welcome screen.
+    OpenModelPicker,
+    /// Start a new session with a specific model from the model picker.
+    StartSessionWithModel(String),
     /// Cycle the active session picker's source filter.
     CycleSessionSourceFilter,
     /// Load a selected session from the session picker.

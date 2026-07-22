@@ -4865,6 +4865,14 @@ pub fn to_acp_model_info(
                     "agentType".to_string(),
                     serde_json::Value::String(info.agent_type.clone()),
                 );
+                map.insert(
+                    "userSelectable".to_string(),
+                    serde_json::Value::Bool(info.user_selectable),
+                );
+                map.insert(
+                    "supportedInApi".to_string(),
+                    serde_json::Value::Bool(info.supported_in_api),
+                );
                 if info.supports_reasoning_effort {
                     map.insert(
                         "supportsReasoningEffort".to_string(),

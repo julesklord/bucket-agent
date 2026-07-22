@@ -54,7 +54,10 @@ use super::rewind::{
     dispatch_rewind_dismiss_error, dispatch_rewind_picker_select, dispatch_rewind_select_mode,
     dispatch_rewind_show_picker,
 };
-use super::session::foreign::dispatch_fetch_session_list;
+use super::session::foreign::{
+    dispatch_fetch_session_list, dispatch_open_model_picker,
+    dispatch_start_session_with_model,
+};
 use super::session::fork::{
     apply_persist_worktree_mode, dispatch_fork, dispatch_fork_resolved, dispatch_project_selected,
     dispatch_startup_fork_session,
@@ -62,7 +65,8 @@ use super::session::fork::{
 use super::session::lifecycle::{
     clear_startup_actions, dispatch_agent_type_mismatch_answered, dispatch_exit_session,
     dispatch_new_session, dispatch_new_session_inner, dispatch_new_session_with_id,
-    dispatch_new_worktree_session, dispatch_trust_folder, open_new_session_question,
+    dispatch_new_worktree_session, dispatch_trust_folder,
+    open_new_session_question,
 };
 use super::session::load::{
     dispatch_cycle_session_source_filter, dispatch_load_session, dispatch_pick_content_session,
@@ -198,6 +202,8 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
             new_session_id,
         } => dispatch_startup_fork_session(app, parent_session_id, parent_cwd, new_session_id),
         Action::FetchSessionList => dispatch_fetch_session_list(app),
+        Action::OpenModelPicker => dispatch_open_model_picker(app),
+        Action::StartSessionWithModel(model_id) => dispatch_start_session_with_model(app, model_id),
         Action::CycleSessionSourceFilter => dispatch_cycle_session_source_filter(app),
         Action::ShowSessionPicker => dispatch_show_session_picker(app),
         Action::SessionPickerClosed => dispatch_session_picker_closed(app),

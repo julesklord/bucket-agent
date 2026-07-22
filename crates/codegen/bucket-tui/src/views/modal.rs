@@ -319,6 +319,15 @@ pub enum ActiveModal {
         /// different note's review modal.
         rewrite_nonce: u64,
     },
+    /// Model picker for selecting a model on the welcome screen.
+    ModelPicker {
+        /// Model entries to display.
+        entries: Vec<crate::acp::model_state::ModelPickerEntry>,
+        /// Unified picker state.
+        state: crate::views::picker::PickerState,
+        /// Shared modal window chrome state.
+        window: ModalWindowState,
+    },
 }
 /// Snapshot of the command palette state, saved when opening an arg picker
 /// and restored on Esc.
@@ -613,7 +622,8 @@ impl ActiveModal {
             | ActiveModal::ShortcutsHelp { .. }
             | ActiveModal::MemoryBrowser { .. }
             | ActiveModal::Settings { .. }
-            | ActiveModal::RememberNoteReview { .. } => vec![],
+            | ActiveModal::RememberNoteReview { .. }
+            | ActiveModal::ModelPicker { .. } => vec![],
         }
     }
     pub fn message(&self, drain_blocked: bool) -> &str {
@@ -644,6 +654,7 @@ impl ActiveModal {
             ActiveModal::Settings { .. } => crate::views::settings_modal::MODAL_TITLE,
             ActiveModal::ResetSettingsConfirm { .. } => "Reset setting?",
             ActiveModal::RememberNoteReview { .. } => "Memory Note",
+            ActiveModal::ModelPicker { .. } => "Select Model",
         }
     }
 }

@@ -812,6 +812,8 @@ pub struct AppView {
     pub session_picker_loading: bool,
     /// Unified picker state for the session picker.
     pub session_picker_state: crate::views::picker::PickerState,
+    /// Unified picker state for the welcome screen models picker.
+    pub welcome_models_picker_state: crate::views::picker::PickerState,
     /// Source filter for the welcome-screen session picker.
     pub session_picker_source_filter: crate::views::session_picker::SourceFilter,
     /// Content-based (deep search) results from ACP session search.
@@ -1258,6 +1260,9 @@ impl AppView {
             session_picker_lanes: Default::default(),
             session_picker_detail_generation: 0,
             session_picker_entries_query: None,
+            welcome_models_picker_state: crate::views::picker::PickerState::with_mode(
+                crate::views::picker::PickerMode::FullScreen,
+            ),
             welcome_tick: 0,
             welcome_shimmer_frame: 0,
             cli_model_override: None,
@@ -2033,6 +2038,7 @@ impl AppView {
         }
     }
 }
+
 impl AppView {
     /// Handle a terminal event. Routes through the input layer stack:
     ///
@@ -3529,10 +3535,11 @@ fn dispatch_menu_action(
     let worktree_idx = base;
     let resume_idx = base + 1;
     let config_provider_idx = base + 2;
+    let models_idx = base + 3;
     let (changelog_idx, quit_idx) = if show_changelog_action {
-        (Some(base + 3), base + 4)
+        (Some(base + 4), base + 5)
     } else {
-        (None, base + 3)
+        (None, base + 4)
     };
     if has_claude_import && index == 0 {
         return InputOutcome::Action(Action::ImportClaudeSettings);
@@ -3545,6 +3552,9 @@ fn dispatch_menu_action(
     }
     if index == config_provider_idx {
         return InputOutcome::Action(Action::ConfigureProvider);
+    }
+    if index == models_idx {
+        return InputOutcome::Action(Action::OpenModelPicker);
     }
     if Some(index) == changelog_idx {
         if let Some(md) = changelog_md {
@@ -5245,6 +5255,9 @@ pub(crate) mod tests {
             session_picker_entries_query: None,
             welcome_tick: 0,
             welcome_shimmer_frame: 0,
+            welcome_models_picker_state: crate::views::picker::PickerState::with_mode(
+                crate::views::picker::PickerMode::FullScreen,
+            ),
             startup_warnings: Vec::new(),
             is_api_key_auth: false,
             pending_update_version: None,

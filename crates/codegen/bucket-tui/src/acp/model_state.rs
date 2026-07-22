@@ -1,5 +1,6 @@
 //! Model state — tracks available models and current selection.
 
+
 use agent_client_protocol as acp;
 use bucket_agent_core::sampling::types::{
     ReasoningEffort, ReasoningEffortOption, parse_reasoning_effort_meta,
@@ -8,6 +9,33 @@ use bucket_agent_core::sampling::types::{
 use indexmap::IndexMap;
 
 use crate::slash::commands::effort_levels::legacy_effort_options;
+
+/// A model entry for the welcome screen model picker.
+#[derive(Debug, Clone)]
+pub struct ModelPickerEntry {
+    /// The model ID (catalog key).
+    pub id: acp::ModelId,
+    /// The display name of the model.
+    pub name: String,
+    /// The model slug (routing identifier).
+    pub model: String,
+    /// The base URL for the model's API.
+    pub base_url: String,
+    /// The API backend type.
+    pub api_backend: String,
+    /// The auth scheme.
+    pub auth_scheme: String,
+    /// The context window size in tokens.
+    pub context_window: u64,
+    /// Whether this model supports reasoning effort.
+    pub supports_reasoning_effort: bool,
+    /// The current reasoning effort for this model (if any).
+    pub reasoning_effort: Option<ReasoningEffort>,
+    /// Whether this model is the currently selected one.
+    pub is_current: bool,
+    /// Whether this model has its own API key configured.
+    pub has_own_credentials: bool,
+}
 
 /// Why an effort token could not be applied to a model. Shared by every effort
 /// surface (`/effort`, the CLI deferred switch, and headless) so they classify
@@ -45,7 +73,6 @@ impl EffortTokenError {
         }
     }
 }
-
 /// Per-agent model state.
 #[derive(Debug, Clone, Default)]
 pub struct ModelState {
@@ -302,6 +329,61 @@ impl ModelState {
         } else {
             Some(self.available.first()?.0.clone())
         }
+    }
+
+    /// Get model picker entries for the welcome screen.
+    /// Returns models that are user-selectable and visible for the current auth mode.
+    pub fn picker_entries(&self, _is_session_auth: bool) -> Vec<ModelPickerEntry> {
+        let current_id = self.current.as_ref();
+        self.available
+            .iter()
+            .map(|(id, info)| {
+                let _is_current = current_id == Some(id);
+                // Extract metadata from ACP ModelInfo meta field
+                let meta = info.meta.as_ref();
+                let base_url = meta
+                    .and_then(|m| m.get("base_url"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let api_backend = meta
+                    .and_then(|m| m.get("api_backend"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("chat_completions")
+                    .to_string();
+                let auth_scheme = meta
+                    .and_then(|m| m.get("auth_scheme"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("bearer")
+                    .to_string();
+                let context_window = meta
+                    .and_then(|m| m.get("totalContextTokens"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(128000);
+                let supports_reasoning_effort = meta
+                    .and_then(|m| m.get("supportsReasoningEffort"))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                let reasoning_effort = meta
+                    .and_then(|m| m.get("reasoningEffort"))
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| s.parse::<bucket_sampling_types::ReasoningEffort>().ok());
+                
+                ModelPickerEntry {
+                    id: id.clone(),
+                    name: info.name.clone(),
+                    model: info.model_id.0.to_string(),
+                    base_url,
+                    api_backend,
+                    auth_scheme,
+                    context_window,
+                    supports_reasoning_effort,
+                    reasoning_effort,
+                    is_current: current_id == Some(id),
+                    has_own_credentials: false, // ACP models don't have local credentials
+                }
+            })
+            .collect()
     }
 }
 

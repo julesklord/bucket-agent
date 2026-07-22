@@ -127,6 +127,9 @@ impl AgentView {
                 ActiveModal::DocPicker { window, state, .. } => {
                     (window, state.query.is_empty(), true)
                 }
+                ActiveModal::ModelPicker { window, state, .. } => {
+                    (window, state.query.is_empty(), true)
+                }
                 _ => unreachable!(),
             };
             // These modals don't use fold; fold_info is None so
@@ -175,6 +178,10 @@ impl AgentView {
                     if matches!(self.active_modal, Some(ActiveModal::DocPicker { .. })) {
                         let ev = crossterm::event::Event::Key(*key);
                         return self.handle_doc_input(&ev);
+                    }
+                    if matches!(self.active_modal, Some(ActiveModal::ModelPicker { .. })) {
+                        let ev = crossterm::event::Event::Key(*key);
+                        return self.handle_model_picker_input(&ev);
                     }
                     let ev = crossterm::event::Event::Key(*key);
                     return self.handle_palette_or_arg_input(&ev);
@@ -474,7 +481,8 @@ impl AgentView {
             | ActiveModal::MemoryBrowser { .. }
             | ActiveModal::Settings { .. }
             | ActiveModal::ResetSettingsConfirm { .. }
-            | ActiveModal::RememberNoteReview { .. } => unreachable!(),
+            | ActiveModal::RememberNoteReview { .. }
+            | ActiveModal::ModelPicker { .. } => unreachable!(),
         }
     }
 
@@ -615,6 +623,62 @@ impl AgentView {
                 self.active_modal = None;
                 InputOutcome::Action(Action::SendSlashCommandPreservingDraft(full))
             }
+        }
+    }
+
+    /// Input handler for the ModelPicker modal.
+    fn handle_model_picker_input(&mut self, ev: &crossterm::event::Event) -> InputOutcome {
+        use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
+        use crate::views::modal::ActiveModal;
+
+        let entry_count = match self.active_modal.as_ref() {
+            Some(ActiveModal::ModelPicker { entries, .. }) => entries.len(),
+            _ => return InputOutcome::Changed,
+        };
+
+        let config = PickerConfig {
+            title: None,
+            show_search_hint: false,
+            expandable: false,
+            esc_clears_query: true,
+            shortcuts: Some(crate::views::picker::picker_shortcuts()),
+            pending_hint: None,
+            non_selectable: &[],
+            non_selectable_clickable: &[],
+            shortcuts_area: None,
+            tabs: None,
+            active_tab: 0,
+            filter_label: None,
+            filter_key_hint: None,
+            filter_active: false,
+            action_keys: &[],
+            disable_search: false,
+            compact_bottom_bar: false,
+            search_only_on_slash: false,
+            vim_normal_first: crate::appearance::cache::load_vim_mode(),
+        };
+
+        let Some(ActiveModal::ModelPicker { state, .. }) = self.active_modal.as_mut() else {
+            return InputOutcome::Changed;
+        };
+
+        match handle_picker_input(ev, state, entry_count, &config) {
+            PickerOutcome::Selected(i) => {
+                if let Some(ActiveModal::ModelPicker { entries, .. }) = self.active_modal.as_ref()
+                    && let Some(entry) = entries.get(i) {
+                        let model_id = entry.model.clone();
+                        self.active_modal = None;
+                        return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
+                    }
+                InputOutcome::Changed
+            }
+            PickerOutcome::Closed => {
+                self.active_modal = None;
+                InputOutcome::Changed
+            }
+            PickerOutcome::Changed => InputOutcome::Changed,
+            PickerOutcome::Unchanged => InputOutcome::Unchanged,
+            _ => InputOutcome::Changed,
         }
     }
 
@@ -1323,6 +1387,7 @@ impl AgentView {
                     | ActiveModal::DocViewer { .. }
                     | ActiveModal::ShortcutsHelp { .. }
                     | ActiveModal::RememberNoteReview { .. }
+                    | ActiveModal::ModelPicker { .. }
             )
         ) {
             // Extract window for handle_modal_mouse.
@@ -1334,6 +1399,7 @@ impl AgentView {
                 Some(ActiveModal::DocViewer { window, .. }) => window,
                 Some(ActiveModal::ShortcutsHelp { window, .. }) => window,
                 Some(ActiveModal::RememberNoteReview { window, .. }) => window,
+                Some(ActiveModal::ModelPicker { window, .. }) => window,
                 _ => unreachable!(),
             };
             let outcome = mw::handle_modal_mouse(window, mouse.kind, mouse.column, mouse.row);

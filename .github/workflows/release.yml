@@ -10,6 +10,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
 
 jobs:
   build:
@@ -51,8 +52,13 @@ jobs:
         run: brew install protobuf
         if: runner.os == 'macOS'
 
-      - name: Install DotSlash
-        run: cargo install dotslash
+      - name: Install DotSlash (Prebuilt)
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            curl -fsSL https://github.com/facebook/dotslash/releases/download/v0.4.0/dotslash-v0.4.0-linux-x86_64.tar.gz | tar -xz -C /usr/local/bin || true
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            curl -fsSL https://github.com/facebook/dotslash/releases/download/v0.4.0/dotslash-v0.4.0-macos-x86_64.tar.gz | tar -xz -C /usr/local/bin || true
+          fi
 
       - name: Extract version from tag
         id: version
@@ -63,6 +69,7 @@ jobs:
           cargo build -p bucket-bin --release --target ${{ matrix.rust_target }}
         env:
           BUCKET_VERSION: ${{ steps.version.outputs.VERSION }}
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++

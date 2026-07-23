@@ -73,6 +73,9 @@ or launch Ollama to get started immediately without editing any config files (se
 
 `bucket` works out of the box without requiring a configuration file. It connects natively to **any OpenAI-compatible API** (`/v1/chat/completions`), Anthropic, or local model server (Ollama).
 
+### Automatic Model Discovery & Dynamic Context Resolution
+When using BYOK providers or local servers (NVIDIA NIM, OpenRouter, Groq, Ollama, etc.), `bucket` automatically prefetches all available models from the provider's `/v1/models` endpoint. It dynamically resolves precise context window limits (e.g. 1M tokens for Nemotron Ultra) by caching specifications from the open [models.dev](https://models.dev) registry into `~/.bucket/models.json`. No manual configuration of context sizes is required.
+
 ### 1. Install `bucket`
 
 **Via Quick Installer Script:**

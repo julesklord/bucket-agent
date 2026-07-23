@@ -142,8 +142,8 @@ detect_platform() {
     os="$(uname -s | tr '[:upper:]' '[:lower:]')"
     arch="$(uname -m)"
     
-    log_verbose "Host OS detected: ${os}"
-    log_verbose "Host Architecture detected: ${arch}"
+    log_verbose "Host OS detected: ${os}" >&2
+    log_verbose "Host Architecture detected: ${arch}" >&2
 
     case "$os" in
         linux)  os="linux" ;;

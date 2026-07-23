@@ -56,7 +56,8 @@ mod tests {
     #[test]
     fn test_feedback_command_opens_issue_template() {
         let cmd = FeedbackCommand;
-        let mut ctx = CommandExecCtx::mock();
+        let model_state = crate::slash::ModelState::default();
+        let mut ctx = crate::slash::commands::tests::make_ctx(&model_state);
         let res = cmd.run(&mut ctx, "");
         if let CommandResult::Action(Action::OpenUrl(url)) = res {
             assert_eq!(url, FEEDBACK_ISSUE_URL);
@@ -68,7 +69,8 @@ mod tests {
     #[test]
     fn test_feedback_command_prefills_title() {
         let cmd = FeedbackCommand;
-        let mut ctx = CommandExecCtx::mock();
+        let model_state = crate::slash::ModelState::default();
+        let mut ctx = crate::slash::commands::tests::make_ctx(&model_state);
         let res = cmd.run(&mut ctx, "Bug in terminal render");
         if let CommandResult::Action(Action::OpenUrl(url)) = res {
             assert!(url.starts_with(FEEDBACK_ISSUE_URL));

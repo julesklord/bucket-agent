@@ -1,0 +1,1 @@
+sed -i 's/        has_claude_import: false,/        has_claude_import: false,\n        provider_config_modal: None,\n        welcome_models_picker_state: crate::views::picker::PickerState::new(),/g' crates/codegen/bucket-tui/src/app/dispatch/tests/mod.rs

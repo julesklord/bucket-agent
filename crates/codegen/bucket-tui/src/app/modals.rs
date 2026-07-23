@@ -628,8 +628,8 @@ impl AgentView {
 
     /// Input handler for the ModelPicker modal.
     fn handle_model_picker_input(&mut self, ev: &crossterm::event::Event) -> InputOutcome {
-        use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
         use crate::views::modal::ActiveModal;
+        use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
 
         let entry_count = match self.active_modal.as_ref() {
             Some(ActiveModal::ModelPicker { entries, .. }) => entries.len(),
@@ -665,11 +665,14 @@ impl AgentView {
         match handle_picker_input(ev, state, entry_count, &config) {
             PickerOutcome::Selected(i) => {
                 if let Some(ActiveModal::ModelPicker { entries, .. }) = self.active_modal.as_ref()
-                    && let Some(entry) = entries.get(i) {
-                        let model_id = entry.model.clone();
-                        self.active_modal = None;
-                        return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
-                    }
+                    && let Some(entry) = entries.get(i)
+                {
+                    let model_id = entry.model.clone();
+                    self.active_modal = None;
+                    return InputOutcome::Action(
+                        crate::app::actions::Action::StartSessionWithModel(model_id),
+                    );
+                }
                 InputOutcome::Changed
             }
             PickerOutcome::Closed => {
@@ -1828,7 +1831,7 @@ impl AgentView {
                         false,
                     );
                 }
-                } else if let modal::ActiveModal::ModelPicker {
+            } else if let modal::ActiveModal::ModelPicker {
                 entries,
                 state,
                 window,
@@ -1838,11 +1841,7 @@ impl AgentView {
                 let right_labels: Vec<String> = entries
                     .iter()
                     .map(|entry| {
-                        let mut label = format!(
-                            "{} | {}",
-                            entry.id.0.as_ref(),
-                            entry.api_backend
-                        );
+                        let mut label = format!("{} | {}", entry.id.0.as_ref(), entry.api_backend);
                         label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
                         if entry.supports_reasoning_effort {
                             label.push_str(" | reasoning");

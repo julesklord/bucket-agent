@@ -333,6 +333,7 @@ fn anthropic_model_entries(base_url: &str) -> IndexMap<String, ModelEntry> {
 /// (set by [`map_provider_env`]). Returns `None` if no provider is configured
 /// or if the fetch fails.
 pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
+    let _ = sync_registry_models_cache();
     let base_url = std::env::var("BUCKET_MODELS_BASE_URL").ok()?;
     let api_key = std::env::var("BUCKET_API_KEY").ok().filter(|k| !k.is_empty())?;
 
@@ -382,7 +383,105 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
     }
 }
 
+fn sync_registry_models_cache() -> Option<()> {
+    let cache_dir = dirs::home_dir()?.join(".bucket");
+    if !cache_dir.exists() {
+        let _ = std::fs::create_dir_all(&cache_dir);
+    }
+    let cache_path = cache_dir.join("models.json");
+    
+    let is_fresh = if let Ok(metadata) = std::fs::metadata(&cache_path) {
+        if let Ok(modified) = metadata.modified() {
+            if let Ok(elapsed) = modified.elapsed() {
+                elapsed < Duration::from_secs(24 * 3600)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+    
+    if is_fresh {
+        return Some(());
+    }
+    
+    let cache_path_clone = cache_path.clone();
+    std::thread::spawn(move || {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build();
+        if let Ok(client) = client {
+            if let Ok(response) = client.get("https://models.dev/api.json").send() {
+                if response.status().is_success() {
+                    if let Ok(bytes) = response.bytes() {
+                        let _ = std::fs::write(cache_path_clone, bytes);
+                    }
+                }
+            }
+        }
+    });
+    
+    Some(())
+}
+
+fn normalize_model_id(id: &str) -> String {
+    id.to_lowercase()
+        .replace('_', "-")
+        .replace('.', "-")
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .to_string()
+}
+
+fn lookup_cache_context_window(model_id: &str) -> Option<u64> {
+    let cache_path = dirs::home_dir()?.join(".bucket/models.json");
+    if !cache_path.exists() {
+        return None;
+    }
+    let file = std::fs::File::open(cache_path).ok()?;
+    let reader = std::io::BufReader::new(file);
+    
+    #[derive(serde::Deserialize)]
+    struct CacheLimit {
+        context: u64,
+    }
+    
+    #[derive(serde::Deserialize)]
+    struct CacheModel {
+        limit: Option<CacheLimit>,
+    }
+    
+    #[derive(serde::Deserialize)]
+    struct CacheProvider {
+        models: std::collections::HashMap<String, CacheModel>,
+    }
+    
+    let data: std::collections::HashMap<String, CacheProvider> = serde_json::from_reader(reader).ok()?;
+    let norm_model = normalize_model_id(model_id);
+    for provider in data.values() {
+        for (m_id, m_info) in &provider.models {
+            let norm_m_id = normalize_model_id(m_id);
+            if norm_m_id == norm_model
+                || norm_model.contains(&norm_m_id)
+                || norm_m_id.contains(&norm_model)
+            {
+                if let Some(limit) = &m_info.limit {
+                    return Some(limit.context);
+                }
+            }
+        }
+    }
+    None
+}
+
 fn estimate_context_window(model_id: &str) -> u64 {
+    if let Some(cached) = lookup_cache_context_window(model_id) {
+        return cached;
+    }
     let lower = model_id.to_lowercase();
     
     // 1. Try parsing suffixes like '128k' or '1m'

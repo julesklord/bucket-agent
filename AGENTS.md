@@ -77,9 +77,15 @@ This is a fork of xAI's Bucket Build agent. Key files for upstream tracking:
 - `SOURCE_REV` — upstream commit this fork is based on
 - `rename_mapping.json` — upstream crate names → fork crate names
 - `scripts/upstream-diff.sh` — analyze diffs from upstream (`./scripts/upstream-diff.sh summary`)
-- `scripts/release.sh` — create releases (`./scripts/release.sh <version>` or `--check`)
+## Release Process & Release Notes Guidelines
 
-## CI/CD
+- **No Emojis**: Do NOT use emojis in release notes or changelogs. Keep all notes clean, plain Markdown (`### Features & Enhancements`, `### Bug Fixes`, etc.).
+- **Dual Updating**: Whenever a release is published:
+  1. Update `CHANGELOG.md` with the new version section at the top following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
+  2. Attach clean release notes to the GitHub Release via `gh release create <tag> --notes "..."` or `gh release edit <tag> --notes "..."`.
+- Use `./scripts/release.sh <version>` to bump versions and trigger releases.
+
+## Scripts
 
 - `.github/workflows/ci.yml` — targeted checks: fmt, check on `bucket-agent-core`, `bucket-tui`, `bucket-updater`, then tests
 - `.github/workflows/rust.yml` — full workspace `cargo build --verbose && cargo test --verbose`

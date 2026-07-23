@@ -1,6 +1,5 @@
 //! Model state — tracks available models and current selection.
 
-
 use agent_client_protocol as acp;
 use bucket_agent_core::sampling::types::{
     ReasoningEffort, ReasoningEffortOption, parse_reasoning_effort_meta,
@@ -368,7 +367,7 @@ impl ModelState {
                     .and_then(|m| m.get("reasoningEffort"))
                     .and_then(|v| v.as_str())
                     .and_then(|s| s.parse::<bucket_sampling_types::ReasoningEffort>().ok());
-                
+
                 ModelPickerEntry {
                     id: id.clone(),
                     name: info.name.clone(),

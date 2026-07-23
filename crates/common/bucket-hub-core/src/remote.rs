@@ -539,3 +539,34 @@ pub fn tool_error_from_wire(wire: ToolErrorWire) -> ToolError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_is_workspace_unavailable_true() {
+        let err = ToolError::custom(WORKSPACE_UNAVAILABLE_SUBCODE, "some message");
+        assert!(is_workspace_unavailable(&err));
+    }
+
+    #[test]
+    fn test_is_workspace_unavailable_false_different_code() {
+        let err = ToolError::custom("some_other_code", "some message");
+        assert!(!is_workspace_unavailable(&err));
+    }
+
+    #[test]
+    fn test_is_workspace_unavailable_false_no_details() {
+        let err = ToolError::new(ToolErrorKind::Custom, "some message");
+        assert!(!is_workspace_unavailable(&err));
+    }
+
+    #[test]
+    fn test_is_workspace_unavailable_false_different_kind() {
+        let err = ToolError::new(ToolErrorKind::InvalidArguments, "some message")
+            .with_details(json!({ "code": WORKSPACE_UNAVAILABLE_SUBCODE }));
+        assert!(!is_workspace_unavailable(&err));
+    }
+}

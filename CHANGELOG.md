@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.1.7] - 2026-07-23
+
+### Changed
+- **Response Latency Optimizations**: Reduced model discovery HTTP timeout (`FETCH_TIMEOUT`) and background `models.dev` sync timeout to 3s for faster initial prompt responses without stalls.
+
+---
+
 ## [v0.1.6] - 2026-07-23
 
 ### Added

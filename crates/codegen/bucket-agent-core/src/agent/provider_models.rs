@@ -124,6 +124,7 @@ struct OpenAiModelEntry {
 fn openai_entry_to_model(
     entry: &OpenAiModelEntry,
     base_url: &str,
+    registry_cache: Option<&std::collections::HashMap<String, u64>>,
 ) -> (String, ModelEntry) {
     let key = entry.id.clone();
     let info = ModelInfo {
@@ -138,7 +139,7 @@ fn openai_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.id))
+        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.id, registry_cache))
             .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
@@ -217,6 +218,7 @@ struct OllamaModelEntry {
 fn ollama_entry_to_model(
     entry: &OllamaModelEntry,
     base_url: &str,
+    registry_cache: Option<&std::collections::HashMap<String, u64>>,
 ) -> (String, ModelEntry) {
     // Ollama model names can include tags like "llama3.3:latest" — strip
     // the tag for the routing slug since Ollama's OpenAI-compat layer
@@ -235,7 +237,7 @@ fn ollama_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.name))
+        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.name, registry_cache))
             .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
@@ -334,6 +336,7 @@ fn anthropic_model_entries(base_url: &str) -> IndexMap<String, ModelEntry> {
 /// or if the fetch fails.
 pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
     let _ = sync_registry_models_cache();
+    let registry_cache = load_models_registry_cache();
     let base_url = std::env::var("BUCKET_MODELS_BASE_URL").ok()?;
     let api_key = std::env::var("BUCKET_API_KEY").ok().filter(|k| !k.is_empty())?;
 
@@ -346,7 +349,7 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
             .map(|entries| {
                 entries
                     .iter()
-                    .map(|e| ollama_entry_to_model(e, &base_url))
+                    .map(|e| ollama_entry_to_model(e, &base_url, registry_cache.as_ref()))
                     .collect()
             })
     } else if is_anthropic {
@@ -358,7 +361,7 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
             .map(|entries| {
                 entries
                     .iter()
-                    .map(|e| openai_entry_to_model(e, &base_url))
+                    .map(|e| openai_entry_to_model(e, &base_url, registry_cache.as_ref()))
                     .collect()
             })
     };
@@ -389,6 +392,7 @@ fn sync_registry_models_cache() -> Option<()> {
         let _ = std::fs::create_dir_all(&cache_dir);
     }
     let cache_path = cache_dir.join("models.json");
+    let tmp_path = cache_dir.join("models.json.tmp");
     
     let is_fresh = if let Ok(metadata) = std::fs::metadata(&cache_path) {
         if let Ok(modified) = metadata.modified() {
@@ -408,7 +412,6 @@ fn sync_registry_models_cache() -> Option<()> {
         return Some(());
     }
     
-    let cache_path_clone = cache_path.clone();
     std::thread::spawn(move || {
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(10))
@@ -417,7 +420,9 @@ fn sync_registry_models_cache() -> Option<()> {
             if let Ok(response) = client.get("https://models.dev/api.json").send() {
                 if response.status().is_success() {
                     if let Ok(bytes) = response.bytes() {
-                        let _ = std::fs::write(cache_path_clone, bytes);
+                        if std::fs::write(&tmp_path, bytes).is_ok() {
+                            let _ = std::fs::rename(&tmp_path, &cache_path);
+                        }
                     }
                 }
             }
@@ -437,7 +442,7 @@ fn normalize_model_id(id: &str) -> String {
         .to_string()
 }
 
-fn lookup_cache_context_window(model_id: &str) -> Option<u64> {
+fn load_models_registry_cache() -> Option<std::collections::HashMap<String, u64>> {
     let cache_path = dirs::home_dir()?.join(".bucket/models.json");
     if !cache_path.exists() {
         return None;
@@ -461,25 +466,45 @@ fn lookup_cache_context_window(model_id: &str) -> Option<u64> {
     }
     
     let data: std::collections::HashMap<String, CacheProvider> = serde_json::from_reader(reader).ok()?;
-    let norm_model = normalize_model_id(model_id);
+    let mut map = std::collections::HashMap::new();
     for provider in data.values() {
         for (m_id, m_info) in &provider.models {
-            let norm_m_id = normalize_model_id(m_id);
-            if norm_m_id == norm_model
-                || norm_model.contains(&norm_m_id)
-                || norm_m_id.contains(&norm_model)
-            {
-                if let Some(limit) = &m_info.limit {
-                    return Some(limit.context);
-                }
+            if let Some(limit) = &m_info.limit {
+                map.insert(normalize_model_id(m_id), limit.context);
             }
         }
     }
+    Some(map)
+}
+
+fn lookup_cache_context_window(model_id: &str, cache_map: Option<&std::collections::HashMap<String, u64>>) -> Option<u64> {
+    let cache_map = cache_map?;
+    let norm_model = normalize_model_id(model_id);
+    
+    // 1. Exact match
+    if let Some(&context) = cache_map.get(&norm_model) {
+        return Some(context);
+    }
+    
+    // 2. Slug match (without provider prefix)
+    let slug = norm_model.split('/').last().unwrap_or(&norm_model);
+    if let Some(&context) = cache_map.get(slug) {
+        return Some(context);
+    }
+
+    // 3. Precise substring match
+    for (m_id, &context) in cache_map {
+        let m_slug = m_id.split('/').last().unwrap_or(m_id);
+        if m_slug == slug || (m_slug.contains(slug) && slug.len() > 6) {
+            return Some(context);
+        }
+    }
+    
     None
 }
 
-fn estimate_context_window(model_id: &str) -> u64 {
-    if let Some(cached) = lookup_cache_context_window(model_id) {
+fn estimate_context_window(model_id: &str, cache_map: Option<&std::collections::HashMap<String, u64>>) -> u64 {
+    if let Some(cached) = lookup_cache_context_window(model_id, cache_map) {
         return cached;
     }
     let lower = model_id.to_lowercase();

@@ -2801,6 +2801,49 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
             if key.kind == crossterm::event::KeyEventKind::Release {
                 return InputOutcome::Unchanged;
             }
+            if let crate::views::modal::ActiveModal::ModelPicker { entries, state, .. } = modal {
+                use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
+                let entry_count = entries.len();
+                let config = PickerConfig {
+                    title: None,
+                    show_search_hint: false,
+                    expandable: false,
+                    esc_clears_query: true,
+                    shortcuts: Some(crate::views::picker::picker_shortcuts()),
+                    pending_hint: None,
+                    non_selectable: &[],
+                    non_selectable_clickable: &[],
+                    shortcuts_area: None,
+                    tabs: None,
+                    active_tab: 0,
+                    filter_label: None,
+                    filter_key_hint: None,
+                    filter_active: false,
+                    action_keys: &[],
+                    disable_search: false,
+                    compact_bottom_bar: false,
+                    search_only_on_slash: false,
+                    vim_normal_first: crate::appearance::cache::load_vim_mode(),
+                };
+                let crossterm_ev = crossterm::event::Event::Key(*key);
+                match handle_picker_input(&crossterm_ev, state, entry_count, &config) {
+                    PickerOutcome::Selected(i) => {
+                        if let Some(entry) = entries.get(i) {
+                            let model_id = entry.model.clone();
+                            *ctx.welcome_doc_viewer = None;
+                            return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
+                        }
+                        return InputOutcome::Changed;
+                    }
+                    PickerOutcome::Closed => {
+                        *ctx.welcome_doc_viewer = None;
+                        return InputOutcome::Changed;
+                    }
+                    PickerOutcome::Changed => return InputOutcome::Changed,
+                    PickerOutcome::Unchanged => return InputOutcome::Unchanged,
+                    _ => return InputOutcome::Changed,
+                }
+            }
             use crate::views::modal_window as mw;
             if let crate::views::modal::ActiveModal::DocViewer { window, scroll, .. } = modal {
                 let chrome_cfg = mw::ModalWindowConfig {
@@ -2826,6 +2869,60 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
             }
         }
         if let Event::Mouse(mouse) = ev {
+            if let crate::views::modal::ActiveModal::ModelPicker { entries, state, window, .. } = modal {
+                use crate::views::modal_window as mw;
+                use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
+                let outcome = mw::handle_modal_mouse(window, mouse.kind, mouse.column, mouse.row);
+                match outcome {
+                    mw::ModalWindowOutcome::CloseRequested => {
+                        *ctx.welcome_doc_viewer = None;
+                        return InputOutcome::Changed;
+                    }
+                    mw::ModalWindowOutcome::Unhandled => {
+                        let entry_count = entries.len();
+                        let config = PickerConfig {
+                            title: None,
+                            show_search_hint: false,
+                            expandable: false,
+                            esc_clears_query: true,
+                            shortcuts: Some(crate::views::picker::picker_shortcuts()),
+                            pending_hint: None,
+                            non_selectable: &[],
+                            non_selectable_clickable: &[],
+                            shortcuts_area: None,
+                            tabs: None,
+                            active_tab: 0,
+                            filter_label: None,
+                            filter_key_hint: None,
+                            filter_active: false,
+                            action_keys: &[],
+                            disable_search: false,
+                            compact_bottom_bar: false,
+                            search_only_on_slash: false,
+                            vim_normal_first: crate::appearance::cache::load_vim_mode(),
+                        };
+                        let crossterm_ev = crossterm::event::Event::Mouse(*mouse);
+                        match handle_picker_input(&crossterm_ev, state, entry_count, &config) {
+                            PickerOutcome::Selected(i) => {
+                                if let Some(entry) = entries.get(i) {
+                                    let model_id = entry.model.clone();
+                                    *ctx.welcome_doc_viewer = None;
+                                    return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
+                                }
+                                return InputOutcome::Changed;
+                            }
+                            PickerOutcome::Closed => {
+                                *ctx.welcome_doc_viewer = None;
+                                return InputOutcome::Changed;
+                            }
+                            PickerOutcome::Changed => return InputOutcome::Changed,
+                            PickerOutcome::Unchanged => return InputOutcome::Unchanged,
+                            _ => return InputOutcome::Changed,
+                        }
+                    }
+                    _ => return InputOutcome::Changed,
+                }
+            }
             use crate::views::modal_window as mw;
             if let crate::views::modal::ActiveModal::DocViewer { window, scroll, .. } = modal {
                 match mw::handle_modal_mouse(window, mouse.kind, mouse.column, mouse.row) {
@@ -3986,27 +4083,134 @@ impl AppView {
                                 dialog,
                             );
                         }
-                        if let Some(crate::views::modal::ActiveModal::DocViewer {
-                            ref title,
-                            ref content,
-                            ref mut scroll,
-                            ref mut window,
-                            ref mut cached_lines,
-                            ..
-                        }) = self.welcome_doc_viewer
-                        {
+                        if let Some(ref mut active_modal) = self.welcome_doc_viewer {
                             let theme = crate::theme::Theme::current();
-                            crate::views::modal::render_doc_viewer_overlay(
-                                f.buffer_mut(),
-                                view_area,
-                                window,
-                                title,
-                                content,
-                                scroll,
-                                cached_lines,
-                                compact,
-                                &theme,
-                            );
+                            match *active_modal {
+                                crate::views::modal::ActiveModal::DocViewer {
+                                    ref title,
+                                    ref content,
+                                    ref mut scroll,
+                                    ref mut window,
+                                    ref mut cached_lines,
+                                    ..
+                                } => {
+                                    crate::views::modal::render_doc_viewer_overlay(
+                                        f.buffer_mut(),
+                                        view_area,
+                                        window,
+                                        title,
+                                        content,
+                                        scroll,
+                                        cached_lines,
+                                        compact,
+                                        &theme,
+                                    );
+                                }
+                                crate::views::modal::ActiveModal::ModelPicker {
+                                    ref entries,
+                                    ref mut state,
+                                    ref mut window,
+                                } => {
+                                    use crate::views::modal_window::{self as mw, ModalWindowConfig, ModalSizing};
+                                    use crate::views::picker::{self, PickerEntry, PickerRow};
+                                    
+                                    let mut picker_shortcuts: Vec<mw::Shortcut> = vec![
+                                        mw::Shortcut {
+                                            label: "\u{2191}/\u{2193} nav",
+                                            clickable: false,
+                                            id: 0,
+                                        },
+                                        mw::Shortcut {
+                                            label: "Enter select",
+                                            clickable: false,
+                                            id: 0,
+                                        },
+                                        mw::Shortcut {
+                                            label: "Esc close",
+                                            clickable: false,
+                                            id: 0,
+                                        },
+                                    ];
+                                    mw::push_vim_nav_search_hint(&mut picker_shortcuts, state.search_active);
+                                    
+                                    let right_labels: Vec<String> = entries
+                                        .iter()
+                                        .map(|entry| {
+                                            let mut label = format!(
+                                                "{} | {}",
+                                                entry.id.0.as_ref(),
+                                                entry.api_backend
+                                            );
+                                            label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
+                                            if entry.supports_reasoning_effort {
+                                                label.push_str(" | reasoning");
+                                            }
+                                            if entry.has_own_credentials {
+                                                label.push_str(" | BYOK");
+                                            }
+                                            if entry.is_current {
+                                                label.push_str(" (current)");
+                                            }
+                                            label
+                                        })
+                                        .collect();
+
+                                    let picker_entries: Vec<PickerEntry> = entries
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(i, entry)| {
+                                            PickerEntry::Row(PickerRow {
+                                                label: &entry.name,
+                                                right_label: &right_labels[i],
+                                                selected: state.hovered == Some(i)
+                                                    || (state.hovered.is_none() && i == state.selected),
+                                                expanded: false,
+                                                fields: &[],
+                                                description_lines: &[],
+                                                summary_lines: &[],
+                                                dimmed: false,
+                                                indent: 0,
+                                                badge: entry.id.0.as_ref(),
+                                                badge_color: Some(theme.accent_user),
+                                                collapsible: false,
+                                                underline_last_desc: false,
+                                            })
+                                        })
+                                        .collect();
+                                    
+                                    let modal_config = ModalWindowConfig {
+                                        title: "Select Model",
+                                        tabs: None,
+                                        shortcuts: &picker_shortcuts,
+                                        sizing: ModalSizing {
+                                            width_pct: 0.50,
+                                            max_width: 80,
+                                            min_width: 44,
+                                            v_margin: 4,
+                                            h_pad: 2,
+                                            v_pad: 1,
+                                            footer_lines: 2,
+                                        }
+                                        .with_compact(compact),
+                                        fold_info: None,
+                                    };
+                                    if let Some(mca) = mw::render_modal_window(f.buffer_mut(), view_area, window, &modal_config, &theme)
+                                    {
+                                        picker::render_picker_in_modal(
+                                            f.buffer_mut(),
+                                            mca.content,
+                                            mca.inner_x,
+                                            mca.inner_width,
+                                            &theme,
+                                            state,
+                                            &picker_entries,
+                                            &[],
+                                            false,
+                                        );
+                                    }
+                                }
+                                _ => {}
+                            }
                         }
                         if !has_access && !self.access_gate_shown_logged {
                             self.access_gate_shown_logged = true;

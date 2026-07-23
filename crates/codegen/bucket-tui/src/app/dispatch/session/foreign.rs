@@ -254,6 +254,12 @@ pub(in crate::app::dispatch) fn dispatch_open_model_picker(app: &mut AppView) ->
             state: picker_state,
             window: crate::views::modal_window::ModalWindowState::new(),
         });
+    } else {
+        app.welcome_doc_viewer = Some(ActiveModal::ModelPicker {
+            entries,
+            state: picker_state,
+            window: crate::views::modal_window::ModalWindowState::new(),
+        });
     }
     vec![]
 }

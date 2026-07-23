@@ -1835,28 +1835,35 @@ impl AgentView {
             } = active_modal
             {
                 // Model picker: ModalWindow chrome + picker content.
-                let picker_entries: Vec<PickerEntry> = entries
+                let right_labels: Vec<String> = entries
                     .iter()
-                    .enumerate()
-                    .map(|(i, entry)| {
-                        let mut right_label = format!(
+                    .map(|entry| {
+                        let mut label = format!(
                             "{} | {}",
                             entry.id.0.as_ref(),
                             entry.api_backend
                         );
-                        right_label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
+                        label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
                         if entry.supports_reasoning_effort {
-                            right_label.push_str(" | reasoning");
+                            label.push_str(" | reasoning");
                         }
                         if entry.has_own_credentials {
-                            right_label.push_str(" | BYOK");
+                            label.push_str(" | BYOK");
                         }
                         if entry.is_current {
-                            right_label.push_str(" (current)");
+                            label.push_str(" (current)");
                         }
+                        label
+                    })
+                    .collect();
+
+                let picker_entries: Vec<PickerEntry> = entries
+                    .iter()
+                    .enumerate()
+                    .map(|(i, entry)| {
                         PickerEntry::Row(PickerRow {
                             label: &entry.name,
-                            right_label: Box::leak(right_label.to_string().into_boxed_str()),
+                            right_label: &right_labels[i],
                             selected: state.hovered == Some(i)
                                 || (state.hovered.is_none() && i == state.selected),
                             expanded: false,

@@ -215,24 +215,56 @@ download_release() {
     log_verbose "Target path: ${INSTALL_DIR}"
     mkdir -p "$INSTALL_DIR"
 
-    local asset_name="bucket-${VERSION}-${platform}"
-    local download_url="https://github.com/${REPO}/releases/download/v${VERSION}/${asset_name}"
+    # Fetch available release tags with assets from GitHub API
+    local available_tags=()
+    if command -v gh >/dev/null 2>&1; then
+        mapfile -t available_tags < <(gh release list --repo "$REPO" --limit 10 --exclude-drafts --json tagName --jq '.[].tagName' 2>/dev/null | sed 's/^v//' || true)
+    fi
+
+    if [[ ${#available_tags[@]} -eq 0 ]]; then
+        local raw_tags
+        raw_tags=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"v?([^"]+)".*/\1/' || true)
+        mapfile -t available_tags <<< "$raw_tags"
+    fi
+
+    # Ensure targeted version is first in list
+    if [[ -n "$VERSION" ]]; then
+        available_tags=("$VERSION" "${available_tags[@]}")
+    fi
+
     local target_binary="${INSTALL_DIR}/${BINARY_NAME}"
+    local download_success=false
+    local installed_ver=""
 
-    log_info "Downloading binary artifact for ${platform}..."
-    log_verbose "URL: ${download_url}"
-    log_verbose "Destination: ${target_binary}"
+    # Fallback iteration over available releases until binary download succeeds
+    for ver in "${available_tags[@]}"; do
+        [[ -z "$ver" ]] && continue
+        local asset_name="bucket-${ver}-${platform}"
+        local download_url="https://github.com/${REPO}/releases/download/v${ver}/${asset_name}"
 
-    if curl --fail --location --progress-bar "$download_url" -o "${target_binary}"; then
-        log_success "Download completed successfully."
-    else
-        log_error "Failed to download binary from ${download_url}."
-        exit 1
+        log_info "Attempting to download binary artifact for v${ver} (${platform})..."
+        log_verbose "URL: ${download_url}"
+
+        if curl --fail --location --progress-bar "$download_url" -o "${target_binary}"; then
+            download_success=true
+            installed_ver="$ver"
+            log_success "Downloaded pre-compiled binary for ${BOLD}v${ver}${RESET}."
+            break
+        else
+            log_warn "Binary for v${ver} is not yet available or failed to download. Trying next available release..."
+        fi
+    done
+
+    if [[ "$download_success" != "true" ]]; then
+        log_error "No pre-compiled binary could be downloaded for ${platform} across available releases."
+        log_info "Falling back to compiling from source..."
+        build_from_source
+        return 0
     fi
 
     log_info "Applying executable permissions..."
     chmod +x "${target_binary}"
-    log_success "Binary configured and executable at: ${BOLD}${target_binary}${RESET}"
+    log_success "Binary configured and executable at: ${BOLD}${target_binary}${RESET} (v${installed_ver})"
 }
 
 ensure_build_dependencies() {

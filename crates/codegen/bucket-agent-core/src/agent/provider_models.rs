@@ -138,8 +138,8 @@ fn openai_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(128_000)
-            .expect("128000 is non-zero"),
+        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.id))
+            .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
         use_concise: false,
@@ -235,8 +235,8 @@ fn ollama_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(128_000)
-            .expect("128000 is non-zero"),
+        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.name))
+            .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
         use_concise: false,
@@ -379,6 +379,54 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
             );
             None
         }
+    }
+}
+
+fn estimate_context_window(model_id: &str) -> u64 {
+    let lower = model_id.to_lowercase();
+    
+    // 1. Try parsing suffixes like '128k' or '1m'
+    if let Some(pos) = lower.find('k') {
+        let bytes = lower.as_bytes();
+        let mut start = pos;
+        while start > 0 && bytes[start - 1].is_ascii_digit() {
+            start -= 1;
+        }
+        if start < pos {
+            if let Ok(num) = lower[start..pos].parse::<u64>() {
+                return num * 1_000;
+            }
+        }
+    }
+    
+    if let Some(pos) = lower.find('m') {
+        let bytes = lower.as_bytes();
+        let mut start = pos;
+        while start > 0 && bytes[start - 1].is_ascii_digit() {
+            start -= 1;
+        }
+        if start < pos {
+            if let Ok(num) = lower[start..pos].parse::<u64>() {
+                return num * 1_000_000;
+            }
+        }
+    }
+
+    // 2. Family heuristics
+    if lower.contains("ultra") {
+        1_000_000
+    } else if lower.contains("gemini-1.5-pro") {
+        2_000_000
+    } else if lower.contains("gemini") {
+        1_048_576
+    } else if lower.contains("claude-3") || lower.contains("claude-3-5") {
+        200_000
+    } else if lower.contains("llama-3.1") || lower.contains("llama-3.2") || lower.contains("llama-3.3") {
+        128_000
+    } else if lower.contains("gpt-4o") || lower.contains("gpt-4-turbo") {
+        128_000
+    } else {
+        128_000 // default fallback
     }
 }
 

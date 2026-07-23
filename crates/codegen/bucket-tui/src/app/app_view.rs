@@ -2167,7 +2167,7 @@ impl AppView {
                     menu_count: if zdr_blocked {
                         2
                     } else {
-                        3 + if self.has_claude_import { 1 } else { 0 }
+                        5 + if self.has_claude_import { 1 } else { 0 }
                             + if self.welcome_show_changelog_action {
                                 1
                             } else {
@@ -3246,6 +3246,12 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
             if key!('s', CONTROL).matches(key) {
                 return InputOutcome::Action(Action::FetchSessionList);
             }
+            if key!('p', CONTROL).matches(key) {
+                return InputOutcome::Action(Action::ConfigureProvider);
+            }
+            if key!('m', CONTROL).matches(key) {
+                return InputOutcome::Action(Action::OpenModelPicker);
+            }
             if ctx.has_pending_update && key!('u', CONTROL).matches(key) {
                 return InputOutcome::Action(Action::QuitForUpdate);
             }
@@ -3572,7 +3578,7 @@ fn handle_menu_nav(
     count: usize,
 ) -> Option<InputOutcome> {
     match key.code {
-        KeyCode::Down => {
+        KeyCode::Down | KeyCode::Tab => {
             *index = Some(match *index {
                 Some(i) if i + 1 < count => i + 1,
                 Some(_) | None => 0,

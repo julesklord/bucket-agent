@@ -17,7 +17,7 @@ use crate::agent::config::{EnvKeys, ModelEntry, ModelInfo};
 use crate::sampling::ApiBackend;
 use bucket_sampler::AuthScheme;
 
-const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(3);
 
 /// Resolve the base URL for a known provider name.
 ///
@@ -414,7 +414,7 @@ fn sync_registry_models_cache() -> Option<()> {
     
     std::thread::spawn(move || {
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(3))
             .build();
         if let Ok(client) = client {
             if let Ok(response) = client.get("https://models.dev/api.json").send() {

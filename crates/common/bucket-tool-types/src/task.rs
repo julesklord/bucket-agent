@@ -1494,4 +1494,18 @@ mod tests {
         assert!(desc.contains("- task_ids: list of task IDs from run_in_background=true\n"));
         assert!(desc.contains("Prefer get_task_output with task_ids"));
     }
+
+    #[test]
+    fn task_output_waits_from_json_tests() {
+        use serde_json::json;
+
+        assert!(!task_output_waits_from_json(&json!({})));
+        assert!(!task_output_waits_from_json(&json!({"timeout_ms": null})));
+        assert!(!task_output_waits_from_json(&json!({"timeout_ms": 0})));
+        assert!(!task_output_waits_from_json(&json!({"timeout_ms": -1})));
+        assert!(!task_output_waits_from_json(&json!({"timeout_ms": -100})));
+        assert!(task_output_waits_from_json(&json!({"timeout_ms": 1})));
+        assert!(task_output_waits_from_json(&json!({"timeout_ms": 100})));
+        assert!(!task_output_waits_from_json(&json!({"timeout_ms": "100"})));
+    }
 }

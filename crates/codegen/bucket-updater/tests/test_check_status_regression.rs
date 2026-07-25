@@ -57,6 +57,9 @@ fn make_update_config() -> UpdateConfig {
         alpha_test_key: None,
         channel: "stable".to_string(),
         npm_registry: None,
+        update_check_url: None,
+        update_base_urls: None,
+        update_gh_repo: None,
     }
 }
 

@@ -119,6 +119,9 @@ pub fn make_update_config(channel: &str) -> bucket_updater::UpdateConfig {
         alpha_test_key: None,
         channel: channel.to_string(),
         npm_registry: None,
+        update_check_url: None,
+        update_base_urls: None,
+        update_gh_repo: None,
     }
 }
 

@@ -897,7 +897,7 @@ impl LineViewerState {
 
         let mut commented_lines = std::collections::HashSet::new();
         for c in comments {
-            for ln in c.line_range.clone() {
+            for ln in c.line_range.start..c.line_range.end {
                 commented_lines.insert(ln);
             }
         }

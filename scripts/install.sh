@@ -12,6 +12,8 @@ INSTALL_DIR="${BUCKET_HOME:-$HOME/.bucket}/bin"
 # Defaults
 MODE="auto" # Options: auto, binary, build
 VERSION=""
+INSTALL_TYPE="auto" # Options: auto, local, system
+SOURCE_BRANCH="stable" # Options: stable, main
 
 # Colors & Formatting (Terminal output)
 setup_colors() {
@@ -47,7 +49,7 @@ log_banner() {
 ⠀⢿⣿⡇⠀⠸⠇⠸⠇⠀⢸⣿⡿⠀
 ⠀⠀⠈⠛⠛⠛⠛⠛⠛⠛⠛⠁⠀⠀${RESET}
 
-  ${CYAN}${BOLD}Bucket AI Agent Installer${RESET} ${DIM}(v0.1)${RESET}
+  ${CYAN}${BOLD}Bucket AI Agent Installer${RESET} ${DIM}(v0.2)${RESET}
   ${DIM}--------------------------------------------------${RESET}
 EOF
 }
@@ -80,12 +82,16 @@ Options:
   --binary, -b        Download pre-compiled binary from GitHub Releases (fast)
   --build, -s         Compile from source code using cargo
   --version, -v VER   Specify version tag to install (e.g. 0.1.6 or v0.1.6)
+  --system, -y        Install system-wide to /usr/local/bin (requires sudo)
+  --local, -l         Install to user local directory ~/.local/bin (default)
+  --stable            Install the latest stable version (default)
+  --latest-src        Compile and install the latest commit from the main branch
   --help, -h          Show this help message
 
 Examples:
-  curl -fsSL .../install.sh | bash -s -- --binary
-  curl -fsSL .../install.sh | bash -s -- --build
-  curl -fsSL .../install.sh | bash -s -- --version 0.1.6 --build
+  curl -fsSL .../install.sh | bash -s -- --binary --local
+  curl -fsSL .../install.sh | bash -s -- --build --system
+  curl -fsSL .../install.sh | bash -s -- --latest-src --local
 EOF
     exit 0
 }
@@ -99,6 +105,23 @@ parse_args() {
                 ;;
             --build|--source|-s)
                 MODE="build"
+                shift
+                ;;
+            --system|-y)
+                INSTALL_TYPE="system"
+                shift
+                ;;
+            --local|-l)
+                INSTALL_TYPE="local"
+                shift
+                ;;
+            --stable)
+                SOURCE_BRANCH="stable"
+                shift
+                ;;
+            --latest-src)
+                SOURCE_BRANCH="main"
+                MODE="build" # latest-src requires compiling from source
                 shift
                 ;;
             --version|-v)
@@ -167,6 +190,12 @@ detect_platform() {
 }
 
 resolve_version() {
+    if [[ "$SOURCE_BRANCH" == "main" ]]; then
+        VERSION="main"
+        log_success "Targeting latest commits from: ${BOLD}main branch${RESET}"
+        return 0
+    fi
+
     if [[ -n "$VERSION" ]]; then
         VERSION="${VERSION#v}" # strip leading v if present
         log_success "Target version specified: ${BOLD}v${VERSION}${RESET}"
@@ -186,25 +215,72 @@ resolve_version() {
 }
 
 prompt_install_mode() {
-    if [[ "$MODE" != "auto" ]]; then
-        return 0
+    # Check if we are running in an interactive terminal
+    local is_interactive=false
+    if [[ -t 0 ]] && [[ -t 1 ]]; then
+        is_interactive=true
     fi
 
-    # Interactive prompt if stdout is TTY
-    if [[ -t 0 ]] && [[ -t 1 ]]; then
-        log_info "Select installation method:"
-        echo "     ${CYAN}1)${RESET} Pre-compiled binary ${DIM}(Fastest, recommended)${RESET}"
-        echo "     ${CYAN}2)${RESET} Compile from source code ${DIM}(Requires Rust toolchain & protoc)${RESET}"
-        printf "     ${BOLD}Choice [1-2] (default 1): ${RESET}"
-        read -r choice
-        case "$choice" in
-            2) MODE="build" ;;
-            *) MODE="binary" ;;
-        esac
+    # 1. Ask for installation destination (local vs system-wide)
+    if [[ "$INSTALL_TYPE" == "auto" ]]; then
+        if [[ "$is_interactive" == "true" ]]; then
+            log_info "Select installation destination:"
+            echo "     ${CYAN}1)${RESET} User Local directory ${DIM}(~/.local/bin)${RESET}"
+            echo "     ${CYAN}2)${RESET} System-wide ${DIM}(/usr/local/bin, requires sudo)${RESET}"
+            printf "     ${BOLD}Choice [1-2] (default 1): ${RESET}"
+            read -r dest_choice < /dev/tty
+            case "$dest_choice" in
+                2) INSTALL_TYPE="system" ;;
+                *) INSTALL_TYPE="local" ;;
+            esac
+        else
+            INSTALL_TYPE="local"
+        fi
+    fi
+
+    # Set installation directory based on choices
+    if [[ "$INSTALL_TYPE" == "system" ]]; then
+        INSTALL_DIR="/usr/local/bin"
     else
-        # Default non-interactive mode to binary
-        log_verbose "Non-interactive shell detected, defaulting to pre-compiled binary download."
-        MODE="binary"
+        INSTALL_DIR="$HOME/.local/bin"
+    fi
+    log_success "Installation directory chosen: ${BOLD}${INSTALL_DIR}${RESET}"
+
+    # 2. Ask for installation method and version stream
+    if [[ "$MODE" == "auto" ]]; then
+        if [[ "$is_interactive" == "true" ]]; then
+            log_info "Select software version stream and method:"
+            echo "     ${CYAN}1)${RESET} Download latest stable version ${DIM}(pre-compiled, fast)${RESET}"
+            echo "     ${CYAN}2)${RESET} Compile latest stable version from source"
+            echo "     ${CYAN}3)${RESET} Compile bleeding-edge main branch from source ${DIM}(newest features)${RESET}"
+            printf "     ${BOLD}Choice [1-3] (default 1): ${RESET}"
+            read -r source_choice < /dev/tty
+            case "$source_choice" in
+                2)
+                    MODE="build"
+                    SOURCE_BRANCH="stable"
+                    ;;
+                3)
+                    MODE="build"
+                    SOURCE_BRANCH="main"
+                    ;;
+                *)
+                    MODE="binary"
+                    SOURCE_BRANCH="stable"
+                    ;;
+            esac
+        else
+            MODE="binary"
+            SOURCE_BRANCH="stable"
+        fi
+    fi
+}
+
+run_maybe_sudo() {
+    if [[ "$INSTALL_TYPE" == "system" ]] && [[ "$EUID" -ne 0 ]]; then
+        sudo "$@"
+    else
+        "$@"
     fi
 }
 
@@ -213,7 +289,7 @@ download_release() {
 
     log_info "Preparing target installation directory..."
     log_verbose "Target path: ${INSTALL_DIR}"
-    mkdir -p "$INSTALL_DIR"
+    run_maybe_sudo mkdir -p "$INSTALL_DIR"
 
     # Fetch available release tags with assets from GitHub API
     local available_tags=()
@@ -228,13 +304,14 @@ download_release() {
     fi
 
     # Ensure targeted version is first in list
-    if [[ -n "$VERSION" ]]; then
+    if [[ -n "$VERSION" ]] && [[ "$VERSION" != "main" ]]; then
         available_tags=("$VERSION" "${available_tags[@]}")
     fi
 
     local target_binary="${INSTALL_DIR}/${BINARY_NAME}"
     local download_success=false
     local installed_ver=""
+    local temp_binary="/tmp/${BINARY_NAME}.tmp"
 
     # Fallback iteration over available releases until binary download succeeds
     for ver in "${available_tags[@]}"; do
@@ -245,9 +322,8 @@ download_release() {
         log_info "Attempting to download binary artifact for v${ver} (${platform})..."
         log_verbose "URL: ${download_url}"
 
-        local temp_binary="${target_binary}.tmp"
         if curl --fail --location --progress-bar "$download_url" -o "${temp_binary}"; then
-            mv -f "${temp_binary}" "${target_binary}"
+            run_maybe_sudo mv -f "${temp_binary}" "${target_binary}"
             download_success=true
             installed_ver="$ver"
             log_success "Downloaded pre-compiled binary for ${BOLD}v${ver}${RESET}."
@@ -266,7 +342,7 @@ download_release() {
     fi
 
     log_info "Applying executable permissions..."
-    chmod +x "${target_binary}"
+    run_maybe_sudo chmod +x "${target_binary}"
     log_success "Binary configured and executable at: ${BOLD}${target_binary}${RESET} (v${installed_ver})"
 }
 
@@ -317,11 +393,14 @@ build_from_source() {
     local build_tmp
     build_tmp=$(mktemp -d)
     log_info "Cloning source code from repository..."
-    log_verbose "Branch/Tag: v${VERSION}"
+    log_verbose "Target: ${VERSION}"
     log_verbose "Temp workspace: ${build_tmp}"
 
-    if git clone --depth 1 --branch "v${VERSION}" "https://github.com/${REPO}.git" "${build_tmp}" 2>/dev/null; then
-        log_success "Repository cloned successfully."
+    if [[ "$VERSION" == "main" ]]; then
+        log_info "Cloning latest commits from main branch..."
+        git clone --depth 1 "https://github.com/${REPO}.git" "${build_tmp}"
+    elif git clone --depth 1 --branch "v${VERSION}" "https://github.com/${REPO}.git" "${build_tmp}" 2>/dev/null; then
+        log_success "Repository cloned successfully at tag v${VERSION}."
     else
         log_warn "Tag v${VERSION} not found, falling back to main branch..."
         git clone --depth 1 "https://github.com/${REPO}.git" "${build_tmp}"
@@ -334,10 +413,10 @@ build_from_source() {
     )
 
     log_info "Installing compiled binary to target location..."
-    mkdir -p "$INSTALL_DIR"
-    cp "${build_tmp}/target/release/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}.tmp"
-    mv -f "${INSTALL_DIR}/${BINARY_NAME}.tmp" "${INSTALL_DIR}/${BINARY_NAME}"
-    chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
+    run_maybe_sudo mkdir -p "$INSTALL_DIR"
+    run_maybe_sudo cp "${build_tmp}/target/release/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}.tmp"
+    run_maybe_sudo mv -f "${INSTALL_DIR}/${BINARY_NAME}.tmp" "${INSTALL_DIR}/${BINARY_NAME}"
+    run_maybe_sudo chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     rm -rf "${build_tmp}"
     log_success "Source build complete and binary installed to: ${BOLD}${INSTALL_DIR}/${BINARY_NAME}${RESET}"

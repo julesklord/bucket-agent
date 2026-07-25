@@ -976,9 +976,25 @@ pub(crate) fn dispatch(action: Action, app: &mut AppView) -> Vec<Effect> {
                     {
                         let _ = std::fs::create_dir_all(&home);
                         let provider_file = home.join("providers.toml");
+                        let mut providers = indexmap::IndexMap::new();
+                        if let Ok(content) = std::fs::read_to_string(&provider_file) {
+                            if let Ok(toml_val) = content.parse::<toml::Value>() {
+                                if let Some(table) = toml_val.get("providers").and_then(|v| v.as_table()) {
+                                    for (k, v) in table {
+                                        if let Some(s) = v.as_str() {
+                                            providers.insert(k.clone(), s.to_string());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        providers.insert(provider.to_string(), api_key.clone());
+
                         let mut config_str = String::new();
                         config_str.push_str("[providers]\n");
-                        config_str.push_str(&format!("{} = \"{}\"\n", provider, api_key));
+                        for (k, v) in &providers {
+                            config_str.push_str(&format!("{} = \"{}\"\n", k, v));
+                        }
                         let _ = std::fs::write(&provider_file, config_str);
 
                         // Apply live environment & base URL settings immediately

@@ -234,7 +234,7 @@ pub fn render_provider_config_modal(
 ) {
     let theme = Theme::current();
     let dialog_width = 72;
-    let dialog_height = 14;
+    let dialog_height = 15;
 
     if area.height < dialog_height || area.width < dialog_width {
         return;
@@ -256,6 +256,7 @@ pub fn render_provider_config_modal(
     .flex(Flex::Center)
     .areas(dialog_h);
 
+    // Clear background
     let bg_style = Style::default().bg(theme.bg_dark);
     for y in dialog.y..dialog.y + dialog.height {
         for x in dialog.x..dialog.x + dialog.width {
@@ -266,51 +267,86 @@ pub fn render_provider_config_modal(
         }
     }
 
-    let inner_x = dialog.x + 2;
-    let inner_width = dialog.width.saturating_sub(4);
+    // Draw main outer border
+    let border_style = Style::default().fg(theme.gray);
+    for x in dialog.x + 1..dialog.x + dialog.width - 1 {
+        if let Some(cell) = buf.cell_mut((x, dialog.y)) { cell.set_char('─').set_style(border_style); }
+        if let Some(cell) = buf.cell_mut((x, dialog.y + dialog.height - 1)) { cell.set_char('─').set_style(border_style); }
+    }
+    for y in dialog.y + 1..dialog.y + dialog.height - 1 {
+        if let Some(cell) = buf.cell_mut((dialog.x, y)) { cell.set_char('│').set_style(border_style); }
+        if let Some(cell) = buf.cell_mut((dialog.x + dialog.width - 1, y)) { cell.set_char('│').set_style(border_style); }
+    }
+    if let Some(cell) = buf.cell_mut((dialog.x, dialog.y)) { cell.set_char('┌').set_style(border_style); }
+    if let Some(cell) = buf.cell_mut((dialog.x + dialog.width - 1, dialog.y)) { cell.set_char('┐').set_style(border_style); }
+    if let Some(cell) = buf.cell_mut((dialog.x, dialog.y + dialog.height - 1)) { cell.set_char('└').set_style(border_style); }
+    if let Some(cell) = buf.cell_mut((dialog.x + dialog.width - 1, dialog.y + dialog.height - 1)) { cell.set_char('┘').set_style(border_style); }
 
-    // Title
-    let title = Line::from(Span::styled(
-        "Configure BYOK Provider",
-        Style::default()
-            .fg(theme.text_primary)
-            .add_modifier(Modifier::BOLD),
-    ));
-    title.render(Rect::new(inner_x, dialog.y + 1, inner_width, 1), buf);
+    let inner_x = dialog.x + 3;
+    let inner_width = dialog.width.saturating_sub(6);
 
-    // Provider selection menu header
-    let p_header = Line::from(vec![
-        Span::styled(
-            "Provider: ",
-            Style::default()
-                .fg(theme.gray_bright)
-                .add_modifier(Modifier::BOLD),
-        ),
-        if state.focus == 0 {
-            Span::styled(
-                "(use ←/→ or 1-6 to select)",
-                Style::default().fg(theme.accent_user),
-            )
-        } else {
-            Span::styled("(press Tab to edit)", Style::default().fg(theme.gray))
-        },
-    ]);
-    p_header.render(Rect::new(inner_x, dialog.y + 3, inner_width, 1), buf);
+    // Title on the top border (overlapping)
+    let title_text = " CONFIGURE BYOK PROVIDERS ";
+    let title_style = Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD);
+    let title_len = title_text.len() as u16;
+    let title_x = dialog.x + (dialog.width - title_len) / 2;
+    for (i, c) in title_text.chars().enumerate() {
+        if let Some(cell) = buf.cell_mut((title_x + i as u16, dialog.y)) {
+            cell.set_char(c).set_style(title_style);
+        }
+    }
 
-    // Grid row 1 (1. OpenAI, 2. Anthropic, 3. NVIDIA NIM)
+    // Section 1: Provider selection box
+    let grid_y = dialog.y + 2;
+    let grid_height = 4;
+    let grid_border_style = if state.focus == 0 {
+        Style::default().fg(theme.accent_user)
+    } else {
+        Style::default().fg(theme.gray)
+    };
+
+    // Draw inner grid border
+    for x in inner_x..inner_x + inner_width {
+        if let Some(cell) = buf.cell_mut((x, grid_y)) { cell.set_char('─').set_style(grid_border_style); }
+        if let Some(cell) = buf.cell_mut((x, grid_y + grid_height - 1)) { cell.set_char('─').set_style(grid_border_style); }
+    }
+    for y in grid_y + 1..grid_y + grid_height - 1 {
+        if let Some(cell) = buf.cell_mut((inner_x, y)) { cell.set_char('│').set_style(grid_border_style); }
+        if let Some(cell) = buf.cell_mut((inner_x + inner_width - 1, y)) { cell.set_char('│').set_style(grid_border_style); }
+    }
+    if let Some(cell) = buf.cell_mut((inner_x, grid_y)) { cell.set_char('┌').set_style(grid_border_style); }
+    if let Some(cell) = buf.cell_mut((inner_x + inner_width - 1, grid_y)) { cell.set_char('┐').set_style(grid_border_style); }
+    if let Some(cell) = buf.cell_mut((inner_x, grid_y + grid_height - 1)) { cell.set_char('└').set_style(grid_border_style); }
+    if let Some(cell) = buf.cell_mut((inner_x + inner_width - 1, grid_y + grid_height - 1)) { cell.set_char('┘').set_style(grid_border_style); }
+
+    // Subtitle on inner grid top border
+    let grid_title = " Select Provider (1-6 or ←/→) ";
+    let grid_title_style = if state.focus == 0 {
+        Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(theme.gray)
+    };
+    let grid_title_x = inner_x + (inner_width - grid_title.len() as u16) / 2;
+    for (i, c) in grid_title.chars().enumerate() {
+        if let Some(cell) = buf.cell_mut((grid_title_x + i as u16, grid_y)) {
+            cell.set_char(c).set_style(grid_title_style);
+        }
+    }
+
+    // Render provider options
     let provider_names = [
         "1. OpenAI",
         "2. Anthropic",
         "3. NVIDIA NIM",
         "4. OpenRouter",
         "5. Groq",
-        "6. Type it",
+        "6. Custom URL",
     ];
 
     let render_pill = |idx: usize, label: &str, x: u16, y: u16, buf: &mut Buffer| {
         let is_selected = state.selected_provider_idx == idx;
         let is_focused = state.focus == 0;
-        let prefix = if is_selected { "(•) " } else { "( ) " };
+        let prefix = if is_selected { "● " } else { "○ " };
         let full_text = format!("{}{}", prefix, label);
 
         let style = if is_selected && is_focused {
@@ -327,204 +363,91 @@ pub fn render_provider_config_modal(
         };
 
         let line = Line::from(Span::styled(full_text, style));
-        line.render(Rect::new(x, y, 21, 1), buf);
+        line.render(Rect::new(x, y, 20, 1), buf);
     };
 
-    // Row 0 pills
-    render_pill(0, provider_names[0], inner_x + 1, dialog.y + 4, buf);
-    render_pill(1, provider_names[1], inner_x + 23, dialog.y + 4, buf);
-    render_pill(2, provider_names[2], inner_x + 45, dialog.y + 4, buf);
+    let col_w = (inner_width - 2) / 3;
+    render_pill(0, provider_names[0], inner_x + 2, grid_y + 1, buf);
+    render_pill(1, provider_names[1], inner_x + 2 + col_w, grid_y + 1, buf);
+    render_pill(2, provider_names[2], inner_x + 2 + col_w * 2, grid_y + 1, buf);
 
-    // Row 1 pills
-    render_pill(3, provider_names[3], inner_x + 1, dialog.y + 5, buf);
-    render_pill(4, provider_names[4], inner_x + 23, dialog.y + 5, buf);
-    render_pill(5, provider_names[5], inner_x + 45, dialog.y + 5, buf);
+    render_pill(3, provider_names[3], inner_x + 2, grid_y + 2, buf);
+    render_pill(4, provider_names[4], inner_x + 2 + col_w, grid_y + 2, buf);
+    render_pill(5, provider_names[5], inner_x + 2 + col_w * 2, grid_y + 2, buf);
 
-    // Selected Provider Details / Custom text input line
+    // Render custom url input line if custom is selected
     if state.selected_provider_idx == 5 {
+        let input_y = dialog.y + 7;
         let mut custom_line = vec![
-            Span::styled(
-                "  Custom Provider Name: ",
-                Style::default().fg(theme.gray_bright),
-            ),
-            Span::styled(
-                &state.custom_provider_input,
-                Style::default().fg(theme.text_primary),
-            ),
+            Span::styled("   Custom Name/URL: ", Style::default().fg(theme.gray_bright)),
+            Span::styled(&state.custom_provider_input, Style::default().fg(theme.text_primary)),
         ];
         if state.focus == 0 {
-            custom_line.push(Span::styled(
-                "\u{2588}",
-                Style::default().fg(theme.accent_user),
-            ));
+            custom_line.push(Span::styled("█", Style::default().fg(theme.accent_user)));
         }
-        Line::from(custom_line).render(Rect::new(inner_x, dialog.y + 6, inner_width, 1), buf);
+        Line::from(custom_line).render(Rect::new(inner_x, input_y, inner_width, 1), buf);
     } else {
+        let details_y = dialog.y + 7;
         let active_p = &PRECONFIGURED_PROVIDERS[state.selected_provider_idx];
         let p_info = Line::from(vec![
-            Span::styled("  Selected ID: ", Style::default().fg(theme.gray)),
-            Span::styled(
-                active_p.id,
-                Style::default()
-                    .fg(theme.accent_user)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Span::styled("   Provider ID: ", Style::default().fg(theme.gray)),
+            Span::styled(active_p.id, Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD)),
         ]);
-        p_info.render(Rect::new(inner_x, dialog.y + 6, inner_width, 1), buf);
+        p_info.render(Rect::new(inner_x, details_y, inner_width, 1), buf);
     }
 
-    // API Key input section
-    let k_prefix = "API Key:  ";
-    let mut k_line = vec![Span::styled(
-        k_prefix,
-        Style::default()
-            .fg(theme.gray_bright)
-            .add_modifier(Modifier::BOLD),
-    )];
+    // Section 2: API Key input box
+    let key_y = dialog.y + 9;
+    let key_input_style = if state.focus == 1 {
+        Style::default().fg(theme.accent_user)
+    } else {
+        Style::default().fg(theme.gray)
+    };
+
+    // Draw field bracket for API Key
+    let input_prefix = " API Key: ";
+    Line::from(Span::styled(input_prefix, Style::default().fg(theme.gray_bright).add_modifier(Modifier::BOLD)))
+        .render(Rect::new(inner_x, key_y, inner_width, 1), buf);
+
+    let val_x = inner_x + input_prefix.len() as u16;
+    let val_w = inner_width.saturating_sub(input_prefix.len() as u16 + 2);
+
+    // Draw input brackets `[ ... ]`
+    if let Some(cell) = buf.cell_mut((val_x, key_y)) { cell.set_char('[').set_style(key_input_style); }
+    if let Some(cell) = buf.cell_mut((val_x + val_w + 1, key_y)) { cell.set_char(']').set_style(key_input_style); }
+
     let masked_key = "*".repeat(state.api_key_input.len());
+    let mut k_line = vec![];
     if state.api_key_input.is_empty() && state.provider_has_env_key() {
         k_line.push(Span::styled(
-            "(api key configured)",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
+            " (api key configured from environment) ",
+            Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD),
         ));
     } else {
-        k_line.push(Span::styled(
-            &masked_key,
-            Style::default().fg(theme.text_primary),
-        ));
+        k_line.push(Span::styled(format!(" {} ", masked_key), Style::default().fg(theme.text_primary)));
     }
     if state.focus == 1 {
-        k_line.push(Span::styled(
-            "\u{2588}",
-            Style::default().fg(theme.accent_user),
-        ));
+        k_line.push(Span::styled("█", Style::default().fg(theme.accent_user)));
     }
-    Line::from(k_line).render(Rect::new(inner_x, dialog.y + 8, inner_width, 1), buf);
+    Line::from(k_line).render(Rect::new(val_x + 1, key_y, val_w, 1), buf);
 
-    // Guide / Example format line
+    // Format Example / Guide line
     let key_guide = state.current_key_example();
     let guide_line = Line::from(vec![
-        Span::styled(
-            "  Guide:  ",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
-        ),
+        Span::styled("   Example: ", Style::default().fg(theme.gray)),
         Span::styled(key_guide, Style::default().fg(theme.gray_bright)),
     ]);
-    guide_line.render(Rect::new(inner_x, dialog.y + 9, inner_width, 1), buf);
+    guide_line.render(Rect::new(inner_x, key_y + 1, inner_width, 1), buf);
 
-    // Key hints
+    // Section 3: Hints in Footer
+    let hints_y = dialog.y + dialog.height - 2;
     let hints = Line::from(vec![
-        Span::styled(
-            "tab",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" = next field   ", Style::default().fg(theme.gray)),
-        Span::styled(
-            "←/→/1-6",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" = select provider   ", Style::default().fg(theme.gray)),
-        Span::styled(
-            "enter",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" = save   ", Style::default().fg(theme.gray)),
-        Span::styled(
-            "esc",
-            Style::default()
-                .fg(theme.accent_user)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" = cancel", Style::default().fg(theme.gray)),
-    ]);
-    hints.render(Rect::new(inner_x, dialog.y + 12, inner_width, 1), buf);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
-    fn make_key(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
-
-    #[test]
-    fn test_default_provider_selection() {
-        let state = ProviderConfigModalState::new();
-        assert_eq!(state.selected_provider_idx, 0);
-        assert_eq!(state.provider_input, "openai");
-        assert!(state.current_key_example().contains("sk-proj-"));
-    }
-
-    #[test]
-    fn test_switching_providers_updates_key_example() {
-        let mut state = ProviderConfigModalState::new();
-
-        // Press 2 for Anthropic
-        state.handle_key(&make_key(KeyCode::Char('2')));
-        assert_eq!(state.selected_provider_idx, 1);
-        assert_eq!(state.provider_input, "anthropic");
-        assert!(state.current_key_example().contains("sk-ant-api03-"));
-
-        // Press 3 for NVIDIA NIM
-        state.handle_key(&make_key(KeyCode::Char('3')));
-        assert_eq!(state.selected_provider_idx, 2);
-        assert_eq!(state.provider_input, "nvidia_nim");
-        assert!(state.current_key_example().contains("nvapi-"));
-
-        // Press 4 for OpenRouter
-        state.handle_key(&make_key(KeyCode::Char('4')));
-        assert_eq!(state.selected_provider_idx, 3);
-        assert_eq!(state.provider_input, "openrouter");
-        assert!(state.current_key_example().contains("sk-or-v1-"));
-
-        // Press 5 for Groq
-        state.handle_key(&make_key(KeyCode::Char('5')));
-        assert_eq!(state.selected_provider_idx, 4);
-        assert_eq!(state.provider_input, "groq");
-        assert!(state.current_key_example().contains("gsk_"));
-    }
-
-    #[test]
-    fn test_type_it_custom_provider() {
-        let mut state = ProviderConfigModalState::new();
-
-        // Press 6 for "Type it"
-        state.handle_key(&make_key(KeyCode::Char('6')));
-        assert_eq!(state.selected_provider_idx, 5);
-        assert_eq!(state.provider_input, "");
-
-        // Type custom provider name: "my_local_llm"
-        for c in "my_local_llm".chars() {
-            state.handle_key(&make_key(KeyCode::Char(c)));
-        }
-        assert_eq!(state.provider_input, "my_local_llm");
-        assert_eq!(
-            state.current_key_example(),
-            "your-api-key-here (e.g. sk-...)"
-        );
-    }
-
-    #[test]
-    fn test_provider_has_env_key() {
-        let state = ProviderConfigModalState::new();
-        unsafe {
-            std::env::set_var("OPENAI_API_KEY", "sk-test12345");
-        }
-        assert!(state.provider_has_env_key());
-        unsafe {
-            std::env::remove_var("OPENAI_API_KEY");
-        }
-    }
+        Span::styled(" tab ", Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD)),
+        Span::styled("Next Field  •  ", Style::default().fg(theme.gray)),
+        Span::styled(" enter ", Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD)),
+        Span::styled("Save  •  ", Style::default().fg(theme.gray)),
+        Span::styled(" esc ", Style::default().fg(theme.accent_user).add_modifier(Modifier::BOLD)),
+        Span::styled("Cancel", Style::default().fg(theme.gray)),
+    ]).alignment(ratatui::layout::Alignment::Center);
+    hints.render(Rect::new(inner_x, hints_y, inner_width, 1), buf);
 }

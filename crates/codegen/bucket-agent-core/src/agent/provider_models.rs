@@ -329,60 +329,129 @@ fn anthropic_model_entries(base_url: &str) -> IndexMap<String, ModelEntry> {
 
 // ── Orchestrator ──────────────────────────────────────────────────────
 
-/// Discover models from the currently configured provider.
+/// Discover models from all configured providers.
 ///
-/// Reads `BUCKET_MODELS_BASE_URL` and `BUCKET_API_KEY` from the environment
-/// (set by [`map_provider_env`]). Returns `None` if no provider is configured
-/// or if the fetch fails.
+/// Reads `providers.toml` (and falls back to standard provider environment variables)
+/// to fetch and merge models from all active providers.
 pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
     let _ = sync_registry_models_cache();
     let registry_cache = load_models_registry_cache();
-    let base_url = std::env::var("BUCKET_MODELS_BASE_URL").ok()?;
-    let api_key = std::env::var("BUCKET_API_KEY").ok().filter(|k| !k.is_empty())?;
 
-    // Determine provider type from the base URL
-    let is_ollama = base_url.contains("localhost:11434") || base_url.contains("127.0.0.1:11434");
-    let is_anthropic = base_url.contains("anthropic.com");
+    // We want to collect models from all configured providers.
+    let mut merged_models = IndexMap::new();
+    let mut has_any = false;
 
-    let result = if is_ollama {
-        fetch_ollama_models(&base_url)
-            .map(|entries| {
-                entries
-                    .iter()
-                    .map(|e| ollama_entry_to_model(e, &base_url, registry_cache.as_ref()))
-                    .collect()
-            })
-    } else if is_anthropic {
-        // Anthropic doesn't have a public /v1/models endpoint
-        Ok(anthropic_model_entries(&base_url))
+    // 1. Read from providers.toml
+    let mut providers = IndexMap::new();
+    if let Ok(home) = std::env::var("BUCKET_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|_| {
+            #[allow(deprecated)]
+            std::env::home_dir()
+                .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
+                .ok_or(())
+        })
+    {
+        let provider_file = home.join("providers.toml");
+        if let Ok(content) = std::fs::read_to_string(&provider_file) {
+            if let Ok(toml_val) = content.parse::<toml::Value>() {
+                if let Some(table) = toml_val.get("providers").and_then(|v| v.as_table()) {
+                    for (k, v) in table {
+                        if let Some(s) = v.as_str() {
+                            providers.insert(k.clone(), s.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // If no providers are configured in providers.toml, check environment variables as fallback
+    if providers.is_empty() {
+        for (provider_id, _) in [
+            ("openai", "OPENAI_API_KEY"),
+            ("anthropic", "ANTHROPIC_API_KEY"),
+            ("nvidia_nim", "NVIDIA_API_KEY"),
+            ("openrouter", "OPENROUTER_API_KEY"),
+            ("groq", "GROQ_API_KEY"),
+            ("gemini", "GEMINI_API_KEY"),
+        ] {
+            if let Some(key) = crate::util::config::resolve_env_key_for_provider(provider_id) {
+                if !key.trim().is_empty() {
+                    providers.insert(provider_id.to_string(), key);
+                }
+            }
+        }
+    }
+
+    // Now discover models for each provider
+    for (provider_name, api_key_val) in providers {
+        let p_lower = provider_name.to_lowercase();
+        let base_url = if p_lower.starts_with("http://") || p_lower.starts_with("https://") {
+            Some(provider_name.as_str())
+        } else {
+            resolve_provider_base_url(&p_lower)
+        };
+
+        let Some(base_url) = base_url else {
+            continue;
+        };
+
+        let api_key = if api_key_val.is_empty() || api_key_val == "(api key configured)" {
+            crate::util::config::resolve_env_key_for_provider(&p_lower).unwrap_or(api_key_val)
+        } else {
+            api_key_val
+        };
+
+        let is_ollama = p_lower == "ollama" || base_url.contains("localhost:11434") || base_url.contains("127.0.0.1:11434");
+        let is_anthropic = p_lower == "anthropic" || base_url.contains("anthropic.com");
+
+        let result = if is_ollama {
+            fetch_ollama_models(base_url)
+                .map(|entries| {
+                    entries
+                        .iter()
+                        .map(|e| ollama_entry_to_model(e, base_url, registry_cache.as_ref()))
+                        .collect::<IndexMap<_, _>>()
+                })
+        } else if is_anthropic {
+            Ok(anthropic_model_entries(base_url))
+        } else {
+            fetch_openai_models(base_url, &api_key)
+                .map(|entries| {
+                    entries
+                        .iter()
+                        .map(|e| openai_entry_to_model(e, base_url, registry_cache.as_ref()))
+                        .collect::<IndexMap<_, _>>()
+                })
+        };
+
+        match result {
+            Ok(map) => {
+                tracing::info!(
+                    count = map.len(),
+                    provider = %provider_name,
+                    "discovered provider models"
+                );
+                for (k, v) in map {
+                    merged_models.insert(k, v);
+                }
+                has_any = true;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    provider = %provider_name,
+                    "failed to discover provider models"
+                );
+            }
+        }
+    }
+
+    if has_any {
+        Some(merged_models)
     } else {
-        // OpenAI-compatible endpoint
-        fetch_openai_models(&base_url, &api_key)
-            .map(|entries| {
-                entries
-                    .iter()
-                    .map(|e| openai_entry_to_model(e, &base_url, registry_cache.as_ref()))
-                    .collect()
-            })
-    };
-
-    match result {
-        Ok(map) => {
-            tracing::info!(
-                count = map.len(),
-                base_url = %base_url,
-                "discovered provider models"
-            );
-            Some(map)
-        }
-        Err(e) => {
-            tracing::warn!(
-                error = %e,
-                base_url = %base_url,
-                "failed to discover provider models"
-            );
-            None
-        }
+        None
     }
 }
 

@@ -1838,20 +1838,23 @@ impl AgentView {
                 let right_labels: Vec<String> = entries
                     .iter()
                     .map(|entry| {
-                        let mut label = format!(
-                            "{} | {}",
-                            entry.id.0.as_ref(),
-                            entry.api_backend
-                        );
-                        label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
-                        if entry.supports_reasoning_effort {
-                            label.push_str(" | reasoning");
-                        }
+                        let mut parts = Vec::new();
+                        parts.push(format!("{}k ctx", entry.context_window / 1000));
                         if entry.has_own_credentials {
-                            label.push_str(" | BYOK");
+                            parts.push("BYOK".to_string());
                         }
+                        let backend_str = match entry.api_backend.as_str() {
+                            "ChatCompletions" => "Chat",
+                            "Messages" => "Msg",
+                            other => other,
+                        };
+                        parts.push(backend_str.to_string());
+                        if entry.supports_reasoning_effort {
+                            parts.push("Reasoning".to_string());
+                        }
+                        let mut label = parts.join("  •  ");
                         if entry.is_current {
-                            label.push_str(" (current)");
+                            label.push_str("  [Active]");
                         }
                         label
                     })

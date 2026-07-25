@@ -196,6 +196,28 @@ No mandatory configuration files. No login screens. Instant terminal AI agent ac
 
 ---
 
+### 5. Zed Editor Integration
+
+`bucket` integrates natively with the **Zed Editor** as an external AI coding agent using the **Agent Client Protocol (ACP)**. 
+
+To configure it, add the following to your Zed `settings.json` (open it via the Command Palette: `ctrl-shift-p` / `cmd-shift-p` -> `zed: open settings`):
+
+```json
+{
+  "agent_servers": {
+    "bucket": {
+      "type": "custom",
+      "command": "bucket",
+      "args": ["agent", "stdio"]
+    }
+  }
+}
+```
+
+A template file is available at [extensions/zed/settings.json](extensions/zed/settings.json). Once configured, you can select **Bucket** as your agent in Zed's Agent Panel to start a new chat thread.
+
+---
+
 ## Documentation
 
 The user guide ships with the pager crate:

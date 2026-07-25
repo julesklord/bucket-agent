@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.1.8] - 2026-07-25
+
+### Added
+- **Multi-Provider Model Discovery**: Enabled simultaneous model fetching and aggregation across all configured APIs in `providers.toml` and active environment variables.
+- **Incremental Provider Configuration**: Updated settings saving flow to accumulate and merge credentials in `providers.toml` instead of overwriting existing records.
+- **Premium Provider and Model Modals UI**: Refactored the provider configuration dialog with high-fidelity borders, titles, input brackets, and centered layout. Styled the Model selection details panel with clean bullet-separated metadata formatting and active state markers.
+- **Early Environment Mapping**: Automated loading of `.env` and `providers.toml` on binary startup to guarantee correct environment variables resolution.
+
+### Changed
+- **Sandbox Performance Optimizations**: Merged sandbox performance improvement to avoid unnecessary path cloning during macOS alias generation.
+
+---
+
 ## [v0.1.7] - 2026-07-23
 
 ### Changed

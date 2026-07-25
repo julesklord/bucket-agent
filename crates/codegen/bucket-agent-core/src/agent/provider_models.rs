@@ -672,7 +672,7 @@ mod tests {
             id: "gpt-4o".to_string(),
             owned_by: Some("openai".to_string()),
         };
-        let (key, model) = openai_entry_to_model(&entry, "https://api.openai.com/v1");
+        let (key, model) = openai_entry_to_model(&entry, "https://api.openai.com/v1", None);
         assert_eq!(key, "gpt-4o");
         assert_eq!(model.info.model, "gpt-4o");
         assert_eq!(model.info.base_url, "https://api.openai.com/v1");
@@ -689,7 +689,7 @@ mod tests {
             id: "nvidia/llama-3.1-70b-instruct".to_string(),
             owned_by: Some("nvidia".to_string()),
         };
-        let (key, model) = openai_entry_to_model(&entry, "https://integrate.api.nvidia.com/v1");
+        let (key, model) = openai_entry_to_model(&entry, "https://integrate.api.nvidia.com/v1", None);
         assert_eq!(key, "nvidia/llama-3.1-70b-instruct");
         let env_key = model.env_key.as_ref().expect("env_key should be set for NVIDIA");
         assert_eq!(env_key.primary(), Some("NVIDIA_API_KEY"));
@@ -701,7 +701,7 @@ mod tests {
             id: "custom-model".to_string(),
             owned_by: None,
         };
-        let (_, model) = openai_entry_to_model(&entry, "https://my-custom-api.example.com/v1");
+        let (_, model) = openai_entry_to_model(&entry, "https://my-custom-api.example.com/v1", None);
         assert!(model.env_key.is_none(), "unknown provider should have no env_key");
     }
 
@@ -711,7 +711,7 @@ mod tests {
             name: "llama3.3:latest".to_string(),
             size: Some(4_000_000_000),
         };
-        let (key, model) = ollama_entry_to_model(&entry, "http://localhost:11434");
+        let (key, model) = ollama_entry_to_model(&entry, "http://localhost:11434", None);
         assert_eq!(key, "llama3.3");
         assert_eq!(model.info.model, "llama3.3");
         assert_eq!(model.info.name.as_deref(), Some("llama3.3:latest"));

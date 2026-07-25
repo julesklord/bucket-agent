@@ -78,12 +78,34 @@ When using BYOK providers or local servers (NVIDIA NIM, OpenRouter, Groq, Ollama
 
 ### 1. Install `bucket`
 
-**Via Quick Installer Script:**
+Choose one of the easy installation methods below:
+
+**Option A: Quick Installer Script (Interactive & Flexible)**
+Our installer script will prompt you to choose where to install (`~/.local/bin` for your user only or `/usr/local/bin` for system-wide with `sudo`), and whether to download the pre-compiled binary (fastest) or compile the source.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/julesklord/bucket-agent/main/scripts/install.sh | bash
 ```
 
-**Or Build from Source:**
+*Non-interactive flags are also supported:*
+- Install system-wide: `curl -fsSL ... | bash -s -- --system`
+- Compile from source: `curl -fsSL ... | bash -s -- --build`
+- Compile bleeding-edge main branch: `curl -fsSL ... | bash -s -- --latest-src`
+
+**Option B: Via Makefile (Classic Unix Build & Install)**
+If you already cloned the repository, you can compile and install easily using the provided GNU-compatible `Makefile`:
+
+```sh
+make          # Compiles target/release/bucket
+sudo make install  # Installs system-wide to /usr/local/bin (default)
+```
+
+To install to a custom path (like your user's local bin folder):
+```sh
+make install PREFIX=$HOME/.local
+```
+
+**Option C: Build Directly with Cargo:**
 ```sh
 cargo build -p bucket-bin --release
 # Binary will be placed at target/release/bucket

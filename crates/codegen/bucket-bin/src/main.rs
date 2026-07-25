@@ -1671,6 +1671,7 @@ fn main() {
 }
 async fn async_main() -> Result<()> {
     let _ = rustls::crypto::ring::default_provider().install_default();
+    let _ = bucket_agent_core::util::config::load_config().await;
     let mut args = PagerArgs::parse_and_apply_cwd()?;
     if let Some(ref mode) = args.compaction_mode {
         unsafe { std::env::set_var("BUCKET_COMPACTION_MODE", mode) };

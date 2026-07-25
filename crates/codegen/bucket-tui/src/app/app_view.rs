@@ -2167,7 +2167,7 @@ impl AppView {
                     menu_count: if zdr_blocked {
                         2
                     } else {
-                        3 + if self.has_claude_import { 1 } else { 0 }
+                        5 + if self.has_claude_import { 1 } else { 0 }
                             + if self.welcome_show_changelog_action {
                                 1
                             } else {
@@ -2831,7 +2831,9 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
                         if let Some(entry) = entries.get(i) {
                             let model_id = entry.model.clone();
                             *ctx.welcome_doc_viewer = None;
-                            return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
+                            return InputOutcome::Action(
+                                crate::app::actions::Action::StartSessionWithModel(model_id),
+                            );
                         }
                         return InputOutcome::Changed;
                     }
@@ -2869,7 +2871,13 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
             }
         }
         if let Event::Mouse(mouse) = ev {
-            if let crate::views::modal::ActiveModal::ModelPicker { entries, state, window, .. } = modal {
+            if let crate::views::modal::ActiveModal::ModelPicker {
+                entries,
+                state,
+                window,
+                ..
+            } = modal
+            {
                 use crate::views::modal_window as mw;
                 use crate::views::picker::{PickerConfig, PickerOutcome, handle_picker_input};
                 let outcome = mw::handle_modal_mouse(window, mouse.kind, mouse.column, mouse.row);
@@ -2907,7 +2915,11 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
                                 if let Some(entry) = entries.get(i) {
                                     let model_id = entry.model.clone();
                                     *ctx.welcome_doc_viewer = None;
-                                    return InputOutcome::Action(crate::app::actions::Action::StartSessionWithModel(model_id));
+                                    return InputOutcome::Action(
+                                        crate::app::actions::Action::StartSessionWithModel(
+                                            model_id,
+                                        ),
+                                    );
                                 }
                                 return InputOutcome::Changed;
                             }
@@ -3246,6 +3258,12 @@ fn handle_welcome_input(ev: &Event, ctx: &mut WelcomeInputCtx<'_>) -> InputOutco
             if key!('s', CONTROL).matches(key) {
                 return InputOutcome::Action(Action::FetchSessionList);
             }
+            if key!('p', CONTROL).matches(key) {
+                return InputOutcome::Action(Action::ConfigureProvider);
+            }
+            if key!('m', CONTROL).matches(key) {
+                return InputOutcome::Action(Action::OpenModelPicker);
+            }
             if ctx.has_pending_update && key!('u', CONTROL).matches(key) {
                 return InputOutcome::Action(Action::QuitForUpdate);
             }
@@ -3572,7 +3590,7 @@ fn handle_menu_nav(
     count: usize,
 ) -> Option<InputOutcome> {
     match key.code {
-        KeyCode::Down => {
+        KeyCode::Down | KeyCode::Tab => {
             *index = Some(match *index {
                 Some(i) if i + 1 < count => i + 1,
                 Some(_) | None => 0,
@@ -4111,9 +4129,11 @@ impl AppView {
                                     ref mut state,
                                     ref mut window,
                                 } => {
-                                    use crate::views::modal_window::{self as mw, ModalWindowConfig, ModalSizing};
+                                    use crate::views::modal_window::{
+                                        self as mw, ModalSizing, ModalWindowConfig,
+                                    };
                                     use crate::views::picker::{self, PickerEntry, PickerRow};
-                                    
+
                                     let mut picker_shortcuts: Vec<mw::Shortcut> = vec![
                                         mw::Shortcut {
                                             label: "\u{2191}/\u{2193} nav",
@@ -4131,8 +4151,11 @@ impl AppView {
                                             id: 0,
                                         },
                                     ];
-                                    mw::push_vim_nav_search_hint(&mut picker_shortcuts, state.search_active);
-                                    
+                                    mw::push_vim_nav_search_hint(
+                                        &mut picker_shortcuts,
+                                        state.search_active,
+                                    );
+
                                     let right_labels: Vec<String> = entries
                                         .iter()
                                         .map(|entry| {
@@ -4141,7 +4164,10 @@ impl AppView {
                                                 entry.id.0.as_ref(),
                                                 entry.api_backend
                                             );
-                                            label.push_str(&format!(" | ctx: {}k", entry.context_window / 1000));
+                                            label.push_str(&format!(
+                                                " | ctx: {}k",
+                                                entry.context_window / 1000
+                                            ));
                                             if entry.supports_reasoning_effort {
                                                 label.push_str(" | reasoning");
                                             }
@@ -4163,7 +4189,8 @@ impl AppView {
                                                 label: &entry.name,
                                                 right_label: &right_labels[i],
                                                 selected: state.hovered == Some(i)
-                                                    || (state.hovered.is_none() && i == state.selected),
+                                                    || (state.hovered.is_none()
+                                                        && i == state.selected),
                                                 expanded: false,
                                                 fields: &[],
                                                 description_lines: &[],
@@ -4177,7 +4204,7 @@ impl AppView {
                                             })
                                         })
                                         .collect();
-                                    
+
                                     let modal_config = ModalWindowConfig {
                                         title: "Select Model",
                                         tabs: None,
@@ -4194,8 +4221,13 @@ impl AppView {
                                         .with_compact(compact),
                                         fold_info: None,
                                     };
-                                    if let Some(mca) = mw::render_modal_window(f.buffer_mut(), view_area, window, &modal_config, &theme)
-                                    {
+                                    if let Some(mca) = mw::render_modal_window(
+                                        f.buffer_mut(),
+                                        view_area,
+                                        window,
+                                        &modal_config,
+                                        &theme,
+                                    ) {
                                         picker::render_picker_in_modal(
                                             f.buffer_mut(),
                                             mca.content,
@@ -5497,7 +5529,6 @@ pub(crate) mod tests {
             optimistic_prompt_echoes: std::collections::HashMap::new(),
             pending_running_adoptions: std::collections::HashMap::new(),
             session_picker_grouped: false,
-            provider_capabilities: bucket_agent_core::provider::ProviderCapabilities::default(),
             cancel_rewind_enabled: true,
             session_recap_available: false,
             dashboard: None,

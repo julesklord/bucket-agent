@@ -2,13 +2,13 @@ use crate::app::actions::Effect;
 use crate::app::app_view::{AppView, SessionPickerEntry};
 use crate::app::dispatch::ctx::get_active_agent_mut;
 use crate::app::effects::ConversationsPartial;
-use agent_client_protocol::ModelId;
 use crate::views::modal::ActiveModal;
 use crate::views::picker::PickerState;
 use crate::views::session_picker::{
     PickerSelectionAnchor, SessionPickerLanes, SessionPickerPendingNotice, SourceFilter,
     capture_picker_selection, effective_filter_query, repo_name_from_cwd, restore_picker_selection,
 };
+use agent_client_protocol::ModelId;
 use std::sync::Arc;
 
 type SearchHit = bucket_agent_core::extensions::session_search::SearchSessionHit;
@@ -239,15 +239,15 @@ pub(in crate::app::dispatch) fn dispatch_open_model_picker(app: &mut AppView) ->
             }
         })
         .collect();
-    
+
     app.welcome_models_picker_state.selected = 0;
     app.welcome_models_picker_state.query.clear();
     app.welcome_models_picker_state.query_cursor = 0;
     app.welcome_models_picker_state.search_active = true;
     app.welcome_models_picker_state.expanded.clear();
-    
+
     let picker_state = app.welcome_models_picker_state.clone();
-    
+
     if let Some(agent) = get_active_agent_mut(app) {
         agent.active_modal = Some(ActiveModal::ModelPicker {
             entries,

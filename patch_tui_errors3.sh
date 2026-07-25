@@ -1,0 +1,1 @@
+sed -i 's/welcome_models_picker_state: crate::views::picker::PickerState::new()/welcome_models_picker_state: crate::views::picker::PickerState::input_active()/g' crates/codegen/bucket-tui/src/app/dispatch/tests/mod.rs

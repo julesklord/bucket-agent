@@ -1,0 +1,6 @@
+sed -i 's/        npm_registry: None,/        npm_registry: None,\n        update_check_url: None,\n        update_base_urls: None,\n        update_gh_repo: None,/g' crates/codegen/bucket-updater/tests/common/mod.rs
+sed -i 's/        npm_registry: None,/        npm_registry: None,\n        update_check_url: None,\n        update_base_urls: None,\n        update_gh_repo: None,/g' crates/codegen/bucket-updater/tests/test_check_status_regression.rs
+sed -i 's/        npm_registry: None,/        npm_registry: None,\n        update_check_url: None,\n        update_base_urls: None,\n        update_gh_repo: None,/g' crates/codegen/bucket-updater/tests/test_downgrade_matrix.rs
+sed -i 's/        npm_registry: None,/        npm_registry: None,\n        update_check_url: None,\n        update_base_urls: None,\n        update_gh_repo: None,/g' crates/codegen/bucket-updater/tests/test_install_internal.rs
+sed -i 's/fetch_gh_release_version("stable")/fetch_gh_release_version("stable", \&common::make_update_config("stable"))/g' crates/codegen/bucket-updater/tests/test_subprocess.rs
+sed -i 's/fetch_gh_release_version("alpha")/fetch_gh_release_version("alpha", \&common::make_update_config("alpha"))/g' crates/codegen/bucket-updater/tests/test_subprocess.rs

@@ -194,4 +194,22 @@ mod tests {
             assert!(!is_context_length_error(msg), "should not match: {msg}");
         }
     }
+
+    #[test]
+    fn is_context_length_error_matches_expected() {
+        let cases = vec![
+            ("too long for this model", true),
+            ("prompt is too long", true),
+            ("maximum prompt length", true),
+            ("maximum context length", true),
+            ("context_length_exceeded", true),
+            ("some other error", false),
+            ("internal server error", false),
+            ("", false),
+            ("TOO LONG FOR THIS MODEL", true), // test case insensitivity
+        ];
+        for (msg, expected) in cases {
+            assert_eq!(is_context_length_error(msg), expected, "failed on: {}", msg);
+        }
+    }
 }

@@ -519,27 +519,19 @@ fn load_models_registry_cache() -> Option<std::collections::HashMap<String, u64>
     let file = std::fs::File::open(cache_path).ok()?;
     let reader = std::io::BufReader::new(file);
     
-    #[derive(serde::Deserialize)]
-    struct CacheLimit {
-        context: u64,
-    }
-    
-    #[derive(serde::Deserialize)]
-    struct CacheModel {
-        limit: Option<CacheLimit>,
-    }
-    
-    #[derive(serde::Deserialize)]
-    struct CacheProvider {
-        models: std::collections::HashMap<String, CacheModel>,
-    }
-    
-    let data: std::collections::HashMap<String, CacheProvider> = serde_json::from_reader(reader).ok()?;
+    let data: serde_json::Value = serde_json::from_reader(reader).ok()?;
     let mut map = std::collections::HashMap::new();
-    for provider in data.values() {
-        for (m_id, m_info) in &provider.models {
-            if let Some(limit) = &m_info.limit {
-                map.insert(normalize_model_id(m_id), limit.context);
+    
+    if let Some(providers) = data.as_object() {
+        for provider in providers.values() {
+            if let Some(models) = provider.get("models").and_then(|m| m.as_object()) {
+                for (m_id, m_info) in models {
+                    if let Some(limit) = m_info.get("limit").and_then(|l| l.as_object()) {
+                        if let Some(context) = limit.get("context").and_then(|c| c.as_u64()) {
+                            map.insert(normalize_model_id(m_id), context);
+                        }
+                    }
+                }
             }
         }
     }

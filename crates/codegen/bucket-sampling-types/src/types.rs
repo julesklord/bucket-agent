@@ -534,8 +534,11 @@ impl ToolCallFunction {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Usage {
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub prompt_tokens: u32,
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub completion_tokens: u32,
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub total_tokens: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prompt_tokens_details: Option<PromptTokensDetails>,
@@ -588,6 +591,7 @@ pub struct ChatCompletionChunk {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChatChunkChoice {
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub index: u32,
     pub delta: ChatChunkDelta,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -605,7 +609,7 @@ pub struct ChatChunkChoice {
 pub struct ToolCallDelta {
     /// The positional index of the tool call being streamed.
     /// Used to correlate delta chunks belonging to the same tool call.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub index: u32,
     /// Only present in the first chunk for this tool call.
     #[serde(skip_serializing_if = "Option::is_none")]

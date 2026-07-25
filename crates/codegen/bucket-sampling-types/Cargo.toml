@@ -1,7 +1,7 @@
 [package]
 license = "Apache-2.0"
 name = "bucket-sampling-types"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 description = "Pure data types for the xAI sampling / chat-completion API layer"
 

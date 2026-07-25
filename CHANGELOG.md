@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.9] - 2026-07-25
+
+### Added
+- **Interactive Installation Script**: Added options in `install.sh` to choose between `sudo` (system-wide) or local install path, and select version channels (stable release, compiled stable, or development branch).
+- **Zed Editor Integration**: Added custom Agent Client Protocol (ACP) configuration sample (`extensions/zed/settings.json`) and documentation.
+- **Makefile Support**: Created a GNU Makefile support for compiling, testing, linting, installing and uninstalling `bucket`.
+
+### Changed
+- **Intelligent Retry State Labels**: Refactored HTTP error handling and status bar integration to show localized short labels during auto-retry phases.
+- **TUI Welcome Screen**: Renamed the TUI model configuration menu entry to "Models" and opened the ModelPicker selector directly.
+
+### Fixed
+- **Robust Models Cache Registry**: Swapped strict struct deserialization for dynamic `serde_json::Value` parsing in `models.json` registry loading, making model metadata discovery resilient against schema variations from `models.dev` api.
+- **API Null Ingestion**: Tolerate null indices and count values in chunk choices, tool calls, and token statistics in streaming responses.
+
 ---
 
 ## [v0.1.8] - 2026-07-25

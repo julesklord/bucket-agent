@@ -370,6 +370,55 @@ pub fn format_sampling_error(err: &SamplingError, retry_count: Option<u32>) -> S
     }
 }
 
+/// Build a short, TUI-friendly label for the error that triggered a retry.
+///
+/// Intentionally compact (≤ ~30 chars) so it fits in the narrow turn-status
+/// bar alongside "Retrying (attempt N/M)…". Examples:
+/// - `"HTTP 503 (server error)"`
+/// - `"HTTP 429 (rate limited)"`
+/// - `"timeout"`
+/// - `"stream error"`
+/// - `"empty response"`
+/// - `"reasoning loop"`
+pub fn format_retry_status_label(err: &SamplingError) -> String {
+    match err {
+        SamplingError::Auth(_) => "auth error".to_string(),
+        SamplingError::InvalidConfiguration(_) => "config error".to_string(),
+        SamplingError::Http(e) => {
+            if e.is_timeout() {
+                "timeout".to_string()
+            } else if e.is_connect() {
+                "connection failed".to_string()
+            } else if e.is_request() || e.is_body() {
+                "request error".to_string()
+            } else {
+                "network error".to_string()
+            }
+        }
+        SamplingError::Serialization(_) => "parse error".to_string(),
+        SamplingError::Api { status, .. } => {
+            let hint = match status.as_u16() {
+                429 => " (rate limited)",
+                500 => " (server error)",
+                502 | 503 | 504 => " (unavailable)",
+                520 => " (gateway error)",
+                400 => " (bad request)",
+                401 | 403 => " (auth error)",
+                404 => " (not found)",
+                413 => " (too large)",
+                _ => "",
+            };
+            format!("HTTP {}{}", status.as_u16(), hint)
+        }
+        SamplingError::EventStreamError(_) => "stream interrupted".to_string(),
+        SamplingError::StreamError { .. } => "stream error".to_string(),
+        SamplingError::IdleTimeout { .. } => "model timeout".to_string(),
+        SamplingError::EmptyResponse { .. } => "empty response".to_string(),
+        SamplingError::MaxTokensTruncation => "max tokens".to_string(),
+        SamplingError::DoomLoopDetected { .. } => "reasoning loop".to_string(),
+    }
+}
+
 /// Reconstruct an owned [`SamplingError`] from a borrowed one.
 ///
 /// `SamplingError` does not implement `Clone` because its `Http` and

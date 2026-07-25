@@ -511,6 +511,7 @@ mod tests {
             attempt: 2,
             max_retries: 5,
             reason: "timeout".to_owned(),
+            error_label: "timeout".to_owned(),
         };
         let state = TitleState {
             activity: Some(&activity),

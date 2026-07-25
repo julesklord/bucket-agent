@@ -108,6 +108,7 @@
             attempt: 1,
             max_retries: 3,
             reason: "rate limited".into(),
+            error_label: "rate limited".into(),
         };
         apply_retry_state(&retry, &mut session, &mut scrollback,
             false,

@@ -2468,11 +2468,20 @@ impl SessionActor {
                         "reason" : crate ::util::truncate(& reason, 300), }
                     )),
                 );
+                // Derive a compact label from the error kind for the TUI status bar.
+                // For API errors the reason string starts with "API error (status NNN";
+                // extract the status to build a compact label. Fall back to a kind-based
+                // label so the bar always shows something useful.
+                let error_label = crate::sampling::retry_label_from_kind_and_reason(
+                    kind,
+                    &reason,
+                );
                 self.send_xai_notification(XaiSessionUpdate::RetryState(
                     crate::extensions::notification::RetryState::Retrying {
                         attempt,
                         max_retries,
                         reason,
+                        error_label,
                     },
                 ))
                 .await;

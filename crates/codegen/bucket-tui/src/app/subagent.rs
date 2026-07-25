@@ -1055,6 +1055,7 @@ mod tests {
                 attempt: 2,
                 max_retries: 5,
                 reason: "rate limited".into(),
+                error_label: "HTTP 429 (rate limited)".into(),
             }),
             "Retrying (2/5)",
         );

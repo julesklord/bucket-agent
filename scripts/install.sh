@@ -245,12 +245,15 @@ download_release() {
         log_info "Attempting to download binary artifact for v${ver} (${platform})..."
         log_verbose "URL: ${download_url}"
 
-        if curl --fail --location --progress-bar "$download_url" -o "${target_binary}"; then
+        local temp_binary="${target_binary}.tmp"
+        if curl --fail --location --progress-bar "$download_url" -o "${temp_binary}"; then
+            mv -f "${temp_binary}" "${target_binary}"
             download_success=true
             installed_ver="$ver"
             log_success "Downloaded pre-compiled binary for ${BOLD}v${ver}${RESET}."
             break
         else
+            rm -f "${temp_binary}"
             log_warn "Binary for v${ver} is not yet available or failed to download. Trying next available release..."
         fi
     done
@@ -332,7 +335,8 @@ build_from_source() {
 
     log_info "Installing compiled binary to target location..."
     mkdir -p "$INSTALL_DIR"
-    cp "${build_tmp}/target/release/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+    cp "${build_tmp}/target/release/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}.tmp"
+    mv -f "${INSTALL_DIR}/${BINARY_NAME}.tmp" "${INSTALL_DIR}/${BINARY_NAME}"
     chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     rm -rf "${build_tmp}"

@@ -181,6 +181,9 @@ pub enum TurnActivity {
         max_retries: u32,
         /// Human-readable reason for the retry.
         reason: String,
+        /// Short, TUI-friendly error category label (e.g. "HTTP 503 (unavailable)",
+        /// "timeout", "rate limited"). Empty string if unknown.
+        error_label: String,
     },
     /// Turn is open but nothing is streaming; `reason` says what we're waiting
     /// on. Replaces the implicit "no activity == generic Waiting…" placeholder.

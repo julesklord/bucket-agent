@@ -955,6 +955,11 @@ pub enum RetryState {
         max_retries: u32,
         /// Human-readable reason for the retry
         reason: String,
+        /// Short, TUI-friendly label for the error category (e.g. "HTTP 503 (unavailable)",
+        /// "timeout", "rate limited", "stream error"). Compact enough to fit in the
+        /// status bar alongside the attempt counter.
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        error_label: String,
     },
     /// All retries have been exhausted
     Exhausted {

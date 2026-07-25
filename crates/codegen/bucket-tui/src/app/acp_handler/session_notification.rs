@@ -1237,11 +1237,13 @@ pub(super) fn apply_retry_state(
             attempt,
             max_retries,
             reason,
+            error_label,
         } => {
             session.set_retry_activity(Some(TurnActivity::Retrying {
                 attempt: *attempt,
                 max_retries: *max_retries,
                 reason: reason.clone(),
+                error_label: error_label.clone(),
             }));
         }
         RetryState::Exhausted {
@@ -1276,7 +1278,15 @@ pub(super) fn apply_retry_state(
                 let error = if *rate_limited {
                     rate_limited_user_message(is_api_key_auth).into()
                 } else {
-                    format!("failed after {attempts} retries: {reason}")
+                    // Build a structured, actionable message: category + reason + hint.
+                    let hint = exhausted_retry_hint(reason);
+                    if hint.is_empty() {
+                        format!("Inference failed after {attempts} retries: {reason}")
+                    } else {
+                        format!(
+                            "Inference failed after {attempts} retries: {reason}\n\n{hint}"
+                        )
+                    }
                 };
                 scrollback.push_block(RenderBlock::session_event(SessionEvent::RetryFailed {
                     error,
@@ -1323,6 +1333,51 @@ pub(super) fn apply_retry_state(
     } else if !is_reauth {
         session.in_flight_prompt = None;
     }
+}
+/// Map a retry-exhaustion reason string to a short, actionable hint shown
+/// below the technical error message. Returns an empty string when no
+/// useful hint can be inferred so callers can omit the extra line.
+fn exhausted_retry_hint(reason: &str) -> &'static str {
+    // HTTP 429 / rate limit
+    if reason.contains("429") || reason.contains("rate limit") || reason.contains("too many") {
+        return "You have hit the API rate limit. Wait a moment, then send your message again.";
+    }
+    // HTTP 5xx server-side transient errors
+    if reason.contains("502") || reason.contains("503") || reason.contains("504")
+        || reason.contains("unavailable") || reason.contains("Bad Gateway")
+        || reason.contains("Service Unavailable")
+    {
+        return "The model API is temporarily unavailable. Try again in a few seconds.";
+    }
+    // HTTP 500 internal server error
+    if reason.contains("500") || reason.contains("Internal Server Error") {
+        return "The API reported an internal error. Try again, or switch models with /model.";
+    }
+    // Timeout / idle
+    if reason.contains("timed out") || reason.contains("timeout") || reason.contains("idle") {
+        return "The model stopped responding. Try a shorter request, or press Enter to retry.";
+    }
+    // Stream / connection errors
+    if reason.contains("stream dropped") || reason.contains("connection")
+        || reason.contains("network")
+    {
+        return "The connection was interrupted. Check your network and press Enter to retry.";
+    }
+    // Empty response / doom loop
+    if reason.contains("empty response") || reason.contains("doom loop")
+        || reason.contains("reasoning loop")
+    {
+        return "The model returned an unusable response. Try rephrasing your request.";
+    }
+    // Auth error
+    if reason.contains("401") || reason.contains("Unauthorized") || reason.contains("auth") {
+        return "Authentication failed. Run `bucket logout && bucket login` to re-authenticate.";
+    }
+    // Context length
+    if reason.contains("context") || reason.contains("too long") || reason.contains("token") {
+        return "The conversation is too long. Use /compact to reduce context, then retry.";
+    }
+    ""
 }
 /// Single source of truth for plan-mode state on the pager side.
 ///

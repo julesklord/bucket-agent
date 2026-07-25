@@ -644,11 +644,14 @@ fn compute_activity(
             "Compacting…".to_string(),
             false,
         ),
-        (AgentState::TurnRunning, Some(TurnActivity::Retrying { attempt, .. })) => (
-            Style::default().fg(theme.warning),
-            format!("Retrying (attempt {attempt})…"),
-            false,
-        ),
+        (AgentState::TurnRunning, Some(TurnActivity::Retrying { attempt, max_retries, error_label, .. })) => {
+            let label = if error_label.is_empty() {
+                format!("Retrying (attempt {attempt}/{max_retries})…")
+            } else {
+                format!("Retrying — {error_label} (attempt {attempt}/{max_retries})…")
+            };
+            (Style::default().fg(theme.warning), label, false)
+        }
         (AgentState::TurnRunning, Some(TurnActivity::Waiting(reason))) => (
             // Explicit wait reason (model / subagent / task output / tasks /
             // sleep): name what the agent is blocked on instead of a generic

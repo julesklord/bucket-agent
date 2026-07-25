@@ -1934,6 +1934,7 @@ impl SessionActor {
                                 attempt,
                                 max_retries: AuthRetrySchedule::MAX_RETRIES,
                                 reason: "Re-authenticated after 401; retrying request".to_string(),
+                                error_label: "auth (401)".to_string(),
                             },
                         ))
                         .await;

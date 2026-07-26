@@ -7280,7 +7280,10 @@ reasoning_effort = "low"
         prefetched: Option<IndexMap<String, ModelEntry>>,
     ) -> (Config, IndexMap<String, ModelEntry>) {
         unsafe {
-            std::env::set_var("BUCKET_CLI_CHAT_PROXY_BASE_URL", "https://cli-chat-proxy.bucket.com/v1");
+            std::env::set_var(
+                "BUCKET_CLI_CHAT_PROXY_BASE_URL",
+                "https://cli-chat-proxy.bucket.com/v1",
+            );
             std::env::set_var("BUCKET_BUCKET_API_BASE_URL", "https://api.x.ai/v1");
         }
         let raw: toml::Value = toml::from_str(toml_str).expect("test TOML should parse");
@@ -7910,7 +7913,11 @@ reasoning_effort = "low"
         assert_eq!(model.info.api_backend, ApiBackend::Messages);
         assert_eq!(model.info.auth_scheme, AuthScheme::XApiKey);
         assert_eq!(
-            model.info.extra_headers.get("anthropic-version").map(String::as_str),
+            model
+                .info
+                .extra_headers
+                .get("anthropic-version")
+                .map(String::as_str),
             Some("2023-06-01"),
         );
         unsafe { std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-test-key-e2e") };
@@ -7924,7 +7931,10 @@ reasoning_effort = "low"
         assert_eq!(sampling.base_url, "https://api.anthropic.com/v1");
         assert_eq!(sampling.api_key.as_deref(), Some("sk-ant-test-key-e2e"));
         assert_eq!(
-            sampling.extra_headers.get("anthropic-version").map(String::as_str),
+            sampling
+                .extra_headers
+                .get("anthropic-version")
+                .map(String::as_str),
             Some("2023-06-01"),
         );
         let client = bucket_sampler::SamplingClient::new(sampling).expect("client should build");

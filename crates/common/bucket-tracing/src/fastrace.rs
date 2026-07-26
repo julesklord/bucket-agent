@@ -51,7 +51,6 @@ pub fn enter_span_with_traceparent(name: impl Into<Cow<'static, str>>, tracepare
     }
 }
 
-
 // Request middleware (TODO: Move into http_client when deprecated tracing)
 #[derive(Clone)]
 #[allow(dead_code)]

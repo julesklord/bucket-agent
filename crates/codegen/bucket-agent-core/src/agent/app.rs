@@ -175,7 +175,10 @@ async fn prefetch_models(agent_config: &AgentConfig) -> Option<IndexMap<String, 
     let endpoints = agent_config.endpoints.clone();
     let fetch_auth = ModelFetchAuth::resolve(&endpoints, auth.is_some());
 
-    let mut result = if auth.is_some() || endpoints.has_custom_endpoint() || fetch_auth != ModelFetchAuth::Session {
+    let mut result = if auth.is_some()
+        || endpoints.has_custom_endpoint()
+        || fetch_auth != ModelFetchAuth::Session
+    {
         tokio::task::spawn_blocking(move || {
             prefetch_models_blocking(&endpoints, auth.as_ref(), fetch_auth)
         })

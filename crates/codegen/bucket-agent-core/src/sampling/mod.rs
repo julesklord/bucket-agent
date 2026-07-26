@@ -54,7 +54,9 @@ pub fn retry_label_from_kind_and_reason(kind: SamplingErrorKind, reason: &str) -
                     // Skip "HTTP " or "status "
                     let digits_start = after.find(|c: char| c.is_ascii_digit())?;
                     let digits = &after[digits_start..];
-                    let end = digits.find(|c: char| !c.is_ascii_digit()).unwrap_or(digits.len());
+                    let end = digits
+                        .find(|c: char| !c.is_ascii_digit())
+                        .unwrap_or(digits.len());
                     digits[..end].parse::<u16>().ok()
                 });
             if let Some(code) = status_code {

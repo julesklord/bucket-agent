@@ -70,7 +70,7 @@ mod tests {
     fn truncate_to_prefix_long_string_cuts_at_12() {
         assert_eq!(
             truncate_to_prefix("bucket-key-aaaaaaaaaaaaaaaaaaa".to_string()),
-            "bucket-key-aaaa"
+            "bucket-key-a"
         );
     }
 

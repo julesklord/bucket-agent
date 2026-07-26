@@ -50,7 +50,7 @@ pub async fn canonicalize_with_timeout(path: PathBuf) -> PathBuf {
 /// passed through `dunce::simplified` so Windows callers never see verbatim
 /// `\\?\` paths. Deliberately no timeout: a synthetic TimedOut error would
 /// change the `ErrorKind`-matching semantics at call sites.
-pub(crate) async fn try_canonicalize(path: &Path) -> std::io::Result<PathBuf> {
+pub async fn try_canonicalize(path: &Path) -> std::io::Result<PathBuf> {
     // dunce-simplified below — blessed wrapper
     #[allow(clippy::disallowed_methods)]
     tokio::fs::canonicalize(path)

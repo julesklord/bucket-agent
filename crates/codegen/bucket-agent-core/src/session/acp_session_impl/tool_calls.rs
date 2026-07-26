@@ -2472,10 +2472,7 @@ impl SessionActor {
                 // For API errors the reason string starts with "API error (status NNN";
                 // extract the status to build a compact label. Fall back to a kind-based
                 // label so the bar always shows something useful.
-                let error_label = crate::sampling::retry_label_from_kind_and_reason(
-                    kind,
-                    &reason,
-                );
+                let error_label = crate::sampling::retry_label_from_kind_and_reason(kind, &reason);
                 self.send_xai_notification(XaiSessionUpdate::RetryState(
                     crate::extensions::notification::RetryState::Retrying {
                         attempt,

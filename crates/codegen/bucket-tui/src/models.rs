@@ -1,7 +1,9 @@
 //! `bucket models` subcommand.
 
 use anyhow::Result;
-use bucket_agent_core::agent::config::{Config as AgentConfig, resolve_credentials, resolve_model_list};
+use bucket_agent_core::agent::config::{
+    Config as AgentConfig, resolve_credentials, resolve_model_list,
+};
 use bucket_agent_core::cli_models::{AuthStatus, list_models};
 use tokio_util::sync::CancellationToken;
 

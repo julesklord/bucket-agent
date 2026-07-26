@@ -30,9 +30,7 @@ pub fn resolve_provider_base_url(provider: &str) -> Option<&'static str> {
         "nvidia_nim" | "nvidia" => Some("https://integrate.api.nvidia.com/v1"),
         "openrouter" => Some("https://openrouter.ai/api/v1"),
         "groq" => Some("https://api.groq.com/openai/v1"),
-        "gemini" | "google" => {
-            Some("https://generativelanguage.googleapis.com/v1beta/openai")
-        }
+        "gemini" | "google" => Some("https://generativelanguage.googleapis.com/v1beta/openai"),
         "ollama" => Some("http://localhost:11434"),
         _ => None,
     }
@@ -66,7 +64,10 @@ fn env_key_for_base_url(base_url: &str) -> Option<EnvKeys> {
     } else if url.contains("openrouter.ai") {
         Some(EnvKeys::single("OPENROUTER_API_KEY"))
     } else if url.contains("googleapis.com") || url.contains("google.com") {
-        Some(EnvKeys::new(["GEMINI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"]))
+        Some(EnvKeys::new([
+            "GEMINI_API_KEY",
+            "GOOGLE_GENERATIVE_AI_API_KEY",
+        ]))
     } else {
         None
     }
@@ -139,8 +140,11 @@ fn openai_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.id, registry_cache))
-            .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
+        context_window: std::num::NonZeroU64::new(estimate_context_window(
+            &entry.id,
+            registry_cache,
+        ))
+        .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
         use_concise: false,
@@ -223,7 +227,12 @@ fn ollama_entry_to_model(
     // Ollama model names can include tags like "llama3.3:latest" — strip
     // the tag for the routing slug since Ollama's OpenAI-compat layer
     // accepts the bare name.
-    let model_slug = entry.name.split(':').next().unwrap_or(&entry.name).to_string();
+    let model_slug = entry
+        .name
+        .split(':')
+        .next()
+        .unwrap_or(&entry.name)
+        .to_string();
     let key = model_slug.clone();
     let info = ModelInfo {
         id: None,
@@ -237,8 +246,11 @@ fn ollama_entry_to_model(
         api_backend: ApiBackend::ChatCompletions,
         auth_scheme: AuthScheme::Bearer,
         extra_headers: IndexMap::new(),
-        context_window: std::num::NonZeroU64::new(estimate_context_window(&entry.name, registry_cache))
-            .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
+        context_window: std::num::NonZeroU64::new(estimate_context_window(
+            &entry.name,
+            registry_cache,
+        ))
+        .unwrap_or_else(|| std::num::NonZeroU64::new(128_000).unwrap()),
         auto_compact_threshold_percent: None,
         system_prompt_label: None,
         use_concise: false,
@@ -403,27 +415,27 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
             api_key_val
         };
 
-        let is_ollama = p_lower == "ollama" || base_url.contains("localhost:11434") || base_url.contains("127.0.0.1:11434");
+        let is_ollama = p_lower == "ollama"
+            || base_url.contains("localhost:11434")
+            || base_url.contains("127.0.0.1:11434");
         let is_anthropic = p_lower == "anthropic" || base_url.contains("anthropic.com");
 
         let result = if is_ollama {
-            fetch_ollama_models(base_url)
-                .map(|entries| {
-                    entries
-                        .iter()
-                        .map(|e| ollama_entry_to_model(e, base_url, registry_cache.as_ref()))
-                        .collect::<IndexMap<_, _>>()
-                })
+            fetch_ollama_models(base_url).map(|entries| {
+                entries
+                    .iter()
+                    .map(|e| ollama_entry_to_model(e, base_url, registry_cache.as_ref()))
+                    .collect::<IndexMap<_, _>>()
+            })
         } else if is_anthropic {
             Ok(anthropic_model_entries(base_url))
         } else {
-            fetch_openai_models(base_url, &api_key)
-                .map(|entries| {
-                    entries
-                        .iter()
-                        .map(|e| openai_entry_to_model(e, base_url, registry_cache.as_ref()))
-                        .collect::<IndexMap<_, _>>()
-                })
+            fetch_openai_models(base_url, &api_key).map(|entries| {
+                entries
+                    .iter()
+                    .map(|e| openai_entry_to_model(e, base_url, registry_cache.as_ref()))
+                    .collect::<IndexMap<_, _>>()
+            })
         };
 
         match result {
@@ -448,11 +460,7 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
         }
     }
 
-    if has_any {
-        Some(merged_models)
-    } else {
-        None
-    }
+    if has_any { Some(merged_models) } else { None }
 }
 
 fn sync_registry_models_cache() -> Option<()> {
@@ -462,7 +470,7 @@ fn sync_registry_models_cache() -> Option<()> {
     }
     let cache_path = cache_dir.join("models.json");
     let tmp_path = cache_dir.join("models.json.tmp");
-    
+
     let is_fresh = if let Ok(metadata) = std::fs::metadata(&cache_path) {
         if let Ok(modified) = metadata.modified() {
             if let Ok(elapsed) = modified.elapsed() {
@@ -476,11 +484,11 @@ fn sync_registry_models_cache() -> Option<()> {
     } else {
         false
     };
-    
+
     if is_fresh {
         return Some(());
     }
-    
+
     std::thread::spawn(move || {
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(3))
@@ -497,7 +505,7 @@ fn sync_registry_models_cache() -> Option<()> {
             }
         }
     });
-    
+
     Some(())
 }
 
@@ -518,10 +526,10 @@ fn load_models_registry_cache() -> Option<std::collections::HashMap<String, u64>
     }
     let file = std::fs::File::open(cache_path).ok()?;
     let reader = std::io::BufReader::new(file);
-    
+
     let data: serde_json::Value = serde_json::from_reader(reader).ok()?;
     let mut map = std::collections::HashMap::new();
-    
+
     if let Some(providers) = data.as_object() {
         for provider in providers.values() {
             if let Some(models) = provider.get("models").and_then(|m| m.as_object()) {
@@ -538,15 +546,18 @@ fn load_models_registry_cache() -> Option<std::collections::HashMap<String, u64>
     Some(map)
 }
 
-fn lookup_cache_context_window(model_id: &str, cache_map: Option<&std::collections::HashMap<String, u64>>) -> Option<u64> {
+fn lookup_cache_context_window(
+    model_id: &str,
+    cache_map: Option<&std::collections::HashMap<String, u64>>,
+) -> Option<u64> {
     let cache_map = cache_map?;
     let norm_model = normalize_model_id(model_id);
-    
+
     // 1. Exact match
     if let Some(&context) = cache_map.get(&norm_model) {
         return Some(context);
     }
-    
+
     // 2. Slug match (without provider prefix)
     let slug = norm_model.split('/').last().unwrap_or(&norm_model);
     if let Some(&context) = cache_map.get(slug) {
@@ -560,18 +571,21 @@ fn lookup_cache_context_window(model_id: &str, cache_map: Option<&std::collectio
             return Some(context);
         }
     }
-    
+
     None
 }
 
-fn estimate_context_window(model_id: &str, cache_map: Option<&std::collections::HashMap<String, u64>>) -> u64 {
+fn estimate_context_window(
+    model_id: &str,
+    cache_map: Option<&std::collections::HashMap<String, u64>>,
+) -> u64 {
     if let Some(cached) = lookup_cache_context_window(model_id, cache_map) {
         return cached;
     }
     let lower = model_id.to_lowercase();
-    
-    // 1. Try parsing suffixes like '128k' or '1m'
-    if let Some(pos) = lower.find('k') {
+
+    // 1. Try parsing suffixes like '128k' or '1m' by scanning all occurrences
+    for (pos, _) in lower.match_indices('k') {
         let bytes = lower.as_bytes();
         let mut start = pos;
         while start > 0 && bytes[start - 1].is_ascii_digit() {
@@ -583,8 +597,8 @@ fn estimate_context_window(model_id: &str, cache_map: Option<&std::collections::
             }
         }
     }
-    
-    if let Some(pos) = lower.find('m') {
+
+    for (pos, _) in lower.match_indices('m') {
         let bytes = lower.as_bytes();
         let mut start = pos;
         while start > 0 && bytes[start - 1].is_ascii_digit() {
@@ -606,7 +620,10 @@ fn estimate_context_window(model_id: &str, cache_map: Option<&std::collections::
         1_048_576
     } else if lower.contains("claude-3") || lower.contains("claude-3-5") {
         200_000
-    } else if lower.contains("llama-3.1") || lower.contains("llama-3.2") || lower.contains("llama-3.3") {
+    } else if lower.contains("llama-3.1")
+        || lower.contains("llama-3.2")
+        || lower.contains("llama-3.3")
+    {
         128_000
     } else if lower.contains("gpt-4o") || lower.contains("gpt-4-turbo") {
         128_000
@@ -681,9 +698,13 @@ mod tests {
             id: "nvidia/llama-3.1-70b-instruct".to_string(),
             owned_by: Some("nvidia".to_string()),
         };
-        let (key, model) = openai_entry_to_model(&entry, "https://integrate.api.nvidia.com/v1", None);
+        let (key, model) =
+            openai_entry_to_model(&entry, "https://integrate.api.nvidia.com/v1", None);
         assert_eq!(key, "nvidia/llama-3.1-70b-instruct");
-        let env_key = model.env_key.as_ref().expect("env_key should be set for NVIDIA");
+        let env_key = model
+            .env_key
+            .as_ref()
+            .expect("env_key should be set for NVIDIA");
         assert_eq!(env_key.primary(), Some("NVIDIA_API_KEY"));
     }
 
@@ -693,8 +714,12 @@ mod tests {
             id: "custom-model".to_string(),
             owned_by: None,
         };
-        let (_, model) = openai_entry_to_model(&entry, "https://my-custom-api.example.com/v1", None);
-        assert!(model.env_key.is_none(), "unknown provider should have no env_key");
+        let (_, model) =
+            openai_entry_to_model(&entry, "https://my-custom-api.example.com/v1", None);
+        assert!(
+            model.env_key.is_none(),
+            "unknown provider should have no env_key"
+        );
     }
 
     #[test]
@@ -713,10 +738,25 @@ mod tests {
     fn anthropic_models_have_correct_backend() {
         let models = anthropic_model_entries("https://api.anthropic.com/v1");
         for (key, model) in &models {
-            assert_eq!(model.info.api_backend, ApiBackend::Messages, "Anthropic model {key} should use messages backend");
-            assert_eq!(model.info.auth_scheme, AuthScheme::XApiKey, "Anthropic model {key} should use x-api-key auth");
-            let env_key = model.env_key.as_ref().expect("Anthropic model should have env_key");
-            assert_eq!(env_key.primary(), Some("ANTHROPIC_API_KEY"), "Anthropic model {key} env_key");
+            assert_eq!(
+                model.info.api_backend,
+                ApiBackend::Messages,
+                "Anthropic model {key} should use messages backend"
+            );
+            assert_eq!(
+                model.info.auth_scheme,
+                AuthScheme::XApiKey,
+                "Anthropic model {key} should use x-api-key auth"
+            );
+            let env_key = model
+                .env_key
+                .as_ref()
+                .expect("Anthropic model should have env_key");
+            assert_eq!(
+                env_key.primary(),
+                Some("ANTHROPIC_API_KEY"),
+                "Anthropic model {key} env_key"
+            );
         }
     }
 
@@ -765,5 +805,39 @@ mod tests {
     #[test]
     fn env_key_for_base_url_unknown_returns_none() {
         assert!(env_key_for_base_url("https://my-custom-api.example.com/v1").is_none());
+    }
+
+    #[test]
+    fn estimate_context_window_cached() {
+        let mut cache = std::collections::HashMap::new();
+        cache.insert("custom-model".to_string(), 99_000);
+        assert_eq!(
+            estimate_context_window("custom-model", Some(&cache)),
+            99_000
+        );
+    }
+
+    #[test]
+    fn estimate_context_window_suffix_parsing() {
+        // Simple suffixes
+        assert_eq!(estimate_context_window("model-128k", None), 128_000);
+        assert_eq!(estimate_context_window("model-1m", None), 1_000_000);
+
+        // Suffixes with letters earlier in the name
+        assert_eq!(estimate_context_window("grok-128k", None), 128_000);
+        assert_eq!(
+            estimate_context_window("gemini-1.5-pro-1m", None),
+            1_000_000
+        );
+    }
+
+    #[test]
+    fn estimate_context_window_heuristics() {
+        assert_eq!(
+            estimate_context_window("gemini-1.5-pro-latest", None),
+            2_000_000
+        );
+        assert_eq!(estimate_context_window("claude-3-5-sonnet", None), 200_000);
+        assert_eq!(estimate_context_window("unknown-model", None), 128_000);
     }
 }

@@ -1283,9 +1283,7 @@ pub(super) fn apply_retry_state(
                     if hint.is_empty() {
                         format!("Inference failed after {attempts} retries: {reason}")
                     } else {
-                        format!(
-                            "Inference failed after {attempts} retries: {reason}\n\n{hint}"
-                        )
+                        format!("Inference failed after {attempts} retries: {reason}\n\n{hint}")
                     }
                 };
                 scrollback.push_block(RenderBlock::session_event(SessionEvent::RetryFailed {
@@ -1343,8 +1341,11 @@ fn exhausted_retry_hint(reason: &str) -> &'static str {
         return "You have hit the API rate limit. Wait a moment, then send your message again.";
     }
     // HTTP 5xx server-side transient errors
-    if reason.contains("502") || reason.contains("503") || reason.contains("504")
-        || reason.contains("unavailable") || reason.contains("Bad Gateway")
+    if reason.contains("502")
+        || reason.contains("503")
+        || reason.contains("504")
+        || reason.contains("unavailable")
+        || reason.contains("Bad Gateway")
         || reason.contains("Service Unavailable")
     {
         return "The model API is temporarily unavailable. Try again in a few seconds.";
@@ -1358,13 +1359,15 @@ fn exhausted_retry_hint(reason: &str) -> &'static str {
         return "The model stopped responding. Try a shorter request, or press Enter to retry.";
     }
     // Stream / connection errors
-    if reason.contains("stream dropped") || reason.contains("connection")
+    if reason.contains("stream dropped")
+        || reason.contains("connection")
         || reason.contains("network")
     {
         return "The connection was interrupted. Check your network and press Enter to retry.";
     }
     // Empty response / doom loop
-    if reason.contains("empty response") || reason.contains("doom loop")
+    if reason.contains("empty response")
+        || reason.contains("doom loop")
         || reason.contains("reasoning loop")
     {
         return "The model returned an unusable response. Try rephrasing your request.";

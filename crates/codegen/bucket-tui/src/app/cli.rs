@@ -366,6 +366,9 @@ pub struct ServeArgs {
     /// Authentication and WebSocket URL overrides
     #[command(flatten)]
     pub headless: HeadlessArgs,
+    /// Print the full plaintext secret on startup
+    #[arg(long)]
+    pub show_secret: bool,
 }
 impl ServeArgs {
     /// Get the secret, generating a random one if not provided.

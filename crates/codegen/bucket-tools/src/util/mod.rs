@@ -24,7 +24,9 @@ pub use command_display::strip_redundant_session_cd;
 pub use env::detach_from_tty;
 pub use env::substitute_plugin_tokens;
 pub use env::{BUCKET_AGENT_ENV, BUCKET_AGENT_ENV_VALUE, apply_bucket_agent_marker, pager_env};
-pub use fs::{UnicodePathMatch, canonicalize_with_timeout, try_resolve_unicode_filename};
+pub use fs::{
+    UnicodePathMatch, canonicalize_with_timeout, try_canonicalize, try_resolve_unicode_filename,
+};
 pub use path_suggestions::format_not_found_error;
 pub use remap::{remap_json_keys, remap_schema_properties, reverse_map};
 pub use spawn::{

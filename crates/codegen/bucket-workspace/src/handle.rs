@@ -1645,11 +1645,12 @@ impl WorkspaceHandle {
     }
     /// Canonicalize a confinement root directory.
     async fn canonicalize_root_dir(root: &std::path::Path) -> WorkspaceResult<PathBuf> {
-        #[allow(clippy::disallowed_methods)]
-        let canonical = tokio::fs::canonicalize(root).await.map_err(|e| {
-            WorkspaceError::HubError(format!("failed to canonicalize workspace root: {e}"))
-        })?;
-        Ok(dunce::simplified(&canonical).to_path_buf())
+        let canonical = bucket_tools::util::try_canonicalize(root)
+            .await
+            .map_err(|e| {
+                WorkspaceError::HubError(format!("failed to canonicalize workspace root: {e}"))
+            })?;
+        Ok(canonical)
     }
     /// Resolve a caller-provided path safely. Accepts a path relative to the
     /// workspace root, or an absolute path that resolves within the root;
@@ -1710,10 +1711,8 @@ impl WorkspaceHandle {
         let mut symlink_hops = 0usize;
         let mut check_path = normalized.clone();
         loop {
-            #[allow(clippy::disallowed_methods)]
-            match tokio::fs::canonicalize(&check_path).await {
+            match bucket_tools::util::try_canonicalize(&check_path).await {
                 Ok(canonical) => {
-                    let canonical = dunce::simplified(&canonical).to_path_buf();
                     if !canonical.starts_with(canonical_root) {
                         return Err(WorkspaceError::HubError(format!(
                             "path resolves outside workspace root (symlink escape): {req_path}"

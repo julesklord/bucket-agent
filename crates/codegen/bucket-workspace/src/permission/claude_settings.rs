@@ -373,11 +373,24 @@ pub fn find_claude_settings_paths(cwd: &Path) -> Vec<PathBuf> {
 /// `is_global` check.
 fn global_claude_settings_paths() -> Vec<PathBuf> {
     let mut paths = Vec::new();
-    if let Some(home) = dirs::home_dir() {
-        let global = home.join(".claude");
-        paths.push(global.join("settings.local.json"));
-        paths.push(global.join("settings.json"));
-    }
+    let home_dir = if cfg!(test) {
+        // Under tests, prevent local developer settings.json from polluting the test environment.
+        // If a test mocks HOME (meaning curr != real), we use the mocked home.
+        // Otherwise, we use a dummy /tmp/mock_home path.
+        let real_home = dirs::home_dir();
+        let current_home = std::env::var_os("HOME").map(PathBuf::from);
+        match (real_home, current_home) {
+            (Some(real), Some(curr)) if real == curr => PathBuf::from("/tmp/mock_home"),
+            (_, Some(curr)) => curr,
+            _ => PathBuf::from("/tmp/mock_home"),
+        }
+    } else {
+        dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp/mock_home"))
+    };
+
+    let global = home_dir.join(".claude");
+    paths.push(global.join("settings.local.json"));
+    paths.push(global.join("settings.json"));
     paths
 }
 

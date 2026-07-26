@@ -1,10 +1,3 @@
-#![allow(
-    unused_imports,
-    unused_variables,
-    unused_mut,
-    unreachable_code,
-    dead_code
-)]
 #[cfg(all(feature = "jemalloc", unix))]
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
@@ -83,16 +76,27 @@ fn resolve_agent_profile_path(path: &std::path::Path) -> std::path::PathBuf {
     }
 }
 /// Print startup information for the serve command.
-fn print_serve_startup_info(bind_addr: SocketAddr, secret: &str) {
+fn print_serve_startup_info(bind_addr: SocketAddr, secret: &str, show_secret: bool) {
+    let display_secret = if show_secret {
+        secret.to_string()
+    } else if secret.len() <= 4 {
+        "****".to_string()
+    } else {
+        format!(
+            "{}{}",
+            "*".repeat(secret.len() - 4),
+            &secret[secret.len() - 4..]
+        )
+    };
     eprintln!();
     eprintln!("   Bucket agent server starting...");
     eprintln!();
     eprintln!("   Address:  {}:{}", bind_addr.ip(), bind_addr.port());
-    eprintln!("   Secret:   {}", secret);
+    eprintln!("   Secret:   {}", display_secret);
     eprintln!();
     eprintln!(
         "   WebSocket URL: ws://{}/ws?server-key={}",
-        bind_addr, secret
+        bind_addr, display_secret
     );
     eprintln!();
 }
@@ -1315,7 +1319,7 @@ async fn run_agent_command(
                 bind_addr: a.bind,
                 secret: secret.clone(),
             };
-            print_serve_startup_info(a.bind, &secret);
+            print_serve_startup_info(a.bind, &secret, a.show_secret);
             bucket_agent_core::agent::run_agent_server(server_config, agent_config).await
         }
         Some(AgentCmd::Leader(a)) => {

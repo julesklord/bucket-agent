@@ -1526,7 +1526,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-agent-core"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "agent-client-protocol",
  "anyhow",
@@ -1702,7 +1702,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-bin"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "anyhow",
  "bucket-acp",
@@ -2358,7 +2358,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-sampling-types"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "assert_matches",
  "async-openai",
@@ -2748,7 +2748,7 @@ dependencies = [
 
 [[package]]
 name = "bucket-tui"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "agent-client-protocol",
  "ansi-to-tui",

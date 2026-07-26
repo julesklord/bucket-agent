@@ -644,7 +644,15 @@ fn compute_activity(
             "Compacting…".to_string(),
             false,
         ),
-        (AgentState::TurnRunning, Some(TurnActivity::Retrying { attempt, max_retries, error_label, .. })) => {
+        (
+            AgentState::TurnRunning,
+            Some(TurnActivity::Retrying {
+                attempt,
+                max_retries,
+                error_label,
+                ..
+            }),
+        ) => {
             let label = if error_label.is_empty() {
                 format!("Retrying (attempt {attempt}/{max_retries})…")
             } else {

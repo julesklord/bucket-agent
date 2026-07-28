@@ -850,6 +850,13 @@ impl AgentSession {
     pub fn set_retry_activity(&mut self, activity: Option<TurnActivity>) {
         self.tracker.set_retry_activity(activity);
     }
+    /// Close any in-flight thinking block immediately.
+    ///
+    /// Call this when a turn ends abnormally (retry exhausted, hard failure)
+    /// so the thinking spinner is stopped before the error block is pushed.
+    pub fn finish_thinking(&mut self, scrollback: &mut crate::scrollback::state::ScrollbackState) {
+        self.tracker.finish_thinking(scrollback);
+    }
     /// Start a slash command (e.g., /compact).
     pub fn start_command(&mut self, command: AgentCommand) {
         self.state = AgentState::CommandRunning {

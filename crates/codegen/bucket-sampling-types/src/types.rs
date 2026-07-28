@@ -471,6 +471,7 @@ pub struct ChatCompletionResponse {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChatChoice {
+    #[serde(default, deserialize_with = "crate::serde_helpers::null_as_default")]
     pub index: u32,
     pub message: ChatResponseMessage,
     #[serde(skip_serializing_if = "Option::is_none")]

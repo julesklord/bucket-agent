@@ -1251,6 +1251,9 @@ pub(super) fn apply_retry_state(
             reason,
             is_rate_limited: rate_limited,
         } => {
+            // Close any in-flight thinking block before showing the error so
+            // the spinner does not keep running after the failure is displayed.
+            session.finish_thinking(scrollback);
             session.set_retry_activity(None);
             session.rate_limited = *rate_limited;
             if *rate_limited {
@@ -1296,6 +1299,9 @@ pub(super) fn apply_retry_state(
             error_type,
             message,
         } => {
+            // Close any in-flight thinking block before showing the error so
+            // the spinner does not keep running after the failure is displayed.
+            session.finish_thinking(scrollback);
             session.set_retry_activity(None);
             if error_type == "encrypted_content_mismatch" {
                 session.model_incompatible = true;

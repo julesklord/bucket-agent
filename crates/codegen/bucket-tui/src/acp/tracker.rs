@@ -858,7 +858,10 @@ impl AcpUpdateTracker {
     /// Empty thinking blocks (pre-created but never received content) are
     /// removed from scrollback — they'd show a misleading "Thought for 0.0s".
     /// Only blocks that received actual thinking tokens are kept.
-    fn finish_thinking(&mut self, scrollback: &mut ScrollbackState) {
+    ///
+    /// Call this whenever a turn ends abnormally (retry exhausted, turn failed)
+    /// so the spinner does not keep running after the error is displayed.
+    pub fn finish_thinking(&mut self, scrollback: &mut ScrollbackState) {
         if let Some(thinking_id) = self.current_thinking.take() {
             let is_empty = scrollback.get_by_id(thinking_id).is_some_and(
                 |e| matches!(& e.block, RenderBlock::Thinking(t) if t.text().is_empty()),

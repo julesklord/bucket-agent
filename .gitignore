@@ -53,3 +53,5 @@ yarn-error.log*
 .bucket/
 .claude/
 session-*.md
+.kdev4/bucket-agent.kdev4
+bucket-agent.kdev4

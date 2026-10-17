@@ -793,6 +793,7 @@ mod tests {
                 attempt: 2,
                 max_retries: 3,
                 reason: "transient error".to_string(),
+                error_label: None,
             }),
             None,
             &theme,

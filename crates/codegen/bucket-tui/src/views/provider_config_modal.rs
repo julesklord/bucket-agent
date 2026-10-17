@@ -192,19 +192,13 @@ impl ProviderConfigModalState {
             }
             KeyCode::Char(c) => {
                 if self.focus == 0 {
-                    if self.selected_provider_idx < 5 && c >= '1' && c <= '6' {
+                    if self.selected_provider_idx < 5 && ('1'..='6').contains(&c) {
                         let idx = (c as usize) - ('1' as usize);
                         self.selected_provider_idx = idx;
                         self.update_provider_input();
                     } else if self.selected_provider_idx == 5 {
-                        if c >= '1' && c <= '6' && self.custom_provider_input.is_empty() {
-                            let idx = (c as usize) - ('1' as usize);
-                            self.selected_provider_idx = idx;
-                            self.update_provider_input();
-                        } else {
-                            self.custom_provider_input.push(c);
-                            self.update_provider_input();
-                        }
+                        self.custom_provider_input.push(c);
+                        self.update_provider_input();
                     }
                 } else {
                     self.api_key_input.push(c);

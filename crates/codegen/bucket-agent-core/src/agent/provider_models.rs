@@ -224,13 +224,12 @@ fn ollama_entry_to_model(
     base_url: &str,
     registry_cache: Option<&std::collections::HashMap<String, u64>>,
 ) -> (String, ModelEntry) {
-    // Ollama model names can include tags like "llama3.3:latest" — strip
-    // the tag for the routing slug since Ollama's OpenAI-compat layer
-    // accepts the bare name.
+    // Strip only the default `:latest` tag for cleaner slugs while preserving
+    // explicit parameter/quantization tags (e.g. `qwen2.5-coder:7b` vs `qwen2.5-coder:32b`)
+    // so they don't collide or 404 against Ollama's OpenAI-compatible endpoint.
     let model_slug = entry
         .name
-        .split(':')
-        .next()
+        .strip_suffix(":latest")
         .unwrap_or(&entry.name)
         .to_string();
     let key = model_slug.clone();
@@ -239,7 +238,7 @@ fn ollama_entry_to_model(
         model: model_slug,
         base_url: base_url.to_string(),
         name: Some(entry.name.clone()),
-        description: Some(format!("Local Ollama model")),
+        description: Some("Local Ollama model".to_string()),
         max_completion_tokens: None,
         temperature: None,
         top_p: None,
@@ -341,6 +340,16 @@ fn anthropic_model_entries(base_url: &str) -> IndexMap<String, ModelEntry> {
 
 // ── Orchestrator ──────────────────────────────────────────────────────
 
+fn resolve_bucket_home_dir() -> Option<std::path::PathBuf> {
+    if let Ok(home) = std::env::var("BUCKET_HOME") {
+        let trimmed = home.trim();
+        if !trimmed.is_empty() {
+            return Some(std::path::PathBuf::from(trimmed));
+        }
+    }
+    dirs::home_dir().map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
+}
+
 /// Discover models from all configured providers.
 ///
 /// Reads `providers.toml` (and falls back to standard provider environment variables)
@@ -355,15 +364,7 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
 
     // 1. Read from providers.toml
     let mut providers = IndexMap::new();
-    if let Ok(home) = std::env::var("BUCKET_HOME")
-        .map(std::path::PathBuf::from)
-        .or_else(|_| {
-            #[allow(deprecated)]
-            std::env::home_dir()
-                .map(|h| dunce::canonicalize(&h).unwrap_or(h).join(".bucket"))
-                .ok_or(())
-        })
-    {
+    if let Some(home) = resolve_bucket_home_dir() {
         let provider_file = home.join("providers.toml");
         if let Ok(content) = std::fs::read_to_string(&provider_file) {
             if let Ok(toml_val) = content.parse::<toml::Value>() {
@@ -464,7 +465,7 @@ pub fn discover_provider_models() -> Option<IndexMap<String, ModelEntry>> {
 }
 
 fn sync_registry_models_cache() -> Option<()> {
-    let cache_dir = dirs::home_dir()?.join(".bucket");
+    let cache_dir = resolve_bucket_home_dir()?;
     if !cache_dir.exists() {
         let _ = std::fs::create_dir_all(&cache_dir);
     }
@@ -520,7 +521,7 @@ fn normalize_model_id(id: &str) -> String {
 }
 
 fn load_models_registry_cache() -> Option<std::collections::HashMap<String, u64>> {
-    let cache_path = dirs::home_dir()?.join(".bucket/models.json");
+    let cache_path = resolve_bucket_home_dir()?.join("models.json");
     if !cache_path.exists() {
         return None;
     }
@@ -575,6 +576,13 @@ fn lookup_cache_context_window(
     None
 }
 
+fn is_token_boundary(b: Option<u8>) -> bool {
+    match b {
+        None => true,
+        Some(c) => matches!(c, b'-' | b'_' | b'/' | b':' | b'.'),
+    }
+}
+
 fn estimate_context_window(
     model_id: &str,
     cache_map: Option<&std::collections::HashMap<String, u64>>,
@@ -583,30 +591,43 @@ fn estimate_context_window(
         return cached;
     }
     let lower = model_id.to_lowercase();
+    let bytes = lower.as_bytes();
 
-    // 1. Try parsing suffixes like '128k' or '1m' by scanning all occurrences
+    // 1. Try parsing delimited suffixes like '128k' or '1m' (must sit on token boundaries)
     for (pos, _) in lower.match_indices('k') {
-        let bytes = lower.as_bytes();
+        if !is_token_boundary(bytes.get(pos + 1).copied()) {
+            continue;
+        }
         let mut start = pos;
         while start > 0 && bytes[start - 1].is_ascii_digit() {
             start -= 1;
         }
-        if start < pos {
+        if start < pos
+            && is_token_boundary(start.checked_sub(1).and_then(|i| bytes.get(i).copied()))
+        {
             if let Ok(num) = lower[start..pos].parse::<u64>() {
-                return num * 1_000;
+                if (4..=2048).contains(&num) {
+                    return num * 1_000;
+                }
             }
         }
     }
 
     for (pos, _) in lower.match_indices('m') {
-        let bytes = lower.as_bytes();
+        if !is_token_boundary(bytes.get(pos + 1).copied()) {
+            continue;
+        }
         let mut start = pos;
         while start > 0 && bytes[start - 1].is_ascii_digit() {
             start -= 1;
         }
-        if start < pos {
+        if start < pos
+            && is_token_boundary(start.checked_sub(1).and_then(|i| bytes.get(i).copied()))
+        {
             if let Ok(num) = lower[start..pos].parse::<u64>() {
-                return num * 1_000_000;
+                if (1..=10).contains(&num) {
+                    return num * 1_000_000;
+                }
             }
         }
     }
@@ -723,15 +744,24 @@ mod tests {
     }
 
     #[test]
-    fn ollama_entry_to_model_strips_tag() {
-        let entry = OllamaModelEntry {
+    fn ollama_entry_to_model_strips_latest_tag_only() {
+        let latest = OllamaModelEntry {
             name: "llama3.3:latest".to_string(),
             size: Some(4_000_000_000),
         };
-        let (key, model) = ollama_entry_to_model(&entry, "http://localhost:11434", None);
+        let (key, model) = ollama_entry_to_model(&latest, "http://localhost:11434", None);
         assert_eq!(key, "llama3.3");
         assert_eq!(model.info.model, "llama3.3");
         assert_eq!(model.info.name.as_deref(), Some("llama3.3:latest"));
+
+        let tagged = OllamaModelEntry {
+            name: "qwen2.5-coder:7b".to_string(),
+            size: Some(4_000_000_000),
+        };
+        let (key_7b, model_7b) = ollama_entry_to_model(&tagged, "http://localhost:11434", None);
+        assert_eq!(key_7b, "qwen2.5-coder:7b");
+        assert_eq!(model_7b.info.model, "qwen2.5-coder:7b");
+        assert_eq!(model_7b.info.name.as_deref(), Some("qwen2.5-coder:7b"));
     }
 
     #[test]
@@ -828,6 +858,13 @@ mod tests {
         assert_eq!(
             estimate_context_window("gemini-1.5-pro-1m", None),
             1_000_000
+        );
+
+        // Non-delimited or out-of-range tokens should not be mistaken for context windows
+        assert_eq!(estimate_context_window("model-v2m", None), 128_000);
+        assert_eq!(
+            estimate_context_window("llama-3.2-3b-q4_k_m", None),
+            128_000
         );
     }
 

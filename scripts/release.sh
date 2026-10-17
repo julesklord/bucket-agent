@@ -48,7 +48,12 @@ check_release_readiness() {
     
     # Check Cargo.toml version
     VERSION=$(grep '^version' crates/codegen/bucket-bin/Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-    echo -e "${YELLOW}Current Cargo.toml version: $VERSION${NC}"
+    LIB_VERSION=$(grep '^version' crates/codegen/bucket-version/Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+    echo -e "${YELLOW}Current Cargo.toml version: $VERSION (bucket-version: $LIB_VERSION)${NC}"
+    if [ "$VERSION" != "$LIB_VERSION" ]; then
+        echo -e "${RED}✗ Version mismatch: bucket-bin ($VERSION) != bucket-version ($LIB_VERSION)${NC}"
+        return 1
+    fi
     
     # Check for uncommitted changes to version
     if git diff --name-only | grep -q "Cargo.toml"; then

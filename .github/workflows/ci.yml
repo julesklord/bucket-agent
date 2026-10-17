@@ -50,8 +50,8 @@ jobs:
         with:
           toolchain: "1.92.0"
       - uses: Swatinem/rust-cache@v2
-      - name: Install protobuf compiler
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install protobuf compiler and ripgrep
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler ripgrep
       - name: Install DotSlash (Prebuilt)
         run: |
           curl -fsSL https://github.com/facebook/dotslash/releases/download/v0.4.0/dotslash-v0.4.0-linux-x86_64.tar.gz | tar -xz -C /usr/local/bin || true
